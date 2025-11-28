@@ -54,3 +54,4 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # If the JAVA_OPTS variable is not needed, you can simply:
 ENTRYPOINT ["/usr/bin/tini","--"]
 CMD ["java", "-jar", "/app/xxl-job-admin.jar"]
+

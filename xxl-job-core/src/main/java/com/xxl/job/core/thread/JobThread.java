@@ -1,6 +1,6 @@
 package com.xxl.job.core.thread;
 
-import com.xxl.job.core.openapi.model.HandleCallbackRequest;
+import com.xxl.job.core.openapi.model.CallbackRequest;
 import com.xxl.job.core.openapi.model.TriggerRequest;
 import com.xxl.job.core.context.XxlJobContext;
 import com.xxl.job.core.context.XxlJobHelper;
@@ -23,7 +23,7 @@ import java.util.concurrent.*;
  * @author xuxueli 2016-1-16 19:52:47
  */
 public class JobThread extends Thread{
-	private static Logger logger = LoggerFactory.getLogger(JobThread.class);
+	private static final Logger logger = LoggerFactory.getLogger(JobThread.class);
 
 	private int jobId;
 	private IJobHandler handler;
@@ -53,9 +53,6 @@ public class JobThread extends Thread{
 
     /**
      * new trigger to queue
-     *
-     * @param triggerParam
-     * @return
      */
 	public Response<String> pushTriggerQueue(TriggerRequest triggerParam) {
         // avoid repeat
@@ -71,8 +68,6 @@ public class JobThread extends Thread{
 
     /**
      * kill job thread
-     *
-     * @param stopReason
      */
 	public void toStop(String stopReason) {
 		/**
@@ -86,7 +81,6 @@ public class JobThread extends Thread{
 
     /**
      * is running job
-     * @return
      */
     public boolean isRunningOrHasQueue() {
         return running || triggerQueue.size()>0;
@@ -121,7 +115,9 @@ public class JobThread extends Thread{
 					XxlJobContext xxlJobContext = new XxlJobContext(
 							triggerParam.getJobId(),
 							triggerParam.getExecutorParams(),
-							logFileName,
+                            triggerParam.getLogId(),
+                            triggerParam.getLogDateTime(),
+                            logFileName,
 							triggerParam.getBroadcastIndex(),
 							triggerParam.getBroadcastTotal());
 
@@ -183,7 +179,7 @@ public class JobThread extends Thread{
 
 				} else {
 					if (idleTimes > 30) {
-						if(triggerQueue.size() == 0) {	// avoid concurrent trigger causes jobId-lost
+						if(triggerQueue.isEmpty()) {	// avoid concurrent trigger causes jobId-lost
 							XxlJobExecutor.removeJobThread(jobId, "excutor idle times over limit.");
 						}
 					}
@@ -206,7 +202,7 @@ public class JobThread extends Thread{
                     // callback handler info
                     if (!toStop) {
                         // common
-                        TriggerCallbackThread.pushCallBack(new HandleCallbackRequest(
+                        TriggerCallbackThread.pushCallBack(new CallbackRequest(
                         		triggerParam.getLogId(),
 								triggerParam.getLogDateTime(),
 								XxlJobContext.getXxlJobContext().getHandleCode(),
@@ -214,7 +210,7 @@ public class JobThread extends Thread{
 						);
                     } else {
                         // is killed
-                        TriggerCallbackThread.pushCallBack(new HandleCallbackRequest(
+                        TriggerCallbackThread.pushCallBack(new CallbackRequest(
                         		triggerParam.getLogId(),
 								triggerParam.getLogDateTime(),
 								XxlJobContext.HANDLE_CODE_FAIL,
@@ -226,11 +222,11 @@ public class JobThread extends Thread{
         }
 
 		// callback trigger request in queue
-		while(triggerQueue !=null && triggerQueue.size()>0){
+		while(triggerQueue !=null && !triggerQueue.isEmpty()){
 			TriggerRequest triggerParam = triggerQueue.poll();
 			if (triggerParam!=null) {
 				// is killed
-				TriggerCallbackThread.pushCallBack(new HandleCallbackRequest(
+				TriggerCallbackThread.pushCallBack(new CallbackRequest(
 						triggerParam.getLogId(),
 						triggerParam.getLogDateTime(),
 						XxlJobContext.HANDLE_CODE_FAIL,

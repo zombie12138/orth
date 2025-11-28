@@ -7,6 +7,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
     pip install uv && \
     rm -rf /var/lib/apt/lists/*
 
+
 WORKDIR /app
 
 # Copy executable JAR (modify according to your actual build artifact name)

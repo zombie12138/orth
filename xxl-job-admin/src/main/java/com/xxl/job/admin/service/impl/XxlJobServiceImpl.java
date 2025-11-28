@@ -1,5 +1,6 @@
 package com.xxl.job.admin.service.impl;
 
+import com.xxl.job.admin.constant.TriggerStatus;
 import com.xxl.job.admin.mapper.*;
 import com.xxl.job.admin.model.XxlJobGroup;
 import com.xxl.job.admin.model.XxlJobInfo;
@@ -18,6 +19,8 @@ import com.xxl.job.core.constant.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
 import com.xxl.sso.core.model.LoginInfo;
 import com.xxl.tool.core.DateTool;
+import com.xxl.tool.core.StringTool;
+import com.xxl.tool.gson.GsonTool;
 import com.xxl.tool.response.PageModel;
 import com.xxl.tool.response.Response;
 import jakarta.annotation.Resource;
@@ -70,10 +73,10 @@ public class XxlJobServiceImpl implements XxlJobService {
 		if (group == null) {
 			return Response.ofFail (I18nUtil.getString("system_please_choose")+I18nUtil.getString("jobinfo_field_jobgroup"));
 		}
-		if (jobInfo.getJobDesc()==null || jobInfo.getJobDesc().trim().length()==0) {
+		if (StringTool.isBlank(jobInfo.getJobDesc())) {
 			return Response.ofFail ( (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_jobdesc")) );
 		}
-		if (jobInfo.getAuthor()==null || jobInfo.getAuthor().trim().length()==0) {
+		if (StringTool.isBlank(jobInfo.getAuthor())) {
 			return Response.ofFail ( (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_author")) );
 		}
 
@@ -91,7 +94,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 				return Response.ofFail ( (I18nUtil.getString("schedule_type")) );
 			}
 			try {
-				int fixSecond = Integer.valueOf(jobInfo.getScheduleConf());
+				int fixSecond = Integer.parseInt(jobInfo.getScheduleConf());
 				if (fixSecond < 1) {
 					return Response.ofFail ( (I18nUtil.getString("schedule_type")+I18nUtil.getString("system_unvalid")) );
 				}
@@ -104,7 +107,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 		if (GlueTypeEnum.match(jobInfo.getGlueType()) == null) {
 			return Response.ofFail ( (I18nUtil.getString("jobinfo_field_gluetype")+I18nUtil.getString("system_unvalid")) );
 		}
-		if (GlueTypeEnum.BEAN==GlueTypeEnum.match(jobInfo.getGlueType()) && (jobInfo.getExecutorHandler()==null || jobInfo.getExecutorHandler().trim().length()==0) ) {
+		if (GlueTypeEnum.BEAN==GlueTypeEnum.match(jobInfo.getGlueType()) && StringTool.isBlank(jobInfo.getExecutorHandler()) ) {
 			return Response.ofFail ( (I18nUtil.getString("system_please_input")+"JobHandler") );
 		}
 		// 》fix "\r" in shell
@@ -124,10 +127,10 @@ public class XxlJobServiceImpl implements XxlJobService {
 		}
 
 		// 》ChildJobId valid
-		if (jobInfo.getChildJobId()!=null && jobInfo.getChildJobId().trim().length()>0) {
+		if (StringTool.isNotBlank(jobInfo.getChildJobId())) {
 			String[] childJobIds = jobInfo.getChildJobId().split(",");
 			for (String childJobIdItem: childJobIds) {
-				if (childJobIdItem!=null && childJobIdItem.trim().length()>0 && isNumeric(childJobIdItem)) {
+				if (StringTool.isNotBlank(childJobIdItem) && StringTool.isNumeric(childJobIdItem)) {
 					XxlJobInfo childJobInfo = xxlJobInfoMapper.loadById(Integer.parseInt(childJobIdItem));
 					if (childJobInfo==null) {
 						return Response.ofFail (
@@ -165,26 +168,21 @@ public class XxlJobServiceImpl implements XxlJobService {
 			return Response.ofFail ( (I18nUtil.getString("jobinfo_field_add")+I18nUtil.getString("system_fail")) );
 		}
 
-		return Response.ofSuccess(String.valueOf(jobInfo.getId()));
-	}
+		// write operation log
+		logger.info(">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
+				loginInfo.getUserName(), "jobinfo-save", GsonTool.toJson(jobInfo));
 
-	private boolean isNumeric(String str){
-		try {
-			int result = Integer.valueOf(str);
-			return true;
-		} catch (NumberFormatException e) {
-			return false;
-		}
+		return Response.ofSuccess(String.valueOf(jobInfo.getId()));
 	}
 
 	@Override
 	public Response<String> update(XxlJobInfo jobInfo, LoginInfo loginInfo) {
 
 		// valid base
-		if (jobInfo.getJobDesc()==null || jobInfo.getJobDesc().trim().length()==0) {
+		if (StringTool.isBlank(jobInfo.getJobDesc())) {
 			return Response.ofFail ( (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_jobdesc")) );
 		}
-		if (jobInfo.getAuthor()==null || jobInfo.getAuthor().trim().length()==0) {
+		if (StringTool.isBlank(jobInfo.getAuthor())) {
 			return Response.ofFail ( (I18nUtil.getString("system_please_input")+I18nUtil.getString("jobinfo_field_author")) );
 		}
 
@@ -202,7 +200,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 				return Response.ofFail ( (I18nUtil.getString("schedule_type")+I18nUtil.getString("system_unvalid")) );
 			}
 			try {
-				int fixSecond = Integer.valueOf(jobInfo.getScheduleConf());
+				int fixSecond = Integer.parseInt(jobInfo.getScheduleConf());
 				if (fixSecond < 1) {
 					return Response.ofFail ( (I18nUtil.getString("schedule_type")+I18nUtil.getString("system_unvalid")) );
 				}
@@ -223,10 +221,10 @@ public class XxlJobServiceImpl implements XxlJobService {
 		}
 
 		// 》ChildJobId valid
-		if (jobInfo.getChildJobId()!=null && jobInfo.getChildJobId().trim().length()>0) {
+		if (StringTool.isNotBlank(jobInfo.getChildJobId())) {
 			String[] childJobIds = jobInfo.getChildJobId().split(",");
 			for (String childJobIdItem: childJobIds) {
-				if (childJobIdItem!=null && childJobIdItem.trim().length()>0 && isNumeric(childJobIdItem)) {
+				if (StringTool.isNotBlank(childJobIdItem) && StringTool.isNumeric(childJobIdItem)) {
 					// parse child
 					int childJobId = Integer.parseInt(childJobIdItem);
 					if (childJobId == jobInfo.getId()) {
@@ -276,7 +274,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 		long nextTriggerTime = exists_jobInfo.getTriggerNextTime();
 		boolean scheduleDataNotChanged = jobInfo.getScheduleType().equals(exists_jobInfo.getScheduleType())
 				&& jobInfo.getScheduleConf().equals(exists_jobInfo.getScheduleConf());		// 触发配置如果不变，避免重复计算；
-		if (exists_jobInfo.getTriggerStatus() == 1 && !scheduleDataNotChanged) {
+		if (exists_jobInfo.getTriggerStatus() == TriggerStatus.RUNNING.getValue() && !scheduleDataNotChanged) {
 			try {
 				// generate next trigger time
 				Date nextValidTime = scheduleTypeEnum.getScheduleType().generateNextTriggerTime(jobInfo, new Date(System.currentTimeMillis() + JobScheduleHelper.PRE_READ_MS));
@@ -310,6 +308,10 @@ public class XxlJobServiceImpl implements XxlJobService {
 		exists_jobInfo.setUpdateTime(new Date());
         xxlJobInfoMapper.update(exists_jobInfo);
 
+		// write operation log
+		logger.info(">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
+				loginInfo.getUserName(), "jobinfo-update", GsonTool.toJson(exists_jobInfo));
+
 		return Response.ofSuccess();
 	}
 
@@ -329,6 +331,11 @@ public class XxlJobServiceImpl implements XxlJobService {
 		xxlJobInfoMapper.delete(id);
 		xxlJobLogMapper.delete(id);
 		xxlJobLogGlueMapper.deleteByJobId(id);
+
+		// write operation log
+		logger.info(">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
+				loginInfo.getUserName(), "jobinfo-remove", id);
+
 		return Response.ofSuccess();
 	}
 
@@ -366,12 +373,17 @@ public class XxlJobServiceImpl implements XxlJobService {
 			return Response.ofFail ( (I18nUtil.getString("schedule_type")+I18nUtil.getString("system_unvalid")) );
 		}
 
-		xxlJobInfo.setTriggerStatus(1);
+		xxlJobInfo.setTriggerStatus(TriggerStatus.RUNNING.getValue());
 		xxlJobInfo.setTriggerLastTime(0);
 		xxlJobInfo.setTriggerNextTime(nextTriggerTime);
 
 		xxlJobInfo.setUpdateTime(new Date());
 		xxlJobInfoMapper.update(xxlJobInfo);
+
+		// write operation log
+		logger.info(">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
+				loginInfo.getUserName(), "jobinfo-start", id);
+
 		return Response.ofSuccess();
 	}
 
@@ -389,12 +401,17 @@ public class XxlJobServiceImpl implements XxlJobService {
 		}
 
 		// stop
-		xxlJobInfo.setTriggerStatus(0);
+		xxlJobInfo.setTriggerStatus(TriggerStatus.STOPPED.getValue());
 		xxlJobInfo.setTriggerLastTime(0);
 		xxlJobInfo.setTriggerNextTime(0);
 
 		xxlJobInfo.setUpdateTime(new Date());
 		xxlJobInfoMapper.update(xxlJobInfo);
+
+		// write operation log
+		logger.info(">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
+				loginInfo.getUserName(), "jobinfo-stop", id);
+
 		return Response.ofSuccess();
 	}
 
@@ -417,6 +434,11 @@ public class XxlJobServiceImpl implements XxlJobService {
 		}
 
 		XxlJobAdminBootstrap.getInstance().getJobTriggerPoolHelper().trigger(jobId, TriggerTypeEnum.MANUAL, -1, null, executorParam, addressList);
+
+		// write operation log
+		logger.info(">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
+				loginInfo.getUserName(), "jobinfo-trigger", jobId);
+
 		return Response.ofSuccess();
 	}
 
