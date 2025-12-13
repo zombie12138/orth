@@ -31,7 +31,7 @@ WORKDIR /app
 COPY --from=build /src/xxl-job-admin/target/*.jar /app/xxl-job-admin.jar
 
 # Create log directories (including GC logs)
-RUN mkdir -p /data/applogs /data/gclogs && chmod -R 777 /data
+RUN mkdir -p /data/applogs /data/gclogs /data/err_logs /data/dumps && chmod -R 777 /data
 
 # JVM tuning
 # G1GC, MaxRAMPercentage (Xmx ratio),
@@ -44,9 +44,12 @@ ENV JAVA_TOOL_OPTIONS="\
     -XX:MaxRAMPercentage=70 \
     -XX:MinRAMPercentage=70 \
     -XX:InitialRAMPercentage=70 \
+    -XX:MaxMetaspaceSize=128m \
     -XX:+UseStringDeduplication \
-    -XX:TieredStopAtLevel=1 \
     -XX:+ExitOnOutOfMemoryError \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -XX:HeapDumpPath=/data/dumps/oom-worker.hprof \
+    -XX:ErrorFile=/data/err_logs/hs_err_pid%p.log \
     -Xlog:gc*,safepoint:file=/data/gclogs/gc.log:time,level,tags:filecount=3,filesize=10M \
     "
 

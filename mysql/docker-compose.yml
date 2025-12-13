@@ -31,7 +31,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 300M
+          memory: 800M
           cpus: 2.0
 
     logging:

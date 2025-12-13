@@ -52,11 +52,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 200m
-          cpus: "3.0"
-        reservations:
-          memory: 200m
-          cpus: "0.5"
+          memory: 500M
+          cpus: "4.0"
     security_opt:
       - no-new-privileges:true
 
@@ -101,11 +98,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256m
-          cpus: "3.0"
-        reservations:
-          memory: 256m
-          cpus: "0.5"
+          memory: 400M
+          cpus: "4.0"
     security_opt:
       - no-new-privileges:true
 
@@ -148,10 +142,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256m
-          cpus: "3.0"
-        reservations:
-          memory: 256m
-          cpus: "0.5"
+          memory: 400M
+          cpus: "4.0"
     security_opt:
       - no-new-privileges:true
