@@ -1,0 +1,57 @@
+---
+description: Python executor standards for data collection tasks
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python Executor Guidelines
+
+## Style
+
+- Follow PEP8 strictly
+- Use `black` for formatting, `ruff` or `flake8` for linting
+
+## Type Hints (Mandatory)
+
+All collection interfaces MUST include type annotations:
+
+```python
+# Required: Full type hints for all public interfaces
+def collect_data(
+    source_url: str,
+    params: dict[str, Any],
+    timeout: float = 30.0
+) -> list[dict[str, Any]]:
+    """Collect data from source."""
+    ...
+
+# Required: TypedDict for structured data
+class CollectionResult(TypedDict):
+    status: Literal["success", "failure"]
+    data: list[dict[str, Any]]
+    error: str | None
+```
+
+## Data Collection Patterns
+
+- Handle exceptions gracefully; never let collection tasks crash silently
+- Implement proper logging with structured context
+- Support graceful shutdown via signal handlers
+- Use async patterns for I/O-bound collection tasks
+
+## Integration with Orth Manager
+
+- Communicate via HTTP callbacks to `AdminBiz` endpoints
+- Report job status: `callback()` for completion/failure
+- Handle heartbeat/registry via `ExecutorRegistryThread` equivalent
+
+## Error Handling
+
+```python
+try:
+    result = collect_data(source)
+except CollectionError as e:
+    logger.error("Collection failed", extra={"source": source, "error": str(e)})
+    report_failure(job_id, str(e))
+    raise
+```

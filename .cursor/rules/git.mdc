@@ -1,0 +1,60 @@
+---
+description: Git commit conventions using Conventional Commits
+alwaysApply: true
+---
+
+# Git Conventions
+
+## Commit Message Format
+
+```
+type(scope): subject
+
+body (detailed description)
+```
+
+### Types
+
+- `feat`: New feature
+- `fix`: Bug fix
+- `refactor`: Code refactoring (no functional change)
+- `docs`: Documentation only
+- `test`: Adding or updating tests
+- `chore`: Build, CI, or tooling changes
+- `perf`: Performance improvements
+
+### Scope (Module Names)
+
+- `admin`: xxl-job-admin module
+- `core`: xxl-job-core module
+- `executor`: Executor samples or Python executor
+- `rpc`: RPC/communication layer
+- `scheduler`: Scheduling logic
+- `docker`: Docker/deployment configs
+
+### Subject
+
+- Use English, imperative mood ("add" not "added")
+- No period at end
+- Max 50 characters
+
+### Body (Required for non-trivial changes)
+
+- Explain WHAT changed and WHY
+- Reference related issues if applicable
+- Describe breaking changes if any
+
+## Example
+
+```
+feat(scheduler): add support for streaming task callbacks
+
+- Implement StreamingCallbackHandler for chunked data reporting
+- Add new endpoint /api/streamCallback in OpenApiController
+- Update TriggerCallbackThread to handle streaming mode
+
+This enables Python executors to report partial results during
+long-running data collection tasks instead of waiting until completion.
+
+Closes #123
+```

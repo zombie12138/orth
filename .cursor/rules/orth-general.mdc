@@ -1,0 +1,34 @@
+---
+description: Core project context and architectural guidelines for Orth
+alwaysApply: true
+---
+
+# Orth Project Guidelines
+
+## Project Context
+
+Orth is a customized fork of xxl-job under the Abyss project, designed for high-performance Python batch data collection task scheduling and execution.
+
+## Architecture
+
+- **Manager (Orth)**: Java-based scheduling and coordination layer
+- **Executor (Python)**: Python-based task execution for data collection
+- Emphasis on high concurrency, low latency, and streaming data processing
+
+## Language Preference
+
+- Use English for all code, comments, and documentation
+- Gradually phase out existing Chinese content in iterations
+
+## Design Philosophy
+
+- Prefer composition over inheritance
+- Apply defensive programming: validate inputs, handle edge cases explicitly
+- Write concise, modular code; avoid over-encapsulation
+- Keep functions focused and single-purpose
+
+## Documentation Requirements
+
+- Add clear comments for distributed locks: acquisition timing, release conditions
+- Document state machine transitions: conditions, side effects, failure handling
+- Explain retry logic and failure recovery mechanisms

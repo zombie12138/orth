@@ -1,0 +1,56 @@
+---
+description: RPC communication and distributed systems patterns
+globs: "**/*.java"
+alwaysApply: false
+---
+
+# Distributed Systems & RPC Guidelines
+
+## Communication Architecture
+
+- **Admin -> Executor**: HTTP POST via Netty `EmbedServer`
+  - Endpoints: `/beat`, `/idleBeat`, `/run`, `/kill`, `/log`
+- **Executor -> Admin**: HTTP client via `HttpTool.createClient()`
+  - Operations: `callback()`, `registry()`, `registryRemove()`
+
+## Key Interfaces
+
+- `AdminBiz`: Callback handling, executor registration
+- `ExecutorBiz`: Job triggering, killing, log retrieval
+
+## Distributed Lock Documentation
+
+When modifying lock-related code, document:
+
+```java
+/**
+ * Acquires scheduling lock to prevent duplicate job triggers.
+ * 
+ * Lock scope: Single job group scheduling cycle
+ * Acquisition: Via XxlJobLockMapper.scheduleLock()
+ * Release: Automatic at transaction commit
+ * Failure mode: Skip scheduling cycle, retry next iteration
+ */
+```
+
+## State Machine Comments
+
+Document job lifecycle transitions clearly:
+
+```java
+/**
+ * Job State Transitions:
+ * PENDING -> RUNNING: Trigger accepted by executor
+ * RUNNING -> SUCCESS: Handler completed without exception
+ * RUNNING -> FAIL: Handler threw exception or timeout
+ * RUNNING -> LOST: No callback received within threshold
+ * 
+ * Recovery: LOST jobs detected by JobCompleteHelper, marked as FAIL
+ */
+```
+
+## Retry Logic
+
+- Document retry conditions, backoff strategy, and max attempts
+- Log each retry attempt with context (attempt number, delay, error)
+- Implement file-based persistence for callback retry (see `TriggerCallbackThread`)

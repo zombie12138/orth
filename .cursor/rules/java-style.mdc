@@ -1,0 +1,45 @@
+---
+description: Java coding standards for Orth (xxl-job-admin and xxl-job-core)
+globs: "**/*.java"
+alwaysApply: false
+---
+
+# Java Code Style
+
+## Tech Stack
+
+- Java 17+, Spring Boot 3.x, MyBatis, Netty, Gson
+- Follow AOSP Style (4-space indentation, based on google-java-format)
+
+## Naming Conventions
+
+- Classes: `PascalCase` with descriptive names (e.g., `JobScheduleHelper`, `ExecutorRouteStrategyEnum`)
+- Methods: `camelCase` (e.g., `scheduleJobQuery`, `refreshNextTriggerTime`)
+- Constants: `UPPER_SNAKE_CASE` (e.g., `PRE_READ_MS`, `ADMIN_ROLE`)
+- Packages: lowercase with clear hierarchy (e.g., `scheduler.thread`, `scheduler.route.strategy`)
+
+## Design Patterns
+
+- **Strategy Pattern**: Use for routing, scheduling types, misfire handling
+  - Define interface (e.g., `ExecutorRouter`), enum for registry (e.g., `ExecutorRouteStrategyEnum`)
+- **Helper Pattern**: Dedicated helper classes for thread management and background tasks
+- **Response Wrapper**: Use `Response<T>` with `ofSuccess()` / `ofFail()` factory methods
+
+## Code Structure
+
+```java
+// Enum with match() method for safe lookup
+public enum ExampleEnum {
+    VALUE_ONE, VALUE_TWO;
+    
+    public static ExampleEnum match(String name, ExampleEnum defaultValue) {
+        // Safe matching with fallback
+    }
+}
+```
+
+## Spring Conventions
+
+- Use `@Resource` for field injection
+- Use `@Component`, `@Service`, `@Controller` appropriately
+- Manage transactions via `PlatformTransactionManager` for scheduling operations
