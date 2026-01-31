@@ -1,0 +1,325 @@
+# Executor Implementation Architecture
+
+## Core Concept
+
+The executor implements a **thread-per-job** model where each job gets a dedicated `JobThread` with a trigger queue. This ensures job isolation and enables different block strategies (serial, discard, cover).
+
+## High-Level Architecture
+
+```mermaid
+flowchart TB
+    subgraph Executor["Executor Process"]
+        Server["Netty Server<br/>Receives triggers"]
+        Registry["Thread Registry<br/>jobId → JobThread"]
+        Handlers["Handler Repository<br/>name → IJobHandler"]
+    end
+    
+    subgraph Threads["Job Threads"]
+        JT1["JobThread 1<br/>Queue + Handler"]
+        JT2["JobThread 2<br/>Queue + Handler"]
+        JTN["JobThread N<br/>Queue + Handler"]
+    end
+    
+    subgraph Output["Output"]
+        Logs["File Logs<br/>/logPath/yyyy-MM-dd/"]
+        Callbacks["Callbacks<br/>to Admin"]
+    end
+    
+    Server -->|"1. Get or create"| Registry
+    Registry -->|"2. Route to"| JT1
+    Registry --> JT2
+    Registry --> JTN
+    
+    JT1 -->|"Execute"| Handlers
+    JT1 --> Logs
+    JT1 --> Callbacks
+```
+
+## JobThread Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created: First trigger for job ID
+    
+    state Created {
+        [*] --> Initialize
+        Initialize: Set thread name
+        Initialize: Create queue
+        Initialize: handler.init()
+    }
+    
+    Created --> Running: thread.start()
+    
+    state Running {
+        [*] --> Polling
+        
+        Polling --> ProcessTrigger: Trigger in queue
+        Polling --> IdleCheck: No trigger (3s timeout)
+        
+        ProcessTrigger --> Execute: Create context
+        Execute --> Callback: Push result
+        Callback --> Polling
+        
+        IdleCheck --> Polling: idleCount ≤ 30
+        IdleCheck --> SelfRemove: idleCount > 30<br/>AND queue empty
+    }
+    
+    Running --> Stopping: toStop flag set
+    
+    state Stopping {
+        [*] --> DrainQueue
+        DrainQueue: Process remaining
+        DrainQueue --> Cleanup
+        Cleanup: handler.destroy()
+    }
+    
+    Stopping --> [*]
+```
+
+**Key Points:**
+- Thread starts on first trigger
+- Auto-cleanup after 90+ seconds idle (30 × 3s poll)
+- Graceful shutdown drains queue
+
+## Context Propagation
+
+```mermaid
+flowchart LR
+    subgraph ThreadLocal["InheritableThreadLocal"]
+        CTX["XxlJobContext<br/>• jobId<br/>• jobParam<br/>• logId<br/>• scheduleTime<br/>• shardIndex/Total"]
+    end
+    
+    subgraph Access["Access via XxlJobHelper"]
+        A1["getJobParam()"]
+        A2["getScheduleTime()"]
+        A3["log(message)"]
+        A4["handleSuccess()"]
+        A5["handleFail(msg)"]
+    end
+    
+    JobThread["JobThread<br/>Sets context"] --> ThreadLocal
+    ThreadLocal --> Access
+    
+    subgraph ChildThreads["Inherited by Children"]
+        User["User spawned threads<br/>also have access"]
+    end
+    
+    ThreadLocal -.->|"Inherits"| ChildThreads
+```
+
+**Design Benefit:** User code can spawn threads and still access job context.
+
+## Handler Types
+
+```mermaid
+flowchart TD
+    subgraph Handlers["IJobHandler Implementations"]
+        Method["MethodJobHandler<br/>@XxlJob annotated methods"]
+        Script["ScriptJobHandler<br/>Python/Shell/PowerShell"]
+        Glue["GlueJobHandler<br/>Groovy code"]
+    end
+    
+    subgraph Registration["Handler Registration"]
+        Spring["Spring scans @XxlJob<br/>at startup"]
+        Runtime["Runtime creates<br/>Script/Glue handlers"]
+    end
+    
+    Spring --> Method
+    Runtime --> Script
+    Runtime --> Glue
+    
+    subgraph Execution["Execution Flow"]
+        E1["handler.init()"]
+        E2["handler.execute()"]
+        E3["handler.destroy()"]
+    end
+    
+    Method --> Execution
+    Script --> Execution
+    Glue --> Execution
+```
+
+## Script Execution Flow
+
+```mermaid
+sequenceDiagram
+    participant JT as JobThread
+    participant SH as ScriptHandler
+    participant FS as File System
+    participant Proc as Script Process
+    
+    JT->>SH: execute()
+    SH->>SH: Build environment variables<br/>XXL_JOB_*
+    
+    alt Script file doesn't exist
+        SH->>FS: Create script file<br/>{jobId}_{updateTime}.py
+        SH->>FS: Write source code
+    end
+    
+    SH->>Proc: Start process<br/>python script.py [params]
+    
+    par Capture output
+        Proc->>FS: stdout → log file
+        Proc->>FS: stderr → log file
+    end
+    
+    Proc-->>SH: Exit code
+    
+    alt Exit code = 0
+        SH->>JT: handleSuccess()
+    else Exit code ≠ 0
+        SH->>JT: handleFail("exit value...")
+    end
+```
+
+**Environment Variables Passed:**
+- `XXL_JOB_ID`, `XXL_JOB_PARAM`
+- `XXL_JOB_LOG_ID`
+- `XXL_JOB_SCHEDULE_TIME` (ISO 8601 or empty for manual)
+- `XXL_JOB_TRIGGER_TIME` (ISO 8601)
+- `XXL_JOB_SHARD_INDEX`, `XXL_JOB_SHARD_TOTAL`
+
+## Block Strategy Execution
+
+```mermaid
+flowchart TD
+    Trigger["Trigger Arrives"] --> Check{Block Strategy}
+    
+    Check -->|SERIAL| Serial["Add to queue<br/>Execute in order"]
+    Check -->|DISCARD| Discard["Reject if running<br/>or queue not empty"]
+    Check -->|COVER| Cover["Kill existing thread<br/>Create new thread"]
+    
+    subgraph Examples["Use Case Examples"]
+        Ex1["SERIAL:<br/>Database migration<br/>(sequential only)"]
+        Ex2["DISCARD:<br/>Data fetch<br/>(skip if busy)"]
+        Ex3["COVER:<br/>Cache warm<br/>(always latest)"]
+    end
+```
+
+## Timeout Enforcement
+
+```mermaid
+sequenceDiagram
+    participant JT as JobThread
+    participant Future as FutureTask
+    participant Worker as Worker Thread
+    
+    JT->>Future: Create with timeout
+    JT->>Worker: Start execution
+    Worker->>Worker: handler.execute()
+    
+    par Timeout watch
+        JT->>Future: get(timeout, SECONDS)
+    end
+    
+    alt Completes in time
+        Worker-->>Future: Success
+        Future-->>JT: Result
+    else Timeout
+        JT->>JT: handleTimeout()
+        JT->>Worker: interrupt()
+        Note over Worker: May not stop immediately<br/>(depends on handler)
+    end
+```
+
+**Limitation:** Thread interrupt doesn't force-stop. Handler must cooperate.
+
+## Callback Processing
+
+```mermaid
+flowchart TD
+    JobComplete["Job Completes"] --> Queue["Push to<br/>Callback Queue"]
+    
+    Queue --> Thread["Background Thread<br/>Processes queue"]
+    
+    Thread --> Batch["Batch callbacks"]
+    Batch --> Send["Try send to Admin 1"]
+    
+    Send --> Check{Success?}
+    Check -->|Yes| Done["Remove from queue"]
+    Check -->|No| Failover["Try Admin 2...N"]
+    
+    Failover --> AllFailed{All failed?}
+    AllFailed -->|Yes| Persist["Write to file<br/>for retry"]
+    AllFailed -->|No| Done
+    
+    Persist --> RetryThread["Retry Thread<br/>(every 30s)"]
+    RetryThread --> Send
+```
+
+## File Organization
+
+```mermaid
+flowchart TB
+    subgraph FileSystem["Executor File System"]
+        Root["logPath/"]
+        
+        subgraph Logs["Execution Logs"]
+            DateDirs["yyyy-MM-dd/"]
+            LogFiles["{logId}.log<br/>One file per execution"]
+        end
+        
+        subgraph Scripts["Script Cache"]
+            ScriptDir["glueSrcPath/"]
+            ScriptFiles["{jobId}_{updateTime}.py"]
+        end
+        
+        subgraph Callbacks["Callback Retry"]
+            CBDir["callbacklog/"]
+            CBFiles["xxl-job-callback-{md5}.log"]
+        end
+        
+        Root --> Logs
+        Root --> Scripts
+        Root --> Callbacks
+        
+        Logs --> DateDirs --> LogFiles
+        Scripts --> ScriptDir --> ScriptFiles
+        Callbacks --> CBDir --> CBFiles
+    end
+```
+
+## Idle Thread Cleanup
+
+```mermaid
+flowchart LR
+    Poll["Queue poll<br/>3s timeout"] --> Check{Trigger received?}
+    
+    Check -->|Yes| Reset["idleCount = 0<br/>Process trigger"]
+    Check -->|No| Increment["idleCount++"]
+    
+    Reset --> Poll
+    Increment --> Threshold{idleCount > 30?}
+    
+    Threshold -->|No| Poll
+    Threshold -->|Yes| QueueCheck{Queue empty?}
+    
+    QueueCheck -->|No| Poll
+    QueueCheck -->|Yes| Remove["Remove thread<br/>handler.destroy()"]
+```
+
+**Calculation:** 30 cycles × 3s = 90+ seconds idle before cleanup.
+
+## Key Metrics
+
+| Metric | Value | Purpose |
+|--------|-------|---------|
+| Poll timeout | 3 seconds | Balance responsiveness vs CPU |
+| Idle threshold | 30 cycles (90s) | Resource conservation |
+| Message truncation | 50,000 chars | Prevent memory/network overload |
+| Netty threads | 0-200 | Handle concurrent triggers |
+| Callback retry interval | 30 seconds | Match heartbeat period |
+
+## Design Strengths
+
+1. **Isolation**: Each job has dedicated thread, no cross-job interference
+2. **Backpressure**: Queue-based processing prevents overload
+3. **Flexibility**: Supports Java methods, scripts in any language
+4. **Fault Tolerance**: File-based retry survives restarts
+
+## Design Limitations
+
+1. **Memory Overhead**: One thread per active job
+2. **No Sub-Second Scheduling**: Minimum granularity is seconds
+3. **Timeout Cooperation**: Thread interrupt may not force-stop handler
+4. **Unbounded Callback Queue**: OOM risk if admin unreachable for extended period
