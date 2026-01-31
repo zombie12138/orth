@@ -94,11 +94,13 @@ public class JobTriggerPoolHelper {
     /**
      * trigger job
      *
-     * @param jobId
-     * @param triggerType
+     * @param jobId job id
+     * @param triggerType trigger type
      * @param failRetryCount >=0: use this param <0: use param from job info config
-     * @param executorShardingParam
+     * @param executorShardingParam sharding param
      * @param executorParam null: use job param not null: cover job param
+     * @param addressList executor address list
+     * @param scheduleTime theoretical schedule time (milliseconds), null for manual/API triggers
      */
     public void trigger(
             final int jobId,
@@ -106,7 +108,8 @@ public class JobTriggerPoolHelper {
             final int failRetryCount,
             final String executorShardingParam,
             final String executorParam,
-            final String addressList) {
+            final String addressList,
+            final Long scheduleTime) {
 
         // choose thread pool
         ThreadPoolExecutor triggerPool_ = fastTriggerPool;
@@ -134,7 +137,8 @@ public class JobTriggerPoolHelper {
                                             failRetryCount,
                                             executorShardingParam,
                                             executorParam,
-                                            addressList);
+                                            addressList,
+                                            scheduleTime);
                         } catch (Throwable e) {
                             logger.error(e.getMessage(), e);
                         } finally {

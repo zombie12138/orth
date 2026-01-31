@@ -63,7 +63,8 @@ public class JobFailAlarmMonitorHelper {
                                                                 .getXxlJobInfoMapper()
                                                                 .loadById(log.getJobId());
 
-                                                // 1、fail retry monitor
+                                                // 1、fail retry monitor (scheduleTime=null for
+                                                // retry)
                                                 if (log.getExecutorFailRetryCount() > 0) {
                                                     XxlJobAdminBootstrap.getInstance()
                                                             .getJobTriggerPoolHelper()
@@ -74,6 +75,7 @@ public class JobFailAlarmMonitorHelper {
                                                                             - 1),
                                                                     log.getExecutorShardingParam(),
                                                                     log.getExecutorParam(),
+                                                                    null,
                                                                     null);
                                                     String retryMsg =
                                                             "<br><br><span style=\"color:#00c0ef;\" > >>>>>>>>>>>"

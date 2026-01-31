@@ -576,9 +576,10 @@ public class XxlJobServiceImpl implements XxlJobService {
             executorParam = "";
         }
 
+        // Manual trigger: scheduleTime=null (no theoretical schedule time)
         XxlJobAdminBootstrap.getInstance()
                 .getJobTriggerPoolHelper()
-                .trigger(jobId, TriggerTypeEnum.MANUAL, -1, null, executorParam, addressList);
+                .trigger(jobId, TriggerTypeEnum.MANUAL, -1, null, executorParam, addressList, null);
 
         // write operation log
         logger.info(
@@ -588,6 +589,266 @@ public class XxlJobServiceImpl implements XxlJobService {
                 jobId);
 
         return Response.ofSuccess();
+    }
+
+    @Override
+    public Response<String> triggerBatch(
+            LoginInfo loginInfo,
+            int jobId,
+            String executorParam,
+            String addressList,
+            Date startTime,
+            Date endTime) {
+        // Maximum instances allowed per batch to prevent abuse
+        final int MAX_INSTANCES = 100;
+
+        // Load and validate job
+        XxlJobInfo xxlJobInfo = xxlJobInfoMapper.loadById(jobId);
+        if (xxlJobInfo == null) {
+            return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
+        }
+
+        // Valid jobGroup permission
+        if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, xxlJobInfo.getJobGroup())) {
+            return Response.ofFail(I18nUtil.getString("system_permission_limit"));
+        }
+
+        // Force cover job param
+        if (executorParam == null) {
+            executorParam = "";
+        }
+
+        // If no time range provided, trigger immediately (existing behavior)
+        if (startTime == null) {
+            XxlJobAdminBootstrap.getInstance()
+                    .getJobTriggerPoolHelper()
+                    .trigger(jobId, TriggerTypeEnum.MANUAL, -1, null, executorParam, addressList, null);
+            logger.info(
+                    ">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
+                    loginInfo.getUserName(),
+                    "jobinfo-trigger-immediate",
+                    jobId);
+            return Response.ofSuccess();
+        }
+
+        // Get schedule type
+        ScheduleTypeEnum scheduleTypeEnum =
+                ScheduleTypeEnum.match(xxlJobInfo.getScheduleType(), ScheduleTypeEnum.NONE);
+
+        // Validate schedule type
+        if (scheduleTypeEnum == ScheduleTypeEnum.NONE) {
+            return Response.ofFail(I18nUtil.getString("schedule_type") + " NONE cannot be used for batch trigger");
+        }
+
+        // Validate time range (for types that need end time)
+        if (endTime != null && !startTime.before(endTime)) {
+            return Response.ofFail("Start time must be before end time");
+        }
+
+        // Generate and trigger instances
+        List<Long> scheduleTimes = new ArrayList<>();
+        try {
+            int count = 0;
+
+            if (scheduleTypeEnum == ScheduleTypeEnum.CRON) {
+                // CRON: generate instances based on cron expression within time range
+                if (endTime == null) {
+                    return Response.ofFail("End time is required for CRON schedule type");
+                }
+
+                // Find first trigger time at or after startTime
+                Date currentTime =
+                        scheduleTypeEnum
+                                .getScheduleType()
+                                .generateNextTriggerTime(
+                                        xxlJobInfo, new Date(startTime.getTime() - 1000));
+
+                // Generate all trigger times within the range
+                while (currentTime != null && count < MAX_INSTANCES) {
+                    // Check if within range
+                    if (currentTime.getTime() >= startTime.getTime()
+                            && currentTime.before(endTime)) {
+                        scheduleTimes.add(currentTime.getTime());
+                        count++;
+                    } else if (currentTime.getTime() >= endTime.getTime()) {
+                        // Past end time, stop
+                        break;
+                    }
+
+                    // Get next trigger time
+                    currentTime =
+                            scheduleTypeEnum
+                                    .getScheduleType()
+                                    .generateNextTriggerTime(xxlJobInfo, currentTime);
+                }
+            } else if (scheduleTypeEnum == ScheduleTypeEnum.FIX_RATE) {
+                // FIX_RATE: generate instances at fixed intervals within time range
+                if (endTime == null) {
+                    return Response.ofFail("End time is required for FIX_RATE schedule type");
+                }
+
+                // Start from the specified start time
+                Date currentTime = startTime;
+
+                while (currentTime.before(endTime) && count < MAX_INSTANCES) {
+                    scheduleTimes.add(currentTime.getTime());
+                    count++;
+
+                    // Generate next trigger time
+                    currentTime =
+                            scheduleTypeEnum
+                                    .getScheduleType()
+                                    .generateNextTriggerTime(xxlJobInfo, currentTime);
+                }
+            } else {
+                // FIX_DELAY or other: single execution only at start time
+                scheduleTimes.add(startTime.getTime());
+            }
+
+            // Check if we hit the limit
+            if (scheduleTimes.size() >= MAX_INSTANCES) {
+                logger.warn(
+                        "Batch trigger hit max instances limit: jobId={}, instances={}, limit={}",
+                        jobId,
+                        scheduleTimes.size(),
+                        MAX_INSTANCES);
+            }
+
+            // Trigger all generated instances
+            for (Long scheduleTime : scheduleTimes) {
+                XxlJobAdminBootstrap.getInstance()
+                        .getJobTriggerPoolHelper()
+                        .trigger(
+                                jobId,
+                                TriggerTypeEnum.MANUAL,
+                                -1,
+                                null,
+                                executorParam,
+                                addressList,
+                                scheduleTime);
+            }
+
+            // Write operation log
+            logger.info(
+                    ">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}, instances = {}",
+                    loginInfo.getUserName(),
+                    "jobinfo-trigger-batch",
+                    jobId,
+                    scheduleTimes.size());
+
+            return Response.ofSuccess(
+                    "Triggered " + scheduleTimes.size() + " instance(s) successfully");
+
+        } catch (Exception e) {
+            logger.error("Batch trigger failed: jobId={}, error={}", jobId, e.getMessage(), e);
+            return Response.ofFail("Batch trigger failed: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Response<List<String>> previewTriggerBatch(
+            LoginInfo loginInfo, int jobId, Date startTime, Date endTime) {
+        // Maximum instances allowed per batch to prevent abuse
+        final int MAX_INSTANCES = 100;
+
+        // Load and validate job
+        XxlJobInfo xxlJobInfo = xxlJobInfoMapper.loadById(jobId);
+        if (xxlJobInfo == null) {
+            return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
+        }
+
+        // Valid jobGroup permission
+        if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, xxlJobInfo.getJobGroup())) {
+            return Response.ofFail(I18nUtil.getString("system_permission_limit"));
+        }
+
+        // If no time range provided, return empty
+        if (startTime == null) {
+            return Response.ofSuccess(new ArrayList<>());
+        }
+
+        // Get schedule type
+        ScheduleTypeEnum scheduleTypeEnum =
+                ScheduleTypeEnum.match(xxlJobInfo.getScheduleType(), ScheduleTypeEnum.NONE);
+
+        // Validate schedule type
+        if (scheduleTypeEnum == ScheduleTypeEnum.NONE) {
+            return Response.ofFail(
+                    I18nUtil.getString("schedule_type") + " NONE cannot be used for batch trigger");
+        }
+
+        // Validate time range (for types that need end time)
+        if (endTime != null && !startTime.before(endTime)) {
+            return Response.ofFail("Start time must be before end time");
+        }
+
+        // Generate schedule times
+        List<String> scheduleTimeStrings = new ArrayList<>();
+        try {
+            int count = 0;
+
+            if (scheduleTypeEnum == ScheduleTypeEnum.CRON) {
+                // CRON: generate instances based on cron expression within time range
+                if (endTime == null) {
+                    return Response.ofFail("End time is required for CRON schedule type");
+                }
+
+                // Find first trigger time at or after startTime
+                Date currentTime =
+                        scheduleTypeEnum
+                                .getScheduleType()
+                                .generateNextTriggerTime(
+                                        xxlJobInfo, new Date(startTime.getTime() - 1000));
+
+                // Generate all trigger times within the range
+                while (currentTime != null && count < MAX_INSTANCES) {
+                    // Check if within range
+                    if (currentTime.getTime() >= startTime.getTime()
+                            && currentTime.before(endTime)) {
+                        scheduleTimeStrings.add(DateTool.formatDateTime(currentTime));
+                        count++;
+                    } else if (currentTime.getTime() >= endTime.getTime()) {
+                        // Past end time, stop
+                        break;
+                    }
+
+                    // Get next trigger time
+                    currentTime =
+                            scheduleTypeEnum
+                                    .getScheduleType()
+                                    .generateNextTriggerTime(xxlJobInfo, currentTime);
+                }
+            } else if (scheduleTypeEnum == ScheduleTypeEnum.FIX_RATE) {
+                // FIX_RATE: generate instances at fixed intervals within time range
+                if (endTime == null) {
+                    return Response.ofFail("End time is required for FIX_RATE schedule type");
+                }
+
+                // Start from the specified start time
+                Date currentTime = startTime;
+
+                while (currentTime.before(endTime) && count < MAX_INSTANCES) {
+                    scheduleTimeStrings.add(DateTool.formatDateTime(currentTime));
+                    count++;
+
+                    // Generate next trigger time
+                    currentTime =
+                            scheduleTypeEnum
+                                    .getScheduleType()
+                                    .generateNextTriggerTime(xxlJobInfo, currentTime);
+                }
+            } else {
+                // FIX_DELAY or other: single execution only at start time
+                scheduleTimeStrings.add(DateTool.formatDateTime(startTime));
+            }
+
+            return Response.ofSuccess(scheduleTimeStrings);
+
+        } catch (Exception e) {
+            logger.error(
+                    "Preview trigger batch failed: jobId={}, error={}", jobId, e.getMessage(), e);
+            return Response.ofFail("Preview failed: " + e.getMessage());
+        }
     }
 
     @Override

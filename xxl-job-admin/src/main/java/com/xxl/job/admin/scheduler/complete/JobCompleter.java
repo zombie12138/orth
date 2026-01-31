@@ -81,10 +81,17 @@ public class JobCompleter {
                             continue;
                         }
 
-                        // trigger child job
+                        // trigger child job (scheduleTime=null for parent-triggered jobs)
                         XxlJobAdminBootstrap.getInstance()
                                 .getJobTriggerPoolHelper()
-                                .trigger(childJobId, TriggerTypeEnum.PARENT, -1, null, null, null);
+                                .trigger(
+                                        childJobId,
+                                        TriggerTypeEnum.PARENT,
+                                        -1,
+                                        null,
+                                        null,
+                                        null,
+                                        null);
                         Response<String> triggerChildResult = Response.ofSuccess();
 
                         // add msg

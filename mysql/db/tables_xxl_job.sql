@@ -91,6 +91,7 @@ CREATE TABLE `xxl_job_log`
     `executor_sharding_param`   varchar(20)         DEFAULT NULL COMMENT '执行器任务分片参数，格式如 1/2',
     `executor_fail_retry_count` int(11)    NOT NULL DEFAULT '0' COMMENT '失败重试次数',
     `trigger_time`              datetime            DEFAULT NULL COMMENT '调度-时间',
+    `schedule_time`             datetime            DEFAULT NULL COMMENT 'Theoretical scheduling time; NULL when triggered manually.',
     `trigger_code`              int(11)    NOT NULL COMMENT '调度-结果',
     `trigger_msg`               text COMMENT '调度-日志',
     `handle_time`               datetime            DEFAULT NULL COMMENT '执行-时间',

@@ -120,7 +120,8 @@ public class JobThread extends Thread {
                                     triggerParam.getLogDateTime(),
                                     logFileName,
                                     triggerParam.getBroadcastIndex(),
-                                    triggerParam.getBroadcastTotal());
+                                    triggerParam.getBroadcastTotal(),
+                                    triggerParam.getScheduleTime());
 
                     // init job context
                     XxlJobContext.setXxlJobContext(xxlJobContext);

@@ -123,6 +123,22 @@ public class XxlJobHelper {
         return xxlJobContext.getShardTotal();
     }
 
+    // ---------------------- schedule info ----------------------
+
+    /**
+     * Get theoretical schedule time (milliseconds), null for manual/API triggers
+     *
+     * @return schedule time in milliseconds, or null if manually triggered
+     */
+    public static Long getScheduleTime() {
+        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
+        if (xxlJobContext == null) {
+            return null;
+        }
+
+        return xxlJobContext.getScheduleTime();
+    }
+
     // ---------------------- tool for log ----------------------
 
     private static final Logger logger = LoggerFactory.getLogger("xxl-job logger");

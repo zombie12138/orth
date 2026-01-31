@@ -4,9 +4,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.tool.core.ArrayTool;
+import com.xxl.tool.core.MapTool;
 import com.xxl.tool.io.FileTool;
 import com.xxl.tool.io.IOTool;
 
@@ -47,7 +49,7 @@ public class ScriptUtil {
     }
 
     /**
-     * 脚本执行，日志文件实时输出
+     * Execute script with real-time log output (backward compatible version)
      *
      * @param command command
      * @param scriptFile script file
@@ -58,6 +60,27 @@ public class ScriptUtil {
      */
     public static int execToFile(
             String command, String scriptFile, String logFile, String... params)
+            throws IOException {
+        return execToFile(command, scriptFile, logFile, null, params);
+    }
+
+    /**
+     * Execute script with environment variables and real-time log output
+     *
+     * @param command command (e.g., "python3", "bash")
+     * @param scriptFile script file path
+     * @param logFile log file path for output
+     * @param envVars environment variables to set (can be null)
+     * @param params script parameters
+     * @return exit code (0=success, non-zero=error)
+     * @throws IOException exception
+     */
+    public static int execToFile(
+            String command,
+            String scriptFile,
+            String logFile,
+            Map<String, String> envVars,
+            String... params)
             throws IOException {
 
         FileOutputStream fileOutputStream = null;
@@ -77,19 +100,27 @@ public class ScriptUtil {
                     cmdarray.add(param);
                 }
             }
-            String[] cmdarrayFinal = cmdarray.toArray(new String[0]);
 
-            // 3、process：exec
-            process = Runtime.getRuntime().exec(cmdarrayFinal);
+            // 3、build process with ProcessBuilder (supports environment variables)
+            ProcessBuilder processBuilder = new ProcessBuilder(cmdarray);
+
+            // Set environment variables if provided
+            if (MapTool.isNotEmpty(envVars)) {
+                Map<String, String> environment = processBuilder.environment();
+                environment.putAll(envVars);
+            }
+
+            // 4、start process
+            process = processBuilder.start();
             Process finalProcess = process;
 
-            // 4、read script log: inputStream + errStream
+            // 5、read script log: inputStream + errStream
             final FileOutputStream finalFileOutputStream = fileOutputStream;
             inputThread =
                     new Thread(
                             () -> {
                                 try {
-                                    // 数据流Copy（Input自动关闭，Output不处理）
+                                    // Stream copy (Input auto-close, Output keep open)
                                     IOTool.copy(
                                             finalProcess.getInputStream(),
                                             finalFileOutputStream,
@@ -115,10 +146,10 @@ public class ScriptUtil {
             inputThread.start();
             errorThread.start();
 
-            // 5、process：wait for result
+            // 6、process：wait for result
             int exitValue = process.waitFor(); // exit code: 0=success, 1=error
 
-            // 6、thread join, wait for log
+            // 7、thread join, wait for log
             inputThread.join();
             errorThread.join();
 
@@ -127,7 +158,7 @@ public class ScriptUtil {
             XxlJobHelper.log(e);
             return -1;
         } finally {
-            // 7、close file OutputStream
+            // 8、close file OutputStream
             if (fileOutputStream != null) {
                 try {
                     fileOutputStream.close();
@@ -135,14 +166,14 @@ public class ScriptUtil {
                     XxlJobHelper.log(e);
                 }
             }
-            // 8、interrupt thread
+            // 9、interrupt thread
             if (inputThread != null && inputThread.isAlive()) {
                 inputThread.interrupt();
             }
             if (errorThread != null && errorThread.isAlive()) {
                 errorThread.interrupt();
             }
-            // 9、process destroy
+            // 10、process destroy
             if (process != null) {
                 process.destroy();
                 // process.destroyForcibly();

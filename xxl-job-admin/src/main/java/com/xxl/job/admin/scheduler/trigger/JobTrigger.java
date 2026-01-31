@@ -42,12 +42,13 @@ public class JobTrigger {
     /**
      * trigger job
      *
-     * @param jobId
-     * @param triggerType
+     * @param jobId job id
+     * @param triggerType trigger type
      * @param failRetryCount >=0: use this param <0: use param from job info config
-     * @param executorShardingParam
+     * @param executorShardingParam sharding param
      * @param executorParam null: use job param not null: cover job param
      * @param addressList null: use executor addressList not null: cover
+     * @param scheduleTime theoretical schedule time (milliseconds), null for manual/API triggers
      */
     public void trigger(
             int jobId,
@@ -55,7 +56,8 @@ public class JobTrigger {
             int failRetryCount,
             String executorShardingParam,
             String executorParam,
-            String addressList) {
+            String addressList,
+            Long scheduleTime) {
 
         // load data
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(jobId);
@@ -100,7 +102,8 @@ public class JobTrigger {
                         finalFailRetryCount,
                         triggerType,
                         i,
-                        group.getRegistryList().size());
+                        group.getRegistryList().size(),
+                        scheduleTime);
             }
         } else {
             if (shardingParam == null) {
@@ -112,7 +115,8 @@ public class JobTrigger {
                     finalFailRetryCount,
                     triggerType,
                     shardingParam[0],
-                    shardingParam[1]);
+                    shardingParam[1],
+                    scheduleTime);
         }
     }
 
@@ -133,7 +137,8 @@ public class JobTrigger {
      * @param finalFailRetryCount the fail-retry count
      * @param triggerType trigger type
      * @param index sharding index
-     * @param total sharding index
+     * @param total sharding total
+     * @param scheduleTime theoretical schedule time (milliseconds), null for manual/API triggers
      */
     private void processTrigger(
             XxlJobGroup group,
@@ -141,7 +146,8 @@ public class JobTrigger {
             int finalFailRetryCount,
             TriggerTypeEnum triggerType,
             int index,
-            int total) {
+            int total,
+            Long scheduleTime) {
 
         // param
         ExecutorBlockStrategyEnum blockStrategy =
@@ -161,6 +167,10 @@ public class JobTrigger {
         jobLog.setJobGroup(jobInfo.getJobGroup());
         jobLog.setJobId(jobInfo.getId());
         jobLog.setTriggerTime(new Date());
+        // Set theoretical schedule time (null for manual/API triggers)
+        if (scheduleTime != null) {
+            jobLog.setScheduleTime(new Date(scheduleTime));
+        }
         xxlJobLogMapper.save(jobLog);
         logger.debug(">>>>>>>>>>> xxl-job trigger start, jobId:{}", jobLog.getId());
 
@@ -178,6 +188,7 @@ public class JobTrigger {
         triggerParam.setGlueUpdatetime(jobInfo.getGlueUpdatetime().getTime());
         triggerParam.setBroadcastIndex(index);
         triggerParam.setBroadcastTotal(total);
+        triggerParam.setScheduleTime(scheduleTime);
 
         // 3、init address
         String address = null;

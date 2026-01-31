@@ -38,6 +38,11 @@ public class XxlJobContext {
     /** shard total */
     private final int shardTotal;
 
+    // ---------------------- for schedule ----------------------
+
+    /** Theoretical schedule time (milliseconds), null for manual/API triggers */
+    private final Long scheduleTime;
+
     // ---------------------- for handle ----------------------
 
     /**
@@ -57,7 +62,8 @@ public class XxlJobContext {
             long logDateTime,
             String logFileName,
             int shardIndex,
-            int shardTotal) {
+            int shardTotal,
+            Long scheduleTime) {
         this.jobId = jobId;
         this.jobParam = jobParam;
         this.logId = logId;
@@ -65,6 +71,7 @@ public class XxlJobContext {
         this.logFileName = logFileName;
         this.shardIndex = shardIndex;
         this.shardTotal = shardTotal;
+        this.scheduleTime = scheduleTime;
 
         this.handleCode = HANDLE_CODE_SUCCESS; // default success
     }
@@ -95,6 +102,15 @@ public class XxlJobContext {
 
     public int getShardTotal() {
         return shardTotal;
+    }
+
+    /**
+     * Get theoretical schedule time (milliseconds), null for manual/API triggers
+     *
+     * @return schedule time in milliseconds, or null
+     */
+    public Long getScheduleTime() {
+        return scheduleTime;
     }
 
     public void setHandleCode(int handleCode) {

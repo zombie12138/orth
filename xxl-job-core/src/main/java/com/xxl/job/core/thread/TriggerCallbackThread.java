@@ -218,7 +218,7 @@ public class TriggerCallbackThread {
                     XxlJobFileAppender.makeLogFileName(
                             new Date(callbackParam.getLogDateTim()), callbackParam.getLogId());
             XxlJobContext.setXxlJobContext(
-                    new XxlJobContext(-1, null, -1, -1, logFileName, -1, -1));
+                    new XxlJobContext(-1, null, -1, -1, logFileName, -1, -1, null));
             XxlJobHelper.log(logContent);
         }
     }

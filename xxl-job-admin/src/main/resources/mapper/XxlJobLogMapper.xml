@@ -16,6 +16,7 @@
 		<result column="executor_fail_retry_count" property="executorFailRetryCount" />
 	    
 	    <result column="trigger_time" property="triggerTime" />
+		<result column="schedule_time" property="scheduleTime" />
 	    <result column="trigger_code" property="triggerCode" />
 	    <result column="trigger_msg" property="triggerMsg" />
 	    
@@ -36,6 +37,7 @@
 		t.executor_sharding_param,
 		t.executor_fail_retry_count,
 		t.trigger_time,
+		t.schedule_time,
 		t.trigger_code,
 		t.trigger_msg,
 		t.handle_time,
@@ -122,12 +124,14 @@
 			`job_group`,
 			`job_id`,
 			`trigger_time`,
+			`schedule_time`,
 			`trigger_code`,
 			`handle_code`
 		) VALUES (
 			#{jobGroup},
 			#{jobId},
 			#{triggerTime},
+			#{scheduleTime},
 			#{triggerCode},
 			#{handleCode}
 		);
@@ -140,6 +144,7 @@
 		UPDATE xxl_job_log
 		SET
 			`trigger_time`= #{triggerTime},
+			`schedule_time`= #{scheduleTime},
 			`trigger_code`= #{triggerCode},
 			`trigger_msg`= #{triggerMsg},
 			`executor_address`= #{executorAddress},

@@ -519,12 +519,57 @@ exit 0
 									<textarea class="textarea form-control" name="addressList" placeholder="${I18n.jobinfo_opt_run_tips}" maxlength="512" style="height: 63px; line-height: 1.2;"></textarea>
 								</div>
 							</div>
+							
+							<hr>
+							
+							<div class="form-group">
+								<label class="col-sm-2 control-label">${I18n.jobinfo_trigger_mode_immediate}</label>
+								<div class="col-sm-10">
+									<label class="radio-inline">
+										<input type="radio" name="triggerMode" value="immediate" checked> ${I18n.jobinfo_trigger_mode_immediate}
+									</label>
+									<label class="radio-inline">
+										<input type="radio" name="triggerMode" value="scheduled"> ${I18n.jobinfo_trigger_mode_scheduled}
+									</label>
+								</div>
+							</div>
+							
+							<div id="timeRangeSection" style="display:none;">
+								<div class="form-group">
+									<label class="col-sm-2 control-label">${I18n.jobinfo_trigger_start_time}<font color="red">*</font></label>
+									<div class="col-sm-10">
+										<input type="text" class="form-control" name="startTime" placeholder="${I18n.system_please_input}${I18n.jobinfo_trigger_start_time}" />
+									</div>
+								</div>
+								<div class="form-group" id="endTimeGroup">
+									<label class="col-sm-2 control-label">${I18n.jobinfo_trigger_end_time}<font color="red">*</font></label>
+									<div class="col-sm-10">
+										<input type="text" class="form-control" name="endTime" placeholder="${I18n.system_please_input}${I18n.jobinfo_trigger_end_time}" />
+									</div>
+								</div>
+								<div class="form-group" id="instanceCountHintGroup" style="display:none;">
+									<div class="col-sm-offset-2 col-sm-10">
+										<span class="help-block text-info" id="instanceCountHint"></span>
+										<a href="javascript:void(0);" id="showScheduleDetails" style="margin-left: 10px;">${I18n.system_show} Details</a>
+									</div>
+								</div>
+								<div class="form-group" id="scheduleDetailsGroup" style="display:none;">
+									<div class="col-sm-offset-2 col-sm-10">
+										<div class="well well-sm" style="max-height: 200px; overflow-y: auto;">
+											<ul id="scheduleDetailsList" style="margin: 0; padding-left: 20px;"></ul>
+										</div>
+									</div>
+								</div>
+							</div>
+							
 							<hr>
 							<div class="form-group">
 								<div class="col-sm-offset-3 col-sm-6">
 									<button type="button" class="btn btn-primary ok" >${I18n.system_save}</button>
 									<button type="button" class="btn btn-default" data-dismiss="modal">${I18n.system_cancel}</button>
 									<input type="hidden" name="id" >
+									<input type="hidden" name="scheduleType" >
+									<input type="hidden" name="scheduleConf" >
 								</div>
 							</div>
 						</form>
@@ -863,18 +908,154 @@ exit 0
 			// fill modal
 			$("#jobTriggerModal .form input[name='id']").val( row.id );
 			$("#jobTriggerModal .form textarea[name='executorParam']").val( row.executorParam );
+			$("#jobTriggerModal .form input[name='scheduleType']").val( row.scheduleType );
+			$("#jobTriggerModal .form input[name='scheduleConf']").val( row.scheduleConf );
+			
+			// Reset trigger mode to immediate
+			$("#jobTriggerModal .form input[name='triggerMode'][value='immediate']").prop('checked', true);
+			$("#timeRangeSection").hide();
+			$("#instanceCountHintGroup").hide();
 
 			$('#jobTriggerModal').modal({backdrop: false, keyboard: false}).modal('show');
 		});
+		
+		// Toggle time range section based on trigger mode
+		$("#jobTriggerModal").on('change', 'input[name="triggerMode"]', function() {
+			var triggerMode = $(this).val();
+			var scheduleType = $("#jobTriggerModal .form input[name='scheduleType']").val();
+			
+			if (triggerMode === 'scheduled') {
+				$('#timeRangeSection').show();
+				
+				// Hide end time for NONE or FIX_DELAY schedule types
+				if (scheduleType === 'NONE' || scheduleType === 'FIX_DELAY') {
+					$('#endTimeGroup').hide();
+				} else {
+					$('#endTimeGroup').show();
+				}
+				
+				// Initialize datetime pickers
+				var now = new Date();
+				var nowStr = moment(now).format('YYYY-MM-DD HH:mm:ss');
+				var endStr = moment(now).add(1, 'hours').format('YYYY-MM-DD HH:mm:ss');
+				
+				$("#jobTriggerModal .form input[name='startTime']").val(nowStr);
+				$("#jobTriggerModal .form input[name='endTime']").val(endStr);
+				
+			} else {
+				$('#timeRangeSection').hide();
+				$("#instanceCountHintGroup").hide();
+			}
+		});
+		
+		// Preview instance count when time changes - call backend API
+		var previewTimeout = null;
+		$("#jobTriggerModal").on('change', 'input[name="startTime"], input[name="endTime"]', function() {
+			var jobId = $("#jobTriggerModal .form input[name='id']").val();
+			var scheduleType = $("#jobTriggerModal .form input[name='scheduleType']").val();
+			var startTime = $("#jobTriggerModal .form input[name='startTime']").val();
+			var endTime = $("#jobTriggerModal .form input[name='endTime']").val();
+			
+			// Hide details when time changes
+			$("#scheduleDetailsGroup").hide();
+			
+			if (!startTime || scheduleType === 'NONE') {
+				$("#instanceCountHintGroup").hide();
+				return;
+			}
+			
+			// Debounce API call
+			clearTimeout(previewTimeout);
+			previewTimeout = setTimeout(function() {
+				// Call backend preview API
+				$.ajax({
+					type: 'POST',
+					url: base_url + "/jobinfo/previewTriggerBatch",
+					data: {
+						"id": jobId,
+						"startTime": startTime,
+						"endTime": endTime
+					},
+					dataType: "json",
+					success: function(data) {
+						if (data.code === 200 && data.data) {
+							var scheduleTimes = data.data;
+							var count = scheduleTimes.length;
+							
+							// Store schedule times for detail view
+							$("#jobTriggerModal").data('scheduleTimes', scheduleTimes);
+							
+							// Show hint
+							var maxInstances = 100;
+							var hintText = I18n.jobinfo_trigger_instance_count.replace('{0}', count);
+							
+							if (count >= maxInstances) {
+								hintText += ' ' + I18n.jobinfo_trigger_max_instances_warning.replace('{0}', maxInstances);
+								$("#instanceCountHint").removeClass('text-info').addClass('text-warning');
+							} else {
+								$("#instanceCountHint").removeClass('text-warning').addClass('text-info');
+							}
+							
+							$("#instanceCountHint").text(hintText);
+							$("#instanceCountHintGroup").show();
+						} else {
+							$("#instanceCountHintGroup").hide();
+						}
+					},
+					error: function() {
+						$("#instanceCountHintGroup").hide();
+					}
+				});
+			}, 500); // 500ms debounce
+		});
+		
+		// Show/hide schedule details
+		$("#jobTriggerModal").on('click', '#showScheduleDetails', function(e) {
+			e.preventDefault();
+			var $detailsGroup = $("#scheduleDetailsGroup");
+			var $detailsList = $("#scheduleDetailsList");
+			
+			if ($detailsGroup.is(':visible')) {
+				$detailsGroup.hide();
+				$(this).text(I18n.system_show + ' Details');
+			} else {
+				// Populate details
+				var scheduleTimes = $("#jobTriggerModal").data('scheduleTimes') || [];
+				$detailsList.empty();
+				
+				if (scheduleTimes.length === 0) {
+					$detailsList.append('<li>No schedule times available</li>');
+				} else {
+					scheduleTimes.forEach(function(time) {
+						$detailsList.append('<li>' + time + '</li>');
+					});
+				}
+				
+				$detailsGroup.show();
+				$(this).text('Hide Details');
+			}
+		});
+		
 		$("#jobTriggerModal .ok").on('click',function() {
+			var triggerMode = $("#jobTriggerModal .form input[name='triggerMode']:checked").val();
+			var url = base_url + (triggerMode === 'scheduled' ? "/jobinfo/triggerBatch" : "/jobinfo/trigger");
+			
+			var data = {
+				"id" : $("#jobTriggerModal .form input[name='id']").val(),
+				"executorParam" : $("#jobTriggerModal .textarea[name='executorParam']").val(),
+				"addressList" : $("#jobTriggerModal .textarea[name='addressList']").val()
+			};
+			
+			// Add time parameters for scheduled trigger
+			if (triggerMode === 'scheduled') {
+				data.startTime = $("#jobTriggerModal .form input[name='startTime']").val();
+				data.endTime = $("#jobTriggerModal .form input[name='endTime']").val();
+			}
+			
 			$.ajax({
 				type : 'POST',
-				url : base_url + "/jobinfo/trigger",
-				data : {
-					"id" : $("#jobTriggerModal .form input[name='id']").val(),
-					"executorParam" : $("#jobTriggerModal .textarea[name='executorParam']").val(),
-					"addressList" : $("#jobTriggerModal .textarea[name='addressList']").val()
-				},
+				url : url,
+				data : data,
 				dataType : "json",
 				success : function(data){
 					if (data.code == 200) {
@@ -889,6 +1070,11 @@ exit 0
 		});
 		$("#jobTriggerModal").on('hide.bs.modal', function () {
 			$("#jobTriggerModal .form")[0].reset();
+			$("#timeRangeSection").hide();
+			$("#instanceCountHintGroup").hide();
+			$("#scheduleDetailsGroup").hide();
+			$("#jobTriggerModal").removeData('scheduleTimes');
+			clearTimeout(previewTimeout);
 		});
 
 		// ---------------------- registryinfo ----------------------

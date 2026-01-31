@@ -28,6 +28,10 @@ public class TriggerRequest implements Serializable {
     private int broadcastIndex;
     private int broadcastTotal;
 
+    // schedule info
+    /** Theoretical schedule time (milliseconds), null for manual/API triggers */
+    private Long scheduleTime;
+
     public int getJobId() {
         return jobId;
     }
@@ -124,6 +128,14 @@ public class TriggerRequest implements Serializable {
         this.broadcastTotal = broadcastTotal;
     }
 
+    public Long getScheduleTime() {
+        return scheduleTime;
+    }
+
+    public void setScheduleTime(Long scheduleTime) {
+        this.scheduleTime = scheduleTime;
+    }
+
     @Override
     public String toString() {
         return "TriggerParam{"
@@ -156,6 +168,8 @@ public class TriggerRequest implements Serializable {
                 + broadcastIndex
                 + ", broadcastTotal="
                 + broadcastTotal
+                + ", scheduleTime="
+                + scheduleTime
                 + '}';
     }
 }

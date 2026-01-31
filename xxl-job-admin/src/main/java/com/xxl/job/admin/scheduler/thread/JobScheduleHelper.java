@@ -30,7 +30,11 @@ public class JobScheduleHelper {
     private Thread ringThread;
     private volatile boolean scheduleThreadToStop = false;
     private volatile boolean ringThreadToStop = false;
-    private final Map<Integer, List<Integer>> ringData = new ConcurrentHashMap<>();
+
+    /** Ring item containing job ID and its theoretical schedule time */
+    private record RingItem(int jobId, long scheduleTime) {}
+
+    private final Map<Integer, List<RingItem>> ringData = new ConcurrentHashMap<>();
 
     /** start */
     public void start() {
@@ -117,6 +121,10 @@ public class JobScheduleHelper {
                                                     // 2.2、trigger-expire < 5s：direct-trigger &&
                                                     // make next-trigger-time
 
+                                                    // Capture schedule time before refresh
+                                                    long currentScheduleTime =
+                                                            jobInfo.getTriggerNextTime();
+
                                                     // 1、trigger direct
                                                     XxlJobAdminBootstrap.getInstance()
                                                             .getJobTriggerPoolHelper()
@@ -126,7 +134,8 @@ public class JobScheduleHelper {
                                                                     -1,
                                                                     null,
                                                                     null,
-                                                                    null);
+                                                                    null,
+                                                                    currentScheduleTime);
                                                     logger.debug(
                                                             ">>>>>>>>>>> xxl-job, schedule expire, direct trigger : jobId = "
                                                                     + jobInfo.getId());
@@ -150,8 +159,12 @@ public class JobScheduleHelper {
                                                                                         / 1000)
                                                                                 % 60);
 
-                                                        // 2、push time ring (pre read)
-                                                        pushTimeRing(ringSecond, jobInfo.getId());
+                                                        // 2、push time ring (pre read) with schedule
+                                                        // time
+                                                        pushTimeRing(
+                                                                ringSecond,
+                                                                jobInfo.getId(),
+                                                                jobInfo.getTriggerNextTime());
                                                         logger.debug(
                                                                 ">>>>>>>>>>> xxl-job, schedule pre-read, push trigger : jobId = "
                                                                         + jobInfo.getId());
@@ -175,8 +188,15 @@ public class JobScheduleHelper {
                                                                                     / 1000)
                                                                             % 60);
 
-                                                    // 2、push time ring
-                                                    pushTimeRing(ringSecond, jobInfo.getId());
+                                                    // Capture schedule time before refresh
+                                                    long currentScheduleTime =
+                                                            jobInfo.getTriggerNextTime();
+
+                                                    // 2、push time ring with schedule time
+                                                    pushTimeRing(
+                                                            ringSecond,
+                                                            jobInfo.getId(),
+                                                            currentScheduleTime);
                                                     logger.debug(
                                                             ">>>>>>>>>>> xxl-job, schedule normal, push trigger : jobId = "
                                                                     + jobInfo.getId());
@@ -260,21 +280,31 @@ public class JobScheduleHelper {
 
                                     try {
                                         // second data
-                                        List<Integer> ringItemData = new ArrayList<>();
+                                        List<RingItem> ringItemData = new ArrayList<>();
 
-                                        // collect rind data, by second
+                                        // collect ring data, by second
                                         int nowSecond = Calendar.getInstance().get(Calendar.SECOND);
                                         for (int i = 0;
                                                 i <= 2;
-                                                i++) { // 避免调度遗漏：处理耗时太长、跨过刻度，除当前刻度外 + 向前校验2个刻度；
-                                            List<Integer> ringItemList =
+                                                i++) { // Avoid scheduling miss: check current + 2
+                                            // previous seconds
+                                            List<RingItem> ringItemList =
                                                     ringData.remove((nowSecond + 60 - i) % 60);
                                             if (CollectionTool.isNotEmpty(ringItemList)) {
-                                                // distinct for each second
-                                                List<Integer> ringItemListDistinct =
+                                                // distinct by jobId for each second
+                                                List<RingItem> ringItemListDistinct =
                                                         ringItemList.stream()
-                                                                .distinct()
-                                                                .toList(); // 避免调度重复：重复推送时间轮刻度，去重只保留一个；；
+                                                                .filter(
+                                                                        item ->
+                                                                                ringItemData
+                                                                                        .stream()
+                                                                                        .noneMatch(
+                                                                                                existing ->
+                                                                                                        existing
+                                                                                                                        .jobId()
+                                                                                                                == item
+                                                                                                                        .jobId()))
+                                                                .toList();
                                                 if (ringItemListDistinct.size()
                                                         < ringItemList.size()) {
                                                     logger.warn(
@@ -297,17 +327,18 @@ public class JobScheduleHelper {
                                                         + ringItemData);
                                         if (CollectionTool.isNotEmpty(ringItemData)) {
                                             // do trigger
-                                            for (int jobId : ringItemData) {
-                                                // do trigger
+                                            for (RingItem item : ringItemData) {
+                                                // do trigger with schedule time
                                                 XxlJobAdminBootstrap.getInstance()
                                                         .getJobTriggerPoolHelper()
                                                         .trigger(
-                                                                jobId,
+                                                                item.jobId(),
                                                                 TriggerTypeEnum.CRON,
                                                                 -1,
                                                                 null,
                                                                 null,
-                                                                null);
+                                                                null,
+                                                                item.scheduleTime());
                                             }
                                             // clear
                                             ringItemData.clear();
@@ -381,13 +412,14 @@ public class JobScheduleHelper {
      *
      * @param ringSecond ring second
      * @param jobId job id
+     * @param scheduleTime theoretical schedule time (milliseconds)
      */
-    private void pushTimeRing(int ringSecond, int jobId) {
+    private void pushTimeRing(int ringSecond, int jobId, long scheduleTime) {
         // get ringItemData, init when not exists
-        List<Integer> ringItemList = ringData.computeIfAbsent(ringSecond, k -> new ArrayList<>());
+        List<RingItem> ringItemList = ringData.computeIfAbsent(ringSecond, k -> new ArrayList<>());
 
-        // push async rind
-        ringItemList.add(jobId);
+        // push async ring
+        ringItemList.add(new RingItem(jobId, scheduleTime));
         logger.debug(
                 ">>>>>>>>>>> xxl-job, schedule push time-ring : "
                         + ringSecond
@@ -419,7 +451,7 @@ public class JobScheduleHelper {
         boolean hasRingData = false;
         if (MapTool.isNotEmpty(ringData)) {
             for (int second : ringData.keySet()) {
-                List<Integer> ringItemList = ringData.get(second);
+                List<RingItem> ringItemList = ringData.get(second);
                 if (CollectionTool.isNotEmpty(ringItemList)) {
                     hasRingData = true;
                     break;

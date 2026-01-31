@@ -192,6 +192,66 @@ public class JobInfoController {
         return xxlJobService.trigger(loginInfoResponse.getData(), id, executorParam, addressList);
     }
 
+    @RequestMapping("/triggerBatch")
+    @ResponseBody
+    public Response<String> triggerBatch(
+            HttpServletRequest request,
+            @RequestParam("id") int id,
+            @RequestParam("executorParam") String executorParam,
+            @RequestParam("addressList") String addressList,
+            @RequestParam(value = "startTime", required = false) String startTimeStr,
+            @RequestParam(value = "endTime", required = false) String endTimeStr) {
+        Response<LoginInfo> loginInfoResponse = XxlSsoHelper.loginCheckWithAttr(request);
+
+        // Parse time strings to Date objects
+        Date startTime = null;
+        Date endTime = null;
+
+        try {
+            if (StringTool.isNotBlank(startTimeStr)) {
+                startTime = DateTool.parseDateTime(startTimeStr);
+            }
+            if (StringTool.isNotBlank(endTimeStr)) {
+                endTime = DateTool.parseDateTime(endTimeStr);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to parse time parameters: {}", e.getMessage());
+            return Response.ofFail("Invalid time format. Expected: yyyy-MM-dd HH:mm:ss");
+        }
+
+        return xxlJobService.triggerBatch(
+                loginInfoResponse.getData(), id, executorParam, addressList, startTime, endTime);
+    }
+
+    @RequestMapping("/previewTriggerBatch")
+    @ResponseBody
+    public Response<List<String>> previewTriggerBatch(
+            HttpServletRequest request,
+            @RequestParam("id") int id,
+            @RequestParam(value = "startTime", required = false) String startTimeStr,
+            @RequestParam(value = "endTime", required = false) String endTimeStr) {
+        Response<LoginInfo> loginInfoResponse = XxlSsoHelper.loginCheckWithAttr(request);
+
+        // Parse time strings to Date objects
+        Date startTime = null;
+        Date endTime = null;
+
+        try {
+            if (StringTool.isNotBlank(startTimeStr)) {
+                startTime = DateTool.parseDateTime(startTimeStr);
+            }
+            if (StringTool.isNotBlank(endTimeStr)) {
+                endTime = DateTool.parseDateTime(endTimeStr);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to parse time parameters: {}", e.getMessage());
+            return Response.ofFail("Invalid time format. Expected: yyyy-MM-dd HH:mm:ss");
+        }
+
+        return xxlJobService.previewTriggerBatch(
+                loginInfoResponse.getData(), id, startTime, endTime);
+    }
+
     @RequestMapping("/nextTriggerTime")
     @ResponseBody
     public Response<List<String>> nextTriggerTime(

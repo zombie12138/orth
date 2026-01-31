@@ -24,6 +24,10 @@ public class XxlJobLog {
 
     // trigger info
     private Date triggerTime;
+
+    /** Theoretical schedule time, null for manual/API triggers */
+    private Date scheduleTime;
+
     private int triggerCode;
     private String triggerMsg;
 
@@ -105,6 +109,14 @@ public class XxlJobLog {
 
     public void setTriggerTime(Date triggerTime) {
         this.triggerTime = triggerTime;
+    }
+
+    public Date getScheduleTime() {
+        return scheduleTime;
+    }
+
+    public void setScheduleTime(Date scheduleTime) {
+        this.scheduleTime = scheduleTime;
     }
 
     public int getTriggerCode() {

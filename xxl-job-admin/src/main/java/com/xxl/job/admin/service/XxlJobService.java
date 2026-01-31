@@ -1,6 +1,7 @@
 package com.xxl.job.admin.service;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import com.xxl.job.admin.model.XxlJobInfo;
@@ -43,6 +44,19 @@ public interface XxlJobService {
     /** trigger */
     public Response<String> trigger(
             LoginInfo loginInfo, int jobId, String executorParam, String addressList);
+
+    /** trigger batch with schedule time range */
+    public Response<String> triggerBatch(
+            LoginInfo loginInfo,
+            int jobId,
+            String executorParam,
+            String addressList,
+            Date startTime,
+            Date endTime);
+
+    /** preview trigger batch schedule times */
+    public Response<List<String>> previewTriggerBatch(
+            LoginInfo loginInfo, int jobId, Date startTime, Date endTime);
 
     /** dashboard info */
     public Map<String, Object> dashboardInfo();
