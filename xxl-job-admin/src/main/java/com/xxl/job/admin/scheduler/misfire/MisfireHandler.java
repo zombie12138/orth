@@ -13,5 +13,4 @@ public abstract class MisfireHandler {
      * @param jobId jobId
      */
     public abstract void handle(final int jobId);
-
 }

@@ -1,22 +1,22 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 //
-//import java.text.DateFormat;
-//import java.text.ParseException;
-//import java.text.SimpleDateFormat;
-//import java.util.Calendar;
-//import java.util.Date;
-//import java.util.HashMap;
-//import java.util.Map;
+// import java.text.DateFormat;
+// import java.text.ParseException;
+// import java.text.SimpleDateFormat;
+// import java.util.Calendar;
+// import java.util.Date;
+// import java.util.HashMap;
+// import java.util.Map;
 //
-///**
+/// **
 // * date util
 // *
 // * @author xuxueli 2018-08-19 01:24:11
 // */
-//public class DateUtil {
+// public class DateUtil {
 //
 //    // ---------------------- format parse ----------------------
 //    private static Logger logger = LoggerFactory.getLogger(DateUtil.class);
@@ -24,7 +24,8 @@
 //    private static final String DATE_FORMAT = "yyyy-MM-dd";
 //    private static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 //
-//    private static final ThreadLocal<Map<String, DateFormat>> dateFormatThreadLocal = new ThreadLocal<Map<String, DateFormat>>();
+//    private static final ThreadLocal<Map<String, DateFormat>> dateFormatThreadLocal = new
+// ThreadLocal<Map<String, DateFormat>>();
 //    private static DateFormat getDateFormat(String pattern) {
 //        if (pattern==null || pattern.trim().length()==0) {
 //            throw new IllegalArgumentException("pattern cannot be empty.");
@@ -115,7 +116,8 @@
 //            Date date = getDateFormat(pattern).parse(dateString);
 //            return date;
 //        } catch (Exception e) {
-//            logger.warn("parse date error, dateString = {}, pattern={}; errorMsg = {}", dateString, pattern, e.getMessage());
+//            logger.warn("parse date error, dateString = {}, pattern={}; errorMsg = {}",
+// dateString, pattern, e.getMessage());
 //            return null;
 //        }
 //    }
@@ -153,4 +155,4 @@
 //        return c.getTime();
 //    }
 //
-//}
+// }

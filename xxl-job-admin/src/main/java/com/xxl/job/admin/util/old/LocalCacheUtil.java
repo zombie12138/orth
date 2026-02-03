@@ -1,16 +1,17 @@
-//package com.xxl.job.admin.util;
+// package com.xxl.job.admin.util;
 //
-//import java.util.concurrent.ConcurrentHashMap;
-//import java.util.concurrent.ConcurrentMap;
+// import java.util.concurrent.ConcurrentHashMap;
+// import java.util.concurrent.ConcurrentMap;
 //
-///**
+/// **
 // * local cache tool
 // *
 // * @author xuxueli 2018-01-22 21:37:34
 // */
-//public class LocalCacheUtil {
+// public class LocalCacheUtil {
 //
-//    private static ConcurrentMap<String, LocalCacheData> cacheRepository = new ConcurrentHashMap<String, LocalCacheData>();   // 类型建议用抽象父类，兼容性更好；
+//    private static ConcurrentMap<String, LocalCacheData> cacheRepository = new
+// ConcurrentHashMap<String, LocalCacheData>();   // 类型建议用抽象父类，兼容性更好；
 //    private static class LocalCacheData{
 //        private String key;
 //        private Object val;
@@ -122,7 +123,8 @@
 //        if (!cacheRepository.keySet().isEmpty()) {
 //            for (String key: cacheRepository.keySet()) {
 //                LocalCacheData localCacheData = cacheRepository.get(key);
-//                if (localCacheData!=null && System.currentTimeMillis()>=localCacheData.getTimeoutTime()) {
+//                if (localCacheData!=null &&
+// System.currentTimeMillis()>=localCacheData.getTimeoutTime()) {
 //                    cacheRepository.remove(key);
 //                }
 //            }
@@ -130,4 +132,4 @@
 //        return true;
 //    }
 //
-//}
+// }

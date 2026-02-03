@@ -13,9 +13,8 @@ public class FramelessApplicationTest {
 
     @Test
     @DisplayName("test1")
-    public void test1(){
+    public void test1() {
         logger.info("111");
-        Assertions.assertNull( null);
+        Assertions.assertNull(null);
     }
-
 }

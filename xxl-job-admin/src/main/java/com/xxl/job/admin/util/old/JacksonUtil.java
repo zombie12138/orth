@@ -1,16 +1,16 @@
-//package com.xxl.job.admin.util.old;
+// package com.xxl.job.admin.util.old;
 //
-//import com.fasterxml.jackson.core.JsonGenerationException;
-//import com.fasterxml.jackson.core.JsonParseException;
-//import com.fasterxml.jackson.databind.JavaType;
-//import com.fasterxml.jackson.databind.JsonMappingException;
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
+// import com.fasterxml.jackson.core.JsonGenerationException;
+// import com.fasterxml.jackson.core.JsonParseException;
+// import com.fasterxml.jackson.databind.JavaType;
+// import com.fasterxml.jackson.databind.JsonMappingException;
+// import com.fasterxml.jackson.databind.ObjectMapper;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 //
-//import java.io.IOException;
+// import java.io.IOException;
 //
-///**
+/// **
 // * Jackson util
 // *
 // * 1、obj need private and set/get；
@@ -18,7 +18,7 @@
 // *
 // * @author xuxueli 2015-9-25 18:02:56
 // */
-//public class JacksonUtil {
+// public class JacksonUtil {
 //	private static Logger logger = LoggerFactory.getLogger(JacksonUtil.class);
 //
 //    private final static ObjectMapper objectMapper = new ObjectMapper();
@@ -76,9 +76,11 @@
 //	 * @param <T>
 //	 * @return
 //	 */
-//	public static <T> T readValue(String jsonStr, Class<?> parametrized, Class<?>... parameterClasses) {
+//	public static <T> T readValue(String jsonStr, Class<?> parametrized, Class<?>...
+// parameterClasses) {
 //		try {
-//			JavaType javaType = getInstance().getTypeFactory().constructParametricType(parametrized, parameterClasses);
+//			JavaType javaType = getInstance().getTypeFactory().constructParametricType(parametrized,
+// parameterClasses);
 //			return getInstance().readValue(jsonStr, javaType);
 //		} catch (JsonParseException e) {
 //			logger.error(e.getMessage(), e);
@@ -89,4 +91,4 @@
 //		}
 //		return null;
 //	}
-//}
+// }

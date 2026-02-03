@@ -1,8 +1,8 @@
 package com.xxl.job.admin.scheduler.type;
 
-import com.xxl.job.admin.model.XxlJobInfo;
-
 import java.util.Date;
+
+import com.xxl.job.admin.model.XxlJobInfo;
 
 /**
  * Schedule Type
@@ -14,9 +14,9 @@ public abstract class ScheduleType {
     /**
      * generate next trigger time
      *
-     * @param jobInfo       job info
-     * @param fromTime      from time
+     * @param jobInfo job info
+     * @param fromTime from time
      */
-    public abstract Date generateNextTriggerTime(XxlJobInfo jobInfo, Date fromTime) throws Exception;
-
+    public abstract Date generateNextTriggerTime(XxlJobInfo jobInfo, Date fromTime)
+            throws Exception;
 }

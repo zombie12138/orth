@@ -1,18 +1,11 @@
 package com.xxl.job.core.constant;
 
-/**
- * Created by xuxueli on 17/5/9.
- */
-public enum RegistType{
+/** Created by xuxueli on 17/5/9. */
+public enum RegistType {
 
-    /**
-     * executor registry
-     */
+    /** executor registry */
     EXECUTOR,
 
-    /**
-     * admin registry
-     */
+    /** admin registry */
     ADMIN;
-
 }

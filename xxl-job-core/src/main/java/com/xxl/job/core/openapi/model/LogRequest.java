@@ -8,8 +8,8 @@ import java.io.Serializable;
 public class LogRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
-    public LogRequest() {
-    }
+    public LogRequest() {}
+
     public LogRequest(long logDateTim, long logId, int fromLineNum) {
         this.logDateTim = logDateTim;
         this.logId = logId;
@@ -43,5 +43,4 @@ public class LogRequest implements Serializable {
     public void setFromLineNum(int fromLineNum) {
         this.fromLineNum = fromLineNum;
     }
-
 }

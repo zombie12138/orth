@@ -2,14 +2,12 @@ package com.xxl.job.core.openapi.model;
 
 import java.io.Serializable;
 
-/**
- * Created by xuxueli on 17/3/23.
- */
+/** Created by xuxueli on 17/3/23. */
 public class LogResult implements Serializable {
     private static final long serialVersionUID = 42L;
 
-    public LogResult() {
-    }
+    public LogResult() {}
+
     public LogResult(int fromLineNum, int toLineNum, String logContent, boolean isEnd) {
         this.fromLineNum = fromLineNum;
         this.toLineNum = toLineNum;

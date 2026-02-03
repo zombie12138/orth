@@ -1,7 +1,6 @@
 package com.xxl.job.admin.constant;
 
 public enum TriggerStatus {
-
     STOPPED(0, "stopped"),
     RUNNING(1, "running");
 
@@ -28,5 +27,4 @@ public enum TriggerStatus {
     public void setDesc(String desc) {
         this.desc = desc;
     }
-
 }

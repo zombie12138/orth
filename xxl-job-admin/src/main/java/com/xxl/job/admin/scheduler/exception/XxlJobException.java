@@ -5,10 +5,9 @@ package com.xxl.job.admin.scheduler.exception;
  */
 public class XxlJobException extends RuntimeException {
 
-    public XxlJobException() {
-    }
+    public XxlJobException() {}
+
     public XxlJobException(String message) {
         super(message);
     }
-
 }

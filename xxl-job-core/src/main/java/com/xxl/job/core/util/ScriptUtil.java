@@ -1,33 +1,34 @@
 package com.xxl.job.core.util;
 
-import com.xxl.job.core.context.XxlJobHelper;
-import com.xxl.tool.core.ArrayTool;
-import com.xxl.tool.io.FileTool;
-import com.xxl.tool.io.IOTool;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.xxl.job.core.context.XxlJobHelper;
+import com.xxl.tool.core.ArrayTool;
+import com.xxl.tool.io.FileTool;
+import com.xxl.tool.io.IOTool;
+
 /**
- *  1、内嵌编译器如"PythonInterpreter"无法引用扩展包，因此推荐使用java调用控制台进程方式"Runtime.getRuntime().exec()"来运行脚本(shell或python)；
- *  2、因为通过java调用控制台进程方式实现，需要保证目标机器PATH路径正确配置对应编译器；
- *  3、暂时脚本执行日志只能在脚本执行结束后一次性获取，无法保证实时性；因此为确保日志实时性，可改为将脚本打印的日志存储在指定的日志文件上；
- *  4、python 异常输出优先级高于标准输出，体现在Log文件中，因此推荐通过logging方式打日志保持和异常信息一致；否则用prinf日志顺序会错乱
+ * 1、内嵌编译器如"PythonInterpreter"无法引用扩展包，因此推荐使用java调用控制台进程方式"Runtime.getRuntime().exec()"来运行脚本(shell或python)；
+ * 2、因为通过java调用控制台进程方式实现，需要保证目标机器PATH路径正确配置对应编译器；
+ * 3、暂时脚本执行日志只能在脚本执行结束后一次性获取，无法保证实时性；因此为确保日志实时性，可改为将脚本打印的日志存储在指定的日志文件上； 4、python
+ * 异常输出优先级高于标准输出，体现在Log文件中，因此推荐通过logging方式打日志保持和异常信息一致；否则用prinf日志顺序会错乱
  *
- * Created by xuxueli on 17/2/25.
+ * <p>Created by xuxueli on 17/2/25.
  */
 public class ScriptUtil {
 
     /**
      * make script file
      *
-     * @param scriptFileName        script file name
-     * @param scriptContent         script content
+     * @param scriptFileName script file name
+     * @param scriptContent script content
      * @throws IOException exception
      */
-    public static void markScriptFile(String scriptFileName, String scriptContent) throws IOException {
+    public static void markScriptFile(String scriptFileName, String scriptContent)
+            throws IOException {
         // make file: filePath/gluesource/666-123456789.py
         FileTool.writeString(scriptFileName, scriptContent);
 
@@ -48,14 +49,16 @@ public class ScriptUtil {
     /**
      * 脚本执行，日志文件实时输出
      *
-     * @param command       command
-     * @param scriptFile    script file
-     * @param logFile       log file
-     * @param params        params
-     * @return  exit code
+     * @param command command
+     * @param scriptFile script file
+     * @param logFile log file
+     * @param params params
+     * @return exit code
      * @throws IOException exception
      */
-    public static int execToFile(String command, String scriptFile, String logFile, String... params) throws IOException {
+    public static int execToFile(
+            String command, String scriptFile, String logFile, String... params)
+            throws IOException {
 
         FileOutputStream fileOutputStream = null;
         Thread inputThread = null;
@@ -70,7 +73,7 @@ public class ScriptUtil {
             cmdarray.add(command);
             cmdarray.add(scriptFile);
             if (ArrayTool.isNotEmpty(params)) {
-                for (String param:params) {
+                for (String param : params) {
                     cmdarray.add(param);
                 }
             }
@@ -82,26 +85,38 @@ public class ScriptUtil {
 
             // 4、read script log: inputStream + errStream
             final FileOutputStream finalFileOutputStream = fileOutputStream;
-            inputThread = new Thread(() -> {
-                try {
-                    // 数据流Copy（Input自动关闭，Output不处理）
-                    IOTool.copy(finalProcess.getInputStream(), finalFileOutputStream, true, false);
-                } catch (IOException e) {
-                    XxlJobHelper.log(e);
-                }
-            });
-            errorThread = new Thread(() -> {
-                try {
-                    IOTool.copy(finalProcess.getErrorStream(), finalFileOutputStream, true, false);
-                } catch (IOException e) {
-                    XxlJobHelper.log(e);
-                }
-            });
+            inputThread =
+                    new Thread(
+                            () -> {
+                                try {
+                                    // 数据流Copy（Input自动关闭，Output不处理）
+                                    IOTool.copy(
+                                            finalProcess.getInputStream(),
+                                            finalFileOutputStream,
+                                            true,
+                                            false);
+                                } catch (IOException e) {
+                                    XxlJobHelper.log(e);
+                                }
+                            });
+            errorThread =
+                    new Thread(
+                            () -> {
+                                try {
+                                    IOTool.copy(
+                                            finalProcess.getErrorStream(),
+                                            finalFileOutputStream,
+                                            true,
+                                            false);
+                                } catch (IOException e) {
+                                    XxlJobHelper.log(e);
+                                }
+                            });
             inputThread.start();
             errorThread.start();
 
             // 5、process：wait for result
-            int exitValue = process.waitFor();      // exit code: 0=success, 1=error
+            int exitValue = process.waitFor(); // exit code: 0=success, 1=error
 
             // 6、thread join, wait for log
             inputThread.join();
@@ -138,17 +153,10 @@ public class ScriptUtil {
     /**
      * 脚本执行，日志文件实时输出
      *
-     * 优点：支持将目标数据实时输出到指定日志文件中去
-     * 缺点：
-     *      标准输出和错误输出优先级固定，可能和脚本中顺序不一致
-     *      Java无法实时获取
-     *
-     *      <!-- commons-exec -->
-     * 		<dependency>
-     * 			<groupId>org.apache.commons</groupId>
-     * 			<artifactId>commons-exec</artifactId>
-     * 			<version>${commons-exec.version}</version>
-     * 		</dependency>
+     * <p>优点：支持将目标数据实时输出到指定日志文件中去 缺点： 标准输出和错误输出优先级固定，可能和脚本中顺序不一致 Java无法实时获取
+     * <!-- commons-exec -->
+     * <dependency> <groupId>org.apache.commons</groupId> <artifactId>commons-exec</artifactId>
+     * <version>${commons-exec.version}</version> </dependency>
      *
      * @param command
      * @param scriptFile

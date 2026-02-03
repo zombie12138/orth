@@ -1,15 +1,15 @@
-//package com.xxl.job.admin.core.util;
+// package com.xxl.job.admin.core.util;
 //
-//import com.xxl.job.admin.util.JacksonUtil;
-//import org.junit.jupiter.api.Test;
+// import com.xxl.job.admin.util.JacksonUtil;
+// import org.junit.jupiter.api.Test;
 //
-//import java.util.HashMap;
-//import java.util.Map;
+// import java.util.HashMap;
+// import java.util.Map;
 //
-//import static com.xxl.job.admin.util.JacksonUtil.writeValueAsString;
-//import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static com.xxl.job.admin.util.JacksonUtil.writeValueAsString;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
 //
-//public class JacksonUtilTest {
+// public class JacksonUtilTest {
 //
 //    @Test
 //    public void shouldWriteValueAsString() {
@@ -38,4 +38,4 @@
 //        assertEquals(result.get("bbb"),"222");
 //
 //    }
-//}
+// }

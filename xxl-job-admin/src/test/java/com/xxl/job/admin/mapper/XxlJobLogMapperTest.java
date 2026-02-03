@@ -1,21 +1,22 @@
 package com.xxl.job.admin.mapper;
 
-import com.xxl.job.admin.model.XxlJobLog;
-import jakarta.annotation.Resource;
+import java.util.Date;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Date;
-import java.util.List;
+import com.xxl.job.admin.model.XxlJobLog;
+
+import jakarta.annotation.Resource;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class XxlJobLogMapperTest {
 
-    @Resource
-    private XxlJobLogMapper xxlJobLogMapper;
+    @Resource private XxlJobLogMapper xxlJobLogMapper;
 
     @Test
-    public void test(){
+    public void test() {
         List<XxlJobLog> list = xxlJobLogMapper.pageList(0, 10, 1, 1, null, null, 1);
         int list_count = xxlJobLogMapper.pageListCount(0, 10, 1, 1, null, null, 1);
 
@@ -35,18 +36,14 @@ public class XxlJobLogMapperTest {
         ret1 = xxlJobLogMapper.updateTriggerInfo(log);
         dto = xxlJobLogMapper.load(log.getId());
 
-
         log.setHandleTime(new Date());
         log.setHandleCode(2);
         log.setHandleMsg("2");
         ret1 = xxlJobLogMapper.updateHandleInfo(log);
         dto = xxlJobLogMapper.load(log.getId());
 
-
         List<Long> ret4 = xxlJobLogMapper.findClearLogIds(1, 1, new Date(), 100, 100);
 
         int ret2 = xxlJobLogMapper.delete(log.getJobId());
-
     }
-
 }

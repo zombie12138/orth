@@ -1,15 +1,16 @@
 package com.xxl.job.core.context;
 
-import com.xxl.job.core.log.XxlJobFileAppender;
-import com.xxl.tool.core.DateTool;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Date;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Date;
+import com.xxl.job.core.log.XxlJobFileAppender;
+import com.xxl.tool.core.DateTool;
 
 /**
  * helper for xxl-job
@@ -129,10 +130,10 @@ public class XxlJobHelper {
     /**
      * append log with pattern
      *
-     * @param appendLogPattern  like "aaa {} bbb {} ccc"
-     * @param appendLogArguments    like "111, true"
+     * @param appendLogPattern like "aaa {} bbb {} ccc"
+     * @param appendLogArguments like "111, true"
      */
-    public static boolean log(String appendLogPattern, Object ... appendLogArguments) {
+    public static boolean log(String appendLogPattern, Object... appendLogArguments) {
 
         FormattingTuple ft = MessageFormatter.arrayFormat(appendLogPattern, appendLogArguments);
         String appendLog = ft.getMessage();
@@ -149,8 +150,7 @@ public class XxlJobHelper {
     /**
      * append exception stack
      *
-     * @param e exception to log
-     * return true if log success
+     * @param e exception to log return true if log success
      */
     public static boolean log(Throwable e) {
 
@@ -165,8 +165,8 @@ public class XxlJobHelper {
     /**
      * append log
      *
-     * @param callInfo      call info
-     * @param appendLog     append log
+     * @param callInfo call info
+     * @param appendLog append log
      */
     private static boolean logDetail(StackTraceElement callInfo, String appendLog) {
         XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
@@ -178,16 +178,29 @@ public class XxlJobHelper {
         StackTraceElement[] stackTraceElements = new Throwable().getStackTrace();
         StackTraceElement callInfo = stackTraceElements[1];*/
 
-        String formatAppendLog = DateTool.formatDateTime(new Date()) + " " +
-                "[" + callInfo.getClassName() + "#" + callInfo.getMethodName() + "]" + "-" +
-                "[" + callInfo.getLineNumber() + "]" + "-" +
-                "[" + Thread.currentThread().getName() + "]" + " " +
-                (appendLog != null ? appendLog : "");
+        String formatAppendLog =
+                DateTool.formatDateTime(new Date())
+                        + " "
+                        + "["
+                        + callInfo.getClassName()
+                        + "#"
+                        + callInfo.getMethodName()
+                        + "]"
+                        + "-"
+                        + "["
+                        + callInfo.getLineNumber()
+                        + "]"
+                        + "-"
+                        + "["
+                        + Thread.currentThread().getName()
+                        + "]"
+                        + " "
+                        + (appendLog != null ? appendLog : "");
 
         // appendlog
         String logFileName = xxlJobContext.getLogFileName();
 
-        if (logFileName!=null && !logFileName.trim().isEmpty()) {
+        if (logFileName != null && !logFileName.trim().isEmpty()) {
             XxlJobFileAppender.appendLog(logFileName, formatAppendLog);
             return true;
         } else {
@@ -203,7 +216,7 @@ public class XxlJobHelper {
      *
      * @return true if handle success
      */
-    public static boolean handleSuccess(){
+    public static boolean handleSuccess() {
         return handleResult(XxlJobContext.HANDLE_CODE_SUCCESS, null);
     }
 
@@ -222,7 +235,7 @@ public class XxlJobHelper {
      *
      * @return true if handle fail
      */
-    public static boolean handleFail(){
+    public static boolean handleFail() {
         return handleResult(XxlJobContext.HANDLE_CODE_FAIL, null);
     }
 
@@ -241,7 +254,7 @@ public class XxlJobHelper {
      *
      * @return true if handle timeout
      */
-    public static boolean handleTimeout(){
+    public static boolean handleTimeout() {
         return handleResult(XxlJobContext.HANDLE_CODE_TIMEOUT, null);
     }
 
@@ -251,17 +264,13 @@ public class XxlJobHelper {
      * @param handleMsg log msg
      * @return true if handle timeout
      */
-    public static boolean handleTimeout(String handleMsg){
+    public static boolean handleTimeout(String handleMsg) {
         return handleResult(XxlJobContext.HANDLE_CODE_TIMEOUT, handleMsg);
     }
 
     /**
      * @param handleCode
-     *
-     *      200 : success
-     *      500 : fail
-     *      502 : timeout
-     *
+     *     <p>200 : success 500 : fail 502 : timeout
      * @param handleMsg log msg
      * @return true if handle success
      */
@@ -277,6 +286,4 @@ public class XxlJobHelper {
         }
         return true;
     }
-
-
 }

@@ -1,12 +1,13 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-///**
+/// **
 // * sharding vo
 // * @author xuxueli 2017-07-25 21:26:38
 // */
-//public class ShardingUtil {
+// public class ShardingUtil {
 //
-//    private static InheritableThreadLocal<ShardingVO> contextHolder = new InheritableThreadLocal<ShardingVO>();
+//    private static InheritableThreadLocal<ShardingVO> contextHolder = new
+// InheritableThreadLocal<ShardingVO>();
 //
 //    public static class ShardingVO {
 //
@@ -43,4 +44,4 @@
 //        return contextHolder.get();
 //    }
 //
-//}
+// }

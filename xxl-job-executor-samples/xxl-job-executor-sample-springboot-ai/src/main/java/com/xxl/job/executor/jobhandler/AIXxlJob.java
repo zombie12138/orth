@@ -1,14 +1,8 @@
 package com.xxl.job.executor.jobhandler;
 
-import com.xxl.job.core.context.XxlJobHelper;
-import com.xxl.job.core.handler.annotation.XxlJob;
-import com.xxl.tool.gson.GsonTool;
-import io.github.imfangs.dify.client.DifyClientFactory;
-import io.github.imfangs.dify.client.DifyWorkflowClient;
-import io.github.imfangs.dify.client.enums.ResponseMode;
-import io.github.imfangs.dify.client.model.workflow.WorkflowRunRequest;
-import io.github.imfangs.dify.client.model.workflow.WorkflowRunResponse;
-import jakarta.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -17,8 +11,16 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.xxl.job.core.context.XxlJobHelper;
+import com.xxl.job.core.handler.annotation.XxlJob;
+import com.xxl.tool.gson.GsonTool;
+
+import io.github.imfangs.dify.client.DifyClientFactory;
+import io.github.imfangs.dify.client.DifyWorkflowClient;
+import io.github.imfangs.dify.client.enums.ResponseMode;
+import io.github.imfangs.dify.client.model.workflow.WorkflowRunRequest;
+import io.github.imfangs.dify.client.model.workflow.WorkflowRunResponse;
+import jakarta.annotation.Resource;
 
 /**
  * AI 任务开发示例
@@ -30,14 +32,14 @@ public class AIXxlJob {
 
     // --------------------------------- ollama chat ---------------------------------
 
-    @Resource
-    private OllamaChatModel ollamaChatModel;
+    @Resource private OllamaChatModel ollamaChatModel;
 
     /**
      * 1、ollama Chat任务
      *
-     *  参数示例：格式见 OllamaParam
-     *  <pre>
+     * <p>参数示例：格式见 OllamaParam
+     *
+     * <pre>
      *      {
      *          "input": "{输入信息，必填信息}",
      *          "prompt": "{模型prompt，可选信息}"
@@ -49,7 +51,7 @@ public class AIXxlJob {
 
         // param
         String param = XxlJobHelper.getJobParam();
-        if (param==null || param.trim().isEmpty()) {
+        if (param == null || param.trim().isEmpty()) {
             XxlJobHelper.log("param is empty.");
 
             XxlJobHelper.handleFail();
@@ -60,7 +62,7 @@ public class AIXxlJob {
         OllamaParam ollamaParam = null;
         try {
             ollamaParam = GsonTool.fromJson(param, OllamaParam.class);
-            if (ollamaParam.getPrompt()==null || ollamaParam.getPrompt().isBlank()) {
+            if (ollamaParam.getPrompt() == null || ollamaParam.getPrompt().isBlank()) {
                 ollamaParam.setPrompt("你是一个研发工程师，擅长解决技术类问题。");
             }
             if (ollamaParam.getInput() == null || ollamaParam.getInput().isBlank()) {
@@ -69,7 +71,7 @@ public class AIXxlJob {
                 XxlJobHelper.handleFail();
                 return;
             }
-            if (ollamaParam.getModel()==null || ollamaParam.getModel().isBlank()) {
+            if (ollamaParam.getModel() == null || ollamaParam.getModel().isBlank()) {
                 ollamaParam.setModel("qwen3:0.6b");
             }
         } catch (Exception e) {
@@ -79,27 +81,32 @@ public class AIXxlJob {
         }
 
         // input
-        XxlJobHelper.log("<br><br><b>【Input】: " + ollamaParam.getInput()+ "</b><br><br>");
+        XxlJobHelper.log("<br><br><b>【Input】: " + ollamaParam.getInput() + "</b><br><br>");
 
         // build chat-client
-        ChatClient ollamaChatClient = ChatClient
-                .builder(ollamaChatModel)
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
-                .defaultAdvisors(SimpleLoggerAdvisor.builder().build())
-                .defaultOptions(OllamaChatOptions.builder().model(ollamaParam.getModel()).build())
-                .build();
+        ChatClient ollamaChatClient =
+                ChatClient.builder(ollamaChatModel)
+                        .defaultAdvisors(
+                                MessageChatMemoryAdvisor.builder(
+                                                MessageWindowChatMemory.builder().build())
+                                        .build())
+                        .defaultAdvisors(SimpleLoggerAdvisor.builder().build())
+                        .defaultOptions(
+                                OllamaChatOptions.builder().model(ollamaParam.getModel()).build())
+                        .build();
 
         // call ollama
-        String response = ollamaChatClient
-                .prompt(ollamaParam.getPrompt())
-                .user(ollamaParam.getInput())
-                .call()
-                .content();
+        String response =
+                ollamaChatClient
+                        .prompt(ollamaParam.getPrompt())
+                        .user(ollamaParam.getInput())
+                        .call()
+                        .content();
 
         XxlJobHelper.log("<br><br><b>【Output】: " + response + "</b><br><br>");
     }
 
-    private static class OllamaParam{
+    private static class OllamaParam {
         private String input;
         private String prompt;
         private String model;
@@ -129,14 +136,14 @@ public class AIXxlJob {
         }
     }
 
-
     // --------------------------------- dify workflow ---------------------------------
 
     /**
      * 2、dify Workflow任务
      *
-     *  参数示例：格式见 DifyParam
-     *  <pre>
+     * <p>参数示例：格式见 DifyParam
+     *
+     * <pre>
      *      {
      *          "inputs":{                      // inputs 为dify工作流任务参数；参数不固定，结合各自 workflow 自行定义。
      *              "input":"{用户输入信息}"      // 该参数为示例变量，需要 workflow 的“开始”节点 自定义参数 “input”，可自行调整或删除。
@@ -150,7 +157,7 @@ public class AIXxlJob {
 
         // param
         String param = XxlJobHelper.getJobParam();
-        if (param==null || param.trim().isEmpty()) {
+        if (param == null || param.trim().isEmpty()) {
             XxlJobHelper.log("param is empty.");
             XxlJobHelper.handleFail();
             return;
@@ -159,14 +166,14 @@ public class AIXxlJob {
         // param parse
         DifyParam difyParam;
         try {
-            difyParam =GsonTool.fromJson(param, DifyParam.class);
+            difyParam = GsonTool.fromJson(param, DifyParam.class);
             if (difyParam.getInputs() == null) {
                 difyParam.setInputs(new HashMap<>());
             }
             if (difyParam.getUser() == null) {
                 difyParam.setUser("xxl-job");
             }
-            if (difyParam.getBaseUrl()==null || difyParam.getApiKey()==null) {
+            if (difyParam.getBaseUrl() == null || difyParam.getApiKey() == null) {
                 XxlJobHelper.log("baseUrl or apiKey invalid.");
                 XxlJobHelper.handleFail();
                 return;
@@ -177,45 +184,40 @@ public class AIXxlJob {
             return;
         }
 
-
         // dify param
         XxlJobHelper.log("<br><br><b>【inputs】: " + difyParam.getInputs() + "</b><br><br>");
 
         // dify request
-        WorkflowRunRequest request = WorkflowRunRequest.builder()
-                .inputs(difyParam.getInputs())
-                .responseMode(ResponseMode.BLOCKING)
-                .user(difyParam.getUser())
-                .build();
+        WorkflowRunRequest request =
+                WorkflowRunRequest.builder()
+                        .inputs(difyParam.getInputs())
+                        .responseMode(ResponseMode.BLOCKING)
+                        .user(difyParam.getUser())
+                        .build();
 
         // dify invoke
-        DifyWorkflowClient workflowClient = DifyClientFactory.createWorkflowClient(difyParam.getBaseUrl(), difyParam.getApiKey());
+        DifyWorkflowClient workflowClient =
+                DifyClientFactory.createWorkflowClient(
+                        difyParam.getBaseUrl(), difyParam.getApiKey());
         WorkflowRunResponse response = workflowClient.runWorkflow(request);
 
         // response
-        XxlJobHelper.log("<br><br><b>【Output】: " + response.getData().getOutputs()+ "</b><br><br>");
+        XxlJobHelper.log(
+                "<br><br><b>【Output】: " + response.getData().getOutputs() + "</b><br><br>");
     }
 
-    private static class DifyParam{
+    private static class DifyParam {
 
-        /**
-         * dify input, 允许传入 Dify App 定义的各变量值
-         */
+        /** dify input, 允许传入 Dify App 定义的各变量值 */
         private Map<String, Object> inputs;
 
-        /**
-         * dify user
-         */
+        /** dify user */
         private String user;
 
-        /**
-         * dify baseUrl
-         */
+        /** dify baseUrl */
         private String baseUrl;
 
-        /**
-         * dify apiKey
-         */
+        /** dify apiKey */
         private String apiKey;
 
         public Map<String, Object> getInputs() {
@@ -249,7 +251,5 @@ public class AIXxlJob {
         public void setApiKey(String apiKey) {
             this.apiKey = apiKey;
         }
-
     }
-
 }

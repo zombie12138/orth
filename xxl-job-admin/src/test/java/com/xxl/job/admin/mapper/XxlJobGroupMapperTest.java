@@ -1,21 +1,22 @@
 package com.xxl.job.admin.mapper;
 
-import com.xxl.job.admin.model.XxlJobGroup;
-import jakarta.annotation.Resource;
+import java.util.Date;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Date;
-import java.util.List;
+import com.xxl.job.admin.model.XxlJobGroup;
+
+import jakarta.annotation.Resource;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class XxlJobGroupMapperTest {
 
-    @Resource
-    private XxlJobGroupMapper xxlJobGroupMapper;
+    @Resource private XxlJobGroupMapper xxlJobGroupMapper;
 
     @Test
-    public void test(){
+    public void test() {
         List<XxlJobGroup> list = xxlJobGroupMapper.findAll();
 
         List<XxlJobGroup> list2 = xxlJobGroupMapper.findByAddressType(0);
@@ -40,5 +41,4 @@ public class XxlJobGroupMapperTest {
 
         int ret3 = xxlJobGroupMapper.remove(group.getId());
     }
-
 }

@@ -12,19 +12,12 @@ import java.lang.annotation.*;
 @Inherited
 public @interface XxlJob {
 
-    /**
-     * jobhandler name
-     */
+    /** jobhandler name */
     String value();
 
-    /**
-     * init handler, invoked when JobThread init
-     */
+    /** init handler, invoked when JobThread init */
     String init() default "";
 
-    /**
-     * destroy handler, invoked when JobThread destroy
-     */
+    /** destroy handler, invoked when JobThread destroy */
     String destroy() default "";
-
 }

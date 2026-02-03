@@ -5,76 +5,62 @@ import java.util.Date;
 import java.util.List;
 
 /**
- *  XxlBootResource DTO
+ * XxlBootResource DTO
  *
- *  Created by xuxueli on 2024-08-04
+ * <p>Created by xuxueli on 2024-08-04
  */
 public class XxlBootResourceDTO implements Serializable {
     private static final long serialVersionUID = 42L;
 
-    /**
-     * 资源ID
-     */
+    /** 资源ID */
     private int id;
 
-    /**
-     * 父节点ID
-     */
+    /** 父节点ID */
     private int parentId;
 
-    /**
-     * 名称
-     */
+    /** 名称 */
     private String name;
 
-    /**
-     * 类型：0-目录, 1-菜单, 2-按钮
-     */
+    /** 类型：0-目录, 1-菜单, 2-按钮 */
     private int type;
 
-    /**
-     * 权限标识
-     */
+    /** 权限标识 */
     private String permission;
 
-    /**
-     * 菜单地址
-     */
+    /** 菜单地址 */
     private String url;
 
-    /**
-     * ICON
-     */
+    /** ICON */
     private String icon;
 
-    /**
-     * 顺序
-     */
+    /** 顺序 */
     private int order;
 
-    /**
-     * 状态：0-正常、1-禁用
-     */
+    /** 状态：0-正常、1-禁用 */
     private int status;
 
-    /**
-     * 新增时间
-     */
+    /** 新增时间 */
     private Date addTime;
 
-    /**
-     * 更新时间
-     */
+    /** 更新时间 */
     private Date updateTime;
 
-    /**
-     * child data
-     */
+    /** child data */
     private List<XxlBootResourceDTO> children;
 
-    public XxlBootResourceDTO() {
-    }
-    public XxlBootResourceDTO(int id, int parentId, String name, int type, String permission, String url, String icon, int order, int status, List<XxlBootResourceDTO> children) {
+    public XxlBootResourceDTO() {}
+
+    public XxlBootResourceDTO(
+            int id,
+            int parentId,
+            String name,
+            int type,
+            String permission,
+            String url,
+            String icon,
+            int order,
+            int status,
+            List<XxlBootResourceDTO> children) {
         this.id = id;
         this.parentId = parentId;
         this.name = name;

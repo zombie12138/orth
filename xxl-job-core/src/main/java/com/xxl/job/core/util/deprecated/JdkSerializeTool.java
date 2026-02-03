@@ -1,14 +1,14 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 //
-//import java.io.*;
+// import java.io.*;
 //
-///**
+/// **
 // * @author xuxueli 2020-04-12 0:14:00
 // */
-//public class JdkSerializeTool {
+// public class JdkSerializeTool {
 //    private static Logger logger = LoggerFactory.getLogger(JdkSerializeTool.class);
 //
 //
@@ -72,4 +72,4 @@
 //    }
 //
 //
-//}
+// }

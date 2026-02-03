@@ -1,21 +1,22 @@
 package com.xxl.job.openapi;
 
-import com.xxl.job.core.constant.Const;
-import com.xxl.job.core.openapi.ExecutorBiz;
-import com.xxl.job.core.openapi.model.*;
-import com.xxl.job.core.constant.ExecutorBlockStrategyEnum;
-import com.xxl.job.core.glue.GlueTypeEnum;
-import com.xxl.tool.http.HttpTool;
-import com.xxl.tool.response.Response;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.xxl.job.core.constant.Const;
+import com.xxl.job.core.constant.ExecutorBlockStrategyEnum;
+import com.xxl.job.core.glue.GlueTypeEnum;
+import com.xxl.job.core.openapi.ExecutorBiz;
+import com.xxl.job.core.openapi.model.*;
+import com.xxl.tool.http.HttpTool;
+import com.xxl.tool.response.Response;
+
 /**
  * executor api test
  *
- * Created by xuxueli on 17/5/12.
+ * <p>Created by xuxueli on 17/5/12.
  */
 public class ExecutorBizTest {
     private static final Logger logger = LoggerFactory.getLogger(ExecutorBizTest.class);
@@ -23,7 +24,7 @@ public class ExecutorBizTest {
     private static String addressUrl = "http://127.0.0.1:9999/";
     private static String accessToken = "default_token";
 
-    private ExecutorBiz buildClient(){
+    private ExecutorBiz buildClient() {
         return HttpTool.createClient()
                 .url(addressUrl)
                 .timeout(3 * 1000)
@@ -45,7 +46,7 @@ public class ExecutorBizTest {
     }
 
     @Test
-    public void idleBeat(){
+    public void idleBeat() {
         ExecutorBiz executorBiz = buildClient();
 
         final int jobId = 0;
@@ -61,7 +62,7 @@ public class ExecutorBizTest {
     }
 
     @Test
-    public void run(){
+    public void run() {
         ExecutorBiz executorBiz = buildClient();
 
         // trigger data
@@ -81,11 +82,10 @@ public class ExecutorBizTest {
 
         // Assert result
         Assertions.assertNotNull(retval);
-
     }
 
     @Test
-    public void kill(){
+    public void kill() {
         ExecutorBiz executorBiz = buildClient();
 
         final int jobId = 0;
@@ -101,7 +101,7 @@ public class ExecutorBizTest {
     }
 
     @Test
-    public void log(){
+    public void log() {
         ExecutorBiz executorBiz = buildClient();
 
         final long logDateTim = 0L;
@@ -109,10 +109,10 @@ public class ExecutorBizTest {
         final int fromLineNum = 0;
 
         // Act
-        final Response<LogResult> retval = executorBiz.log(new LogRequest(logDateTim, logId, fromLineNum));
+        final Response<LogResult> retval =
+                executorBiz.log(new LogRequest(logDateTim, logId, fromLineNum));
 
         // Assert result
         Assertions.assertNotNull(retval);
     }
-
 }

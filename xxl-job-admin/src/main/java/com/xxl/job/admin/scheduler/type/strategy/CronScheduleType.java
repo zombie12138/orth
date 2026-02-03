@@ -1,10 +1,10 @@
 package com.xxl.job.admin.scheduler.type.strategy;
 
+import java.util.Date;
+
 import com.xxl.job.admin.model.XxlJobInfo;
 import com.xxl.job.admin.scheduler.cron.CronExpression;
 import com.xxl.job.admin.scheduler.type.ScheduleType;
-
-import java.util.Date;
 
 public class CronScheduleType extends ScheduleType {
 
@@ -13,5 +13,4 @@ public class CronScheduleType extends ScheduleType {
         // generate next trigger time, with cron
         return new CronExpression(jobInfo.getScheduleConf()).getNextValidTimeAfter(fromTime);
     }
-
 }

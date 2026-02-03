@@ -1,15 +1,9 @@
 package com.xxl.job.admin.scheduler.config;
 
-import com.xxl.job.admin.mapper.*;
-import com.xxl.job.admin.scheduler.alarm.JobAlarmer;
-import com.xxl.job.admin.scheduler.complete.JobCompleter;
-import com.xxl.job.admin.scheduler.thread.*;
-import com.xxl.job.admin.scheduler.trigger.JobTrigger;
-import com.xxl.job.core.constant.Const;
-import com.xxl.job.core.openapi.ExecutorBiz;
-import com.xxl.tool.core.StringTool;
-import com.xxl.tool.http.HttpTool;
-import jakarta.annotation.Resource;
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -19,16 +13,23 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import com.xxl.job.admin.mapper.*;
+import com.xxl.job.admin.scheduler.alarm.JobAlarmer;
+import com.xxl.job.admin.scheduler.complete.JobCompleter;
+import com.xxl.job.admin.scheduler.thread.*;
+import com.xxl.job.admin.scheduler.trigger.JobTrigger;
+import com.xxl.job.core.constant.Const;
+import com.xxl.job.core.openapi.ExecutorBiz;
+import com.xxl.tool.core.StringTool;
+import com.xxl.tool.http.HttpTool;
+
+import jakarta.annotation.Resource;
 
 /**
  * xxl-job config
  *
  * @author xuxueli 2017-04-28
  */
-
 @Component
 public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(XxlJobAdminBootstrap.class);
@@ -36,10 +37,10 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
     // ---------------------- instance ----------------------
 
     private static XxlJobAdminBootstrap adminConfig = null;
+
     public static XxlJobAdminBootstrap getInstance() {
         return adminConfig;
     }
-
 
     // ---------------------- start / stop ----------------------
 
@@ -69,16 +70,16 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
     public JobTriggerPoolHelper getJobTriggerPoolHelper() {
         return jobTriggerPoolHelper;
     }
+
     public JobRegistryHelper getJobRegistryHelper() {
         return jobRegistryHelper;
     }
+
     public JobCompleteHelper getJobCompleteHelper() {
         return jobCompleteHelper;
     }
 
-    /**
-     * do start
-     */
+    /** do start */
     private void doStart() throws Exception {
         // trigger-pool start
         jobTriggerPoolHelper = new JobTriggerPoolHelper();
@@ -107,10 +108,8 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
         logger.info(">>>>>>>>> xxl-job admin start success.");
     }
 
-    /**
-     * do stop
-     */
-    private void doStop(){
+    /** do stop */
+    private void doStop() {
         // job-schedule stop
         jobScheduleHelper.stop();
 
@@ -132,10 +131,11 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
         logger.info(">>>>>>>>> xxl-job admin stopped.");
     }
 
-
     // ---------------------- executor-client ----------------------
 
-    private static ConcurrentMap<String, ExecutorBiz> executorBizRepository = new ConcurrentHashMap<String, ExecutorBiz>();
+    private static ConcurrentMap<String, ExecutorBiz> executorBizRepository =
+            new ConcurrentHashMap<String, ExecutorBiz>();
+
     public static ExecutorBiz getExecutorBiz(String address) throws Exception {
         // valid
         if (StringTool.isBlank(address)) {
@@ -150,15 +150,17 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
         }
 
         // set-cache
-        executorBiz = HttpTool.createClient()
-                .url(address)
-                .timeout(XxlJobAdminBootstrap.getInstance().getTimeout() * 1000)
-                .header(Const.XXL_JOB_ACCESS_TOKEN, XxlJobAdminBootstrap.getInstance().getAccessToken())
-                .proxy(ExecutorBiz.class);
+        executorBiz =
+                HttpTool.createClient()
+                        .url(address)
+                        .timeout(XxlJobAdminBootstrap.getInstance().getTimeout() * 1000)
+                        .header(
+                                Const.XXL_JOB_ACCESS_TOKEN,
+                                XxlJobAdminBootstrap.getInstance().getAccessToken())
+                        .proxy(ExecutorBiz.class);
         executorBizRepository.put(address, executorBiz);
         return executorBiz;
     }
-
 
     // ---------------------- field ----------------------
 
@@ -185,31 +187,19 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
     private int logretentiondays;
 
     // service, mapper
-    @Resource
-    private XxlJobLogMapper xxlJobLogMapper;
-    @Resource
-    private XxlJobInfoMapper xxlJobInfoMapper;
-    @Resource
-    private XxlJobRegistryMapper xxlJobRegistryMapper;
-    @Resource
-    private XxlJobGroupMapper xxlJobGroupMapper;
-    @Resource
-    private XxlJobLogReportMapper xxlJobLogReportMapper;
-    @Resource
-    private XxlJobLockMapper xxlJobLockMapper;
-    @Resource
-    private JavaMailSender mailSender;
+    @Resource private XxlJobLogMapper xxlJobLogMapper;
+    @Resource private XxlJobInfoMapper xxlJobInfoMapper;
+    @Resource private XxlJobRegistryMapper xxlJobRegistryMapper;
+    @Resource private XxlJobGroupMapper xxlJobGroupMapper;
+    @Resource private XxlJobLogReportMapper xxlJobLogReportMapper;
+    @Resource private XxlJobLockMapper xxlJobLockMapper;
+    @Resource private JavaMailSender mailSender;
     /*@Resource
     private DataSource dataSource;*/
-    @Resource
-    private PlatformTransactionManager transactionManager;
-    @Resource
-    private JobAlarmer jobAlarmer;
-    @Resource
-    private JobTrigger jobTrigger;
-    @Resource
-    private JobCompleter jobCompleter;
-
+    @Resource private PlatformTransactionManager transactionManager;
+    @Resource private JobAlarmer jobAlarmer;
+    @Resource private JobTrigger jobTrigger;
+    @Resource private JobCompleter jobCompleter;
 
     public String getI18n() {
         if (!Arrays.asList("zh_CN", "zh_TC", "en").contains(i18n)) {
@@ -246,7 +236,7 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
 
     public int getLogretentiondays() {
         if (logretentiondays < 3) {
-            return -1;  // Limit greater than or equal to 3, otherwise close
+            return -1; // Limit greater than or equal to 3, otherwise close
         }
         return logretentiondays;
     }
@@ -298,5 +288,4 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
     public JobCompleter getJobCompleter() {
         return jobCompleter;
     }
-
 }

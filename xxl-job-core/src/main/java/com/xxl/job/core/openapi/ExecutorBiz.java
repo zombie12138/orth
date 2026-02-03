@@ -3,13 +3,12 @@ package com.xxl.job.core.openapi;
 import com.xxl.job.core.openapi.model.*;
 import com.xxl.tool.response.Response;
 
-/**
- * Created by xuxueli on 17/3/1.
- */
+/** Created by xuxueli on 17/3/1. */
 public interface ExecutorBiz {
 
     /**
      * beat
+     *
      * @return response
      */
     public Response<String> beat();
@@ -24,6 +23,7 @@ public interface ExecutorBiz {
 
     /**
      * run
+     *
      * @param triggerRequest triggerRequest
      * @return response
      */
@@ -31,6 +31,7 @@ public interface ExecutorBiz {
 
     /**
      * kill
+     *
      * @param killRequest killRequest
      * @return response
      */
@@ -38,9 +39,9 @@ public interface ExecutorBiz {
 
     /**
      * log
+     *
      * @param logRequest logRequest
      * @return response
      */
     public Response<LogResult> log(LogRequest logRequest);
-
 }

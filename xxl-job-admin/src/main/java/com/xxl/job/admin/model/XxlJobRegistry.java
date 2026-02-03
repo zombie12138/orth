@@ -2,9 +2,7 @@ package com.xxl.job.admin.model;
 
 import java.util.Date;
 
-/**
- * Created by xuxueli on 16/9/30.
- */
+/** Created by xuxueli on 16/9/30. */
 public class XxlJobRegistry {
 
     private int id;

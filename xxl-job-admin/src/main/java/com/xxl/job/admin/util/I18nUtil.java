@@ -1,10 +1,11 @@
 package com.xxl.job.admin.util;
 
-import com.xxl.job.core.constant.ExecutorBlockStrategyEnum;
-import com.xxl.tool.core.PropTool;
-import com.xxl.tool.freemarker.FtlTool;
-import com.xxl.tool.gson.GsonTool;
-import freemarker.template.Configuration;
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -12,11 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import com.xxl.job.core.constant.ExecutorBlockStrategyEnum;
+import com.xxl.tool.core.PropTool;
+import com.xxl.tool.freemarker.FtlTool;
+import com.xxl.tool.gson.GsonTool;
+
+import freemarker.template.Configuration;
 
 /**
  * i18n util
@@ -29,22 +31,18 @@ public class I18nUtil implements InitializingBean {
 
     // ---------------------- for i18n config ----------------------
 
-    /**
-     * i18n config
-     */
+    /** i18n config */
     @Value("${xxl.job.i18n}")
     private String i18n;
 
-    /**
-     * freemarker config
-     */
-    @Autowired
-    private Configuration configuration;
+    /** freemarker config */
+    @Autowired private Configuration configuration;
 
     @Override
     public void afterPropertiesSet() throws Exception {
         // init freemarker shared variable
-        configuration.setSharedVariable("I18nUtil", FtlTool.generateStaticModel(I18nUtil.class.getName()));
+        configuration.setSharedVariable(
+                "I18nUtil", FtlTool.generateStaticModel(I18nUtil.class.getName()));
         // init single
         single = this;
 
@@ -52,9 +50,7 @@ public class I18nUtil implements InitializingBean {
         initI18nEnum();
     }
 
-    /**
-     * get i18n
-     */
+    /** get i18n */
     public String getI18n() {
         if (!Arrays.asList("zh_CN", "zh_TC", "en").contains(i18n)) {
             return "zh_CN";
@@ -63,6 +59,7 @@ public class I18nUtil implements InitializingBean {
     }
 
     private static I18nUtil single = null;
+
     private static I18nUtil getSingle() {
         return single;
     }
@@ -70,7 +67,8 @@ public class I18nUtil implements InitializingBean {
     // ---------------------- tool ----------------------
 
     private static Properties prop = null;
-    public static Properties loadI18nProp(){
+
+    public static Properties loadI18nProp() {
         if (prop != null) {
             return prop;
         }
@@ -103,12 +101,12 @@ public class I18nUtil implements InitializingBean {
         Map<String, String> map = new HashMap<>();
 
         Properties prop = loadI18nProp();
-        if (keys!=null && keys.length>0) {
-            for (String key: keys) {
+        if (keys != null && keys.length > 0) {
+            for (String key : keys) {
                 map.put(key, prop.getProperty(key));
             }
         } else {
-            for (String key: prop.stringPropertyNames()) {
+            for (String key : prop.stringPropertyNames()) {
                 map.put(key, prop.getProperty(key));
             }
         }
@@ -116,16 +114,12 @@ public class I18nUtil implements InitializingBean {
         return GsonTool.toJson(map);
     }
 
-
     // ---------------------- init I18n-enum ----------------------
 
-    /**
-     * init i18n-enum
-     */
-    private void initI18nEnum(){
+    /** init i18n-enum */
+    private void initI18nEnum() {
         for (ExecutorBlockStrategyEnum item : ExecutorBlockStrategyEnum.values()) {
             item.setTitle(I18nUtil.getString("jobconf_block_".concat(item.name())));
         }
     }
-
 }

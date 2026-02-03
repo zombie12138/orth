@@ -1,9 +1,9 @@
 package com.xxl.job.admin.scheduler.type.strategy;
 
+import java.util.Date;
+
 import com.xxl.job.admin.model.XxlJobInfo;
 import com.xxl.job.admin.scheduler.type.ScheduleType;
-
-import java.util.Date;
 
 public class FixRateScheduleType extends ScheduleType {
 
@@ -12,5 +12,4 @@ public class FixRateScheduleType extends ScheduleType {
         // generate next trigger time, fix rate delay
         return new Date(fromTime.getTime() + Long.parseLong(jobInfo.getScheduleConf()) * 1000L);
     }
-
 }

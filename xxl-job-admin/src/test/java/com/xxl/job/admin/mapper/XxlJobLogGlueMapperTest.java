@@ -1,21 +1,22 @@
 package com.xxl.job.admin.mapper;
 
-import com.xxl.job.admin.model.XxlJobLogGlue;
-import jakarta.annotation.Resource;
+import java.util.Date;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Date;
-import java.util.List;
+import com.xxl.job.admin.model.XxlJobLogGlue;
+
+import jakarta.annotation.Resource;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class XxlJobLogGlueMapperTest {
 
-    @Resource
-    private XxlJobLogGlueMapper xxlJobLogGlueMapper;
+    @Resource private XxlJobLogGlueMapper xxlJobLogGlueMapper;
 
     @Test
-    public void test(){
+    public void test() {
         XxlJobLogGlue logGlue = new XxlJobLogGlue();
         logGlue.setJobId(1);
         logGlue.setGlueType("1");
@@ -32,5 +33,4 @@ public class XxlJobLogGlueMapperTest {
 
         int ret3 = xxlJobLogGlueMapper.deleteByJobId(1);
     }
-
 }

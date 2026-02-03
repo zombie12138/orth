@@ -9,14 +9,10 @@ import com.xxl.job.admin.util.I18nUtil;
  */
 public enum MisfireStrategyEnum {
 
-    /**
-     * do nothing
-     */
+    /** do nothing */
     DO_NOTHING(I18nUtil.getString("misfire_strategy_do_nothing"), new MisfireDoNothing()),
 
-    /**
-     * fire once now
-     */
+    /** fire once now */
     FIRE_ONCE_NOW(I18nUtil.getString("misfire_strategy_fire_once_now"), new MisfireFireOnceNow());
 
     private final String title;
@@ -38,17 +34,16 @@ public enum MisfireStrategyEnum {
     /**
      * match misfire strategy
      *
-     * @param name          name of misfire strategy
-     * @param defaultItem   default misfire strategy
+     * @param name name of misfire strategy
+     * @param defaultItem default misfire strategy
      * @return misfire strategy
      */
-    public static MisfireStrategyEnum match(String name, MisfireStrategyEnum defaultItem){
-        for (MisfireStrategyEnum item: MisfireStrategyEnum.values()) {
+    public static MisfireStrategyEnum match(String name, MisfireStrategyEnum defaultItem) {
+        for (MisfireStrategyEnum item : MisfireStrategyEnum.values()) {
             if (item.name().equals(name)) {
                 return item;
             }
         }
         return defaultItem;
     }
-
 }

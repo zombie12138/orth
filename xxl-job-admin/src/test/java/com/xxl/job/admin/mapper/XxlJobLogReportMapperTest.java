@@ -1,24 +1,25 @@
 package com.xxl.job.admin.mapper;
 
-import com.xxl.job.admin.model.XxlJobLogReport;
-import com.xxl.tool.core.DateTool;
-import jakarta.annotation.Resource;
+import java.util.Date;
+
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Date;
+import com.xxl.job.admin.model.XxlJobLogReport;
+import com.xxl.tool.core.DateTool;
+
+import jakarta.annotation.Resource;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class XxlJobLogReportMapperTest {
     private static final Logger logger = LoggerFactory.getLogger(XxlJobLogMapperTest.class);
 
-    @Resource
-    private XxlJobLogReportMapper xxlJobLogReportMapper;
+    @Resource private XxlJobLogReportMapper xxlJobLogReportMapper;
 
     @Test
-    public void test(){
+    public void test() {
 
         Date date = DateTool.parseDate("2025-10-01");
 

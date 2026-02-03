@@ -2,9 +2,7 @@ package com.xxl.job.core.openapi.model;
 
 import java.io.Serializable;
 
-/**
- * Created by xuxueli on 17/3/2.
- */
+/** Created by xuxueli on 17/3/2. */
 public class CallbackRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
@@ -14,7 +12,8 @@ public class CallbackRequest implements Serializable {
     private int handleCode;
     private String handleMsg;
 
-    public CallbackRequest(){}
+    public CallbackRequest() {}
+
     public CallbackRequest(long logId, long logDateTim, int handleCode, String handleMsg) {
         this.logId = logId;
         this.logDateTim = logDateTim;
@@ -56,12 +55,16 @@ public class CallbackRequest implements Serializable {
 
     @Override
     public String toString() {
-        return "HandleCallbackParam{" +
-                "logId=" + logId +
-                ", logDateTim=" + logDateTim +
-                ", handleCode=" + handleCode +
-                ", handleMsg='" + handleMsg + '\'' +
-                '}';
+        return "HandleCallbackParam{"
+                + "logId="
+                + logId
+                + ", logDateTim="
+                + logDateTim
+                + ", handleCode="
+                + handleCode
+                + ", handleMsg='"
+                + handleMsg
+                + '\''
+                + '}';
     }
-
 }

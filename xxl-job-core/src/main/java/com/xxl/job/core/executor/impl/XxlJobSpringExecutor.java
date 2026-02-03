@@ -1,8 +1,10 @@
 package com.xxl.job.core.executor.impl;
 
-import com.xxl.job.core.executor.XxlJobExecutor;
-import com.xxl.job.core.glue.GlueFactory;
-import com.xxl.job.core.handler.annotation.XxlJob;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -15,37 +17,31 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.MethodIntrospector;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import com.xxl.job.core.executor.XxlJobExecutor;
+import com.xxl.job.core.glue.GlueFactory;
+import com.xxl.job.core.handler.annotation.XxlJob;
 
 /**
  * xxl-job executor (for spring)
  *
  * @author xuxueli 2018-11-01 09:24:52
  */
-public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationContextAware, SmartInitializingSingleton, DisposableBean {
+public class XxlJobSpringExecutor extends XxlJobExecutor
+        implements ApplicationContextAware, SmartInitializingSingleton, DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(XxlJobSpringExecutor.class);
 
     // ---------------------- field ----------------------
 
-    /**
-     * excluded package, like "org.springframework"、"org.aaa,org.bbb"
-     */
+    /** excluded package, like "org.springframework"、"org.aaa,org.bbb" */
     private String excludedPackage = "org.springframework.,spring.";
 
     public void setExcludedPackage(String excludedPackage) {
         this.excludedPackage = excludedPackage;
     }
 
-
     // ---------------------- start / stop ----------------------
 
-    /**
-     * start
-      */
+    /** start */
     @Override
     public void afterSingletonsInstantiated() {
 
@@ -63,14 +59,11 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
         }
     }
 
-    /**
-     * stop
-      */
+    /** stop */
     @Override
     public void destroy() {
         super.destroy();
     }
-
 
     /**
      * init job handler from method
@@ -87,21 +80,21 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
         List<String> excludedPackageList = new ArrayList<>();
         if (excludedPackage != null) {
             for (String excludedPackage : excludedPackage.split(",")) {
-                if (!excludedPackage.trim().isEmpty()){
+                if (!excludedPackage.trim().isEmpty()) {
                     excludedPackageList.add(excludedPackage.trim());
                 }
             }
         }
 
         // 2、scan bean form jobhandler
-        String[] beanNames = applicationContext.getBeanNamesForType(Object.class, false, false);  // allowEagerInit=false, avoid early initialization
+        String[] beanNames =
+                applicationContext.getBeanNamesForType(
+                        Object.class,
+                        false,
+                        false); // allowEagerInit=false, avoid early initialization
         for (String beanName : beanNames) {
 
-            /**
-             * 2.1、skip by BeanDefinition:
-             *      - skip excluded-package bean
-             *      - skip lazy-init bean
-              */
+            /** 2.1、skip by BeanDefinition: - skip excluded-package bean - skip lazy-init bean */
             if (applicationContext instanceof BeanDefinitionRegistry beanDefinitionRegistry) {
                 // get BeanDefinition
                 if (!beanDefinitionRegistry.containsBeanDefinition(beanName)) {
@@ -112,41 +105,54 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
                 // skip excluded-package bean
                 String beanClassName = beanDefinition.getBeanClassName();
                 if (isExcluded(excludedPackageList, beanClassName)) {
-                    logger.debug(">>>>>>>>>>> xxl-job bean-definition scan, skip excluded-package beanName:{}, beanClassName:{}", beanName, beanClassName);
+                    logger.debug(
+                            ">>>>>>>>>>> xxl-job bean-definition scan, skip excluded-package beanName:{}, beanClassName:{}",
+                            beanName,
+                            beanClassName);
                     continue;
                 }
 
                 // skip lazy-init bean
                 if (beanDefinition.isLazyInit()) {
-                    logger.debug(">>>>>>>>>>> xxl-job bean-definition scan, skip lazy-init beanName:{}", beanName);
+                    logger.debug(
+                            ">>>>>>>>>>> xxl-job bean-definition scan, skip lazy-init beanName:{}",
+                            beanName);
                     continue;
                 }
             }
 
             /**
-             * 2.2、skip by BeanDefinition Class
-             *      - skip beanClass is null
-             *      - skip method annotation(@XxlJob) is null
+             * 2.2、skip by BeanDefinition Class - skip beanClass is null - skip method
+             * annotation(@XxlJob) is null
              */
             Class<?> beanClass = applicationContext.getType(beanName, false);
             if (beanClass == null) {
-                logger.debug(">>>>>>>>>>> xxl-job bean-definition scan, skip beanClass-null beanName:{}", beanName);
+                logger.debug(
+                        ">>>>>>>>>>> xxl-job bean-definition scan, skip beanClass-null beanName:{}",
+                        beanName);
                 continue;
             }
             // filter method
             Map<Method, XxlJob> annotatedMethods = null;
             try {
-                annotatedMethods = MethodIntrospector.selectMethods(beanClass,
-                        new MethodIntrospector.MetadataLookup<XxlJob>() {
-                            @Override
-                            public XxlJob inspect(Method method) {
-                                return AnnotatedElementUtils.findMergedAnnotation(method, XxlJob.class);
-                            }
-                        });
+                annotatedMethods =
+                        MethodIntrospector.selectMethods(
+                                beanClass,
+                                new MethodIntrospector.MetadataLookup<XxlJob>() {
+                                    @Override
+                                    public XxlJob inspect(Method method) {
+                                        return AnnotatedElementUtils.findMergedAnnotation(
+                                                method, XxlJob.class);
+                                    }
+                                });
             } catch (Throwable ex) {
-                logger.error(">>>>>>>>>>> xxl-job method-jobhandler resolve error for bean[" + beanName + "].", ex);
+                logger.error(
+                        ">>>>>>>>>>> xxl-job method-jobhandler resolve error for bean["
+                                + beanName
+                                + "].",
+                        ex);
             }
-            if (annotatedMethods==null || annotatedMethods.isEmpty()) {
+            if (annotatedMethods == null || annotatedMethods.isEmpty()) {
                 continue;
             }
 
@@ -158,16 +164,15 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
                 // regist
                 registryJobHandler(xxlJob, jobBean, jobMethod);
             }
-
         }
     }
 
     /**
      * check bean if excluded
      *
-     * @param excludedPackageList   excludedPackageList
-     * @param beanClassName         beanClassName
-     * @return  true if excluded
+     * @param excludedPackageList excludedPackageList
+     * @param beanClassName beanClassName
+     * @return true if excluded
      */
     private boolean isExcluded(List<String> excludedPackageList, String beanClassName) {
         // excludedPackageList is empty, no excluded
@@ -189,7 +194,6 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
         return false;
     }
 
-
     // ---------------------- applicationContext ----------------------
     private static ApplicationContext applicationContext;
 
@@ -201,5 +205,4 @@ public class XxlJobSpringExecutor extends XxlJobExecutor implements ApplicationC
     public static ApplicationContext getApplicationContext() {
         return applicationContext;
     }
-
 }

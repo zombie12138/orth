@@ -2,9 +2,7 @@ package com.xxl.job.core.openapi.model;
 
 import java.io.Serializable;
 
-/**
- * Created by xuxueli on 2017-05-10 20:22:42
- */
+/** Created by xuxueli on 2017-05-10 20:22:42 */
 public class RegistryRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
@@ -12,7 +10,8 @@ public class RegistryRequest implements Serializable {
     private String registryKey;
     private String registryValue;
 
-    public RegistryRequest(){}
+    public RegistryRequest() {}
+
     public RegistryRequest(String registryGroup, String registryKey, String registryValue) {
         this.registryGroup = registryGroup;
         this.registryKey = registryKey;
@@ -45,10 +44,16 @@ public class RegistryRequest implements Serializable {
 
     @Override
     public String toString() {
-        return "RegistryParam{" +
-                "registryGroup='" + registryGroup + '\'' +
-                ", registryKey='" + registryKey + '\'' +
-                ", registryValue='" + registryValue + '\'' +
-                '}';
+        return "RegistryParam{"
+                + "registryGroup='"
+                + registryGroup
+                + '\''
+                + ", registryKey='"
+                + registryKey
+                + '\''
+                + ", registryValue='"
+                + registryValue
+                + '\''
+                + '}';
     }
 }

@@ -1,21 +1,22 @@
 package com.xxl.job.openapi;
 
-import com.xxl.job.core.constant.RegistType;
-import com.xxl.job.core.openapi.AdminBiz;
-import com.xxl.job.core.openapi.model.CallbackRequest;
-import com.xxl.job.core.openapi.model.RegistryRequest;
-import com.xxl.job.core.context.XxlJobContext;
-import com.xxl.job.core.constant.Const;
-import com.xxl.tool.http.HttpTool;
-import com.xxl.tool.response.Response;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.xxl.job.core.constant.Const;
+import com.xxl.job.core.constant.RegistType;
+import com.xxl.job.core.context.XxlJobContext;
+import com.xxl.job.core.openapi.AdminBiz;
+import com.xxl.job.core.openapi.model.CallbackRequest;
+import com.xxl.job.core.openapi.model.RegistryRequest;
+import com.xxl.tool.http.HttpTool;
+import com.xxl.tool.response.Response;
 
 /**
  * admin api test
@@ -28,7 +29,7 @@ public class AdminBizTest {
     private static String addressUrl = "http://127.0.0.1:8080/xxl-job-admin";
     private static String accessToken = "default_token";
 
-    private AdminBiz buildClient(){
+    private AdminBiz buildClient() {
         String finalUrl = addressUrl + "/api";
 
         return HttpTool.createClient()
@@ -61,7 +62,9 @@ public class AdminBizTest {
     public void registry() throws Exception {
         AdminBiz adminBiz = buildClient();
 
-        RegistryRequest registryParam = new RegistryRequest(RegistType.EXECUTOR.name(), "xxl-job-executor-example", "127.0.0.1:9999");
+        RegistryRequest registryParam =
+                new RegistryRequest(
+                        RegistType.EXECUTOR.name(), "xxl-job-executor-example", "127.0.0.1:9999");
 
         Response<String> returnT = adminBiz.registry(registryParam);
         assertTrue(returnT.isSuccess());
@@ -76,11 +79,12 @@ public class AdminBizTest {
     public void registryRemove() throws Exception {
         AdminBiz adminBiz = buildClient();
 
-        RegistryRequest registryParam = new RegistryRequest(RegistType.EXECUTOR.name(), "xxl-job-executor-example", "127.0.0.1:9999");
+        RegistryRequest registryParam =
+                new RegistryRequest(
+                        RegistType.EXECUTOR.name(), "xxl-job-executor-example", "127.0.0.1:9999");
 
         Response<String> returnT = adminBiz.registryRemove(registryParam);
         assertTrue(returnT.isSuccess());
-
     }
 
     // ---------------------- job opt ----------------------
@@ -89,5 +93,4 @@ public class AdminBizTest {
     public void jobManage() throws Exception {
         // jobAdd、jobUpdate、jobRemove、jobStart、jobStop
     }
-
 }

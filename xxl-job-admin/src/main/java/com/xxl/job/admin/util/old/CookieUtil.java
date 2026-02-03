@@ -1,15 +1,15 @@
-//package com.xxl.job.admin.util;
+// package com.xxl.job.admin.util;
 //
-//import jakarta.servlet.http.Cookie;
-//import jakarta.servlet.http.HttpServletRequest;
-//import jakarta.servlet.http.HttpServletResponse;
+// import jakarta.servlet.http.Cookie;
+// import jakarta.servlet.http.HttpServletRequest;
+// import jakarta.servlet.http.HttpServletResponse;
 //
-///**
+/// **
 // * Cookie.Util
 // *
 // * @author xuxueli 2015-12-12 18:01:06
 // */
-//public class CookieUtil {
+// public class CookieUtil {
 //
 //	// 默认缓存时间,单位/秒, 2H
 //	private static final int COOKIE_MAX_AGE = Integer.MAX_VALUE;
@@ -24,7 +24,8 @@
 //	 * @param value
 //	 * @param ifRemember
 //	 */
-//	public static void set(HttpServletResponse response, String key, String value, boolean ifRemember) {
+//	public static void set(HttpServletResponse response, String key, String value, boolean
+// ifRemember) {
 //		int age = ifRemember?COOKIE_MAX_AGE:-1;
 //		set(response, key, value, null, COOKIE_PATH, age, true);
 //	}
@@ -37,7 +38,8 @@
 //	 * @param value
 //	 * @param maxAge
 //	 */
-//	private static void set(HttpServletResponse response, String key, String value, String domain, String path, int maxAge, boolean isHttpOnly) {
+//	private static void set(HttpServletResponse response, String key, String value, String domain,
+// String path, int maxAge, boolean isHttpOnly) {
 //		Cookie cookie = new Cookie(key, value);
 //		if (domain != null) {
 //			cookie.setDomain(domain);
@@ -95,4 +97,4 @@
 //		}
 //	}
 //
-//}
+// }

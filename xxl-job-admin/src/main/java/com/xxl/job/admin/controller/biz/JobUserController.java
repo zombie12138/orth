@@ -1,5 +1,13 @@
 package com.xxl.job.admin.controller.biz;
 
+import java.util.List;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import com.xxl.job.admin.constant.Consts;
 import com.xxl.job.admin.mapper.XxlJobGroupMapper;
 import com.xxl.job.admin.mapper.XxlJobUserMapper;
@@ -14,17 +22,9 @@ import com.xxl.tool.core.StringTool;
 import com.xxl.tool.encrypt.SHA256Tool;
 import com.xxl.tool.response.PageModel;
 import com.xxl.tool.response.Response;
+
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author xuxueli 2019-05-04 16:39:50
@@ -33,10 +33,8 @@ import java.util.Map;
 @RequestMapping("/user")
 public class JobUserController {
 
-    @Resource
-    private XxlJobUserMapper xxlJobUserMapper;
-    @Resource
-    private XxlJobGroupMapper xxlJobGroupMapper;
+    @Resource private XxlJobUserMapper xxlJobUserMapper;
+    @Resource private XxlJobGroupMapper xxlJobGroupMapper;
 
     @RequestMapping
     @XxlSso(role = Consts.ADMIN_ROLE)
@@ -52,18 +50,19 @@ public class JobUserController {
     @RequestMapping("/pageList")
     @ResponseBody
     @XxlSso(role = Consts.ADMIN_ROLE)
-    public Response<PageModel<XxlJobUser>> pageList(@RequestParam(required = false, defaultValue = "0") int offset,
-                                                    @RequestParam(required = false, defaultValue = "10") int pagesize,
-                                                    @RequestParam String username,
-                                                    @RequestParam int role) {
+    public Response<PageModel<XxlJobUser>> pageList(
+            @RequestParam(required = false, defaultValue = "0") int offset,
+            @RequestParam(required = false, defaultValue = "10") int pagesize,
+            @RequestParam String username,
+            @RequestParam int role) {
 
         // page list
         List<XxlJobUser> list = xxlJobUserMapper.pageList(offset, pagesize, username, role);
         int list_count = xxlJobUserMapper.pageListCount(offset, pagesize, username, role);
 
         // filter
-        if (list!=null && !list.isEmpty()) {
-            for (XxlJobUser item: list) {
+        if (list != null && !list.isEmpty()) {
+            for (XxlJobUser item : list) {
                 item.setPassword(null);
             }
         }
@@ -83,19 +82,23 @@ public class JobUserController {
 
         // valid username
         if (StringTool.isBlank(xxlJobUser.getUsername())) {
-            return Response.ofFail(I18nUtil.getString("system_please_input")+I18nUtil.getString("user_username") );
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_input")
+                            + I18nUtil.getString("user_username"));
         }
         xxlJobUser.setUsername(xxlJobUser.getUsername().trim());
-        if (!(xxlJobUser.getUsername().length()>=4 && xxlJobUser.getUsername().length()<=20)) {
-            return Response.ofFail(I18nUtil.getString("system_lengh_limit")+"[4-20]" );
+        if (!(xxlJobUser.getUsername().length() >= 4 && xxlJobUser.getUsername().length() <= 20)) {
+            return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
         }
         // valid password
         if (StringTool.isBlank(xxlJobUser.getPassword())) {
-            return Response.ofFail(I18nUtil.getString("system_please_input")+I18nUtil.getString("user_password") );
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_input")
+                            + I18nUtil.getString("user_password"));
         }
         xxlJobUser.setPassword(xxlJobUser.getPassword().trim());
-        if (!(xxlJobUser.getPassword().length()>=4 && xxlJobUser.getPassword().length()<=20)) {
-            return Response.ofFail(I18nUtil.getString("system_lengh_limit")+"[4-20]" );
+        if (!(xxlJobUser.getPassword().length() >= 4 && xxlJobUser.getPassword().length() <= 20)) {
+            return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
         }
         // md5 password
         String passwordHash = SHA256Tool.sha256(xxlJobUser.getPassword());
@@ -104,7 +107,7 @@ public class JobUserController {
         // check repeat
         XxlJobUser existUser = xxlJobUserMapper.loadByUserName(xxlJobUser.getUsername());
         if (existUser != null) {
-            return Response.ofFail( I18nUtil.getString("user_username_repeat") );
+            return Response.ofFail(I18nUtil.getString("user_username_repeat"));
         }
 
         // write
@@ -126,8 +129,9 @@ public class JobUserController {
         // valid password
         if (StringTool.isNotBlank(xxlJobUser.getPassword())) {
             xxlJobUser.setPassword(xxlJobUser.getPassword().trim());
-            if (!(xxlJobUser.getPassword().length()>=4 && xxlJobUser.getPassword().length()<=20)) {
-                return Response.ofFail(I18nUtil.getString("system_lengh_limit")+"[4-20]" );
+            if (!(xxlJobUser.getPassword().length() >= 4
+                    && xxlJobUser.getPassword().length() <= 20)) {
+                return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
             }
             // md5 password
             String passwordHash = SHA256Tool.sha256(xxlJobUser.getPassword());
@@ -144,11 +148,15 @@ public class JobUserController {
     @RequestMapping("/delete")
     @ResponseBody
     @XxlSso(role = Consts.ADMIN_ROLE)
-    public Response<String> delete(HttpServletRequest request, @RequestParam("ids[]") List<Integer> ids) {
+    public Response<String> delete(
+            HttpServletRequest request, @RequestParam("ids[]") List<Integer> ids) {
 
         // valid
-        if (CollectionTool.isEmpty(ids) || ids.size()!=1) {
-            return Response.ofFail(I18nUtil.getString("system_please_choose") + I18nUtil.getString("system_one") + I18nUtil.getString("system_data"));
+        if (CollectionTool.isEmpty(ids) || ids.size() != 1) {
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_choose")
+                            + I18nUtil.getString("system_one")
+                            + I18nUtil.getString("system_data"));
         }
 
         // avoid opt login seft

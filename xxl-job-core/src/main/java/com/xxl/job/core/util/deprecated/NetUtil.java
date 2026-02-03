@@ -1,17 +1,17 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 //
-//import java.io.IOException;
-//import java.net.ServerSocket;
+// import java.io.IOException;
+// import java.net.ServerSocket;
 //
-///**
+/// **
 // * net util
 // *
 // * @author xuxueli 2017-11-29 17:00:25
 // */
-//public class NetUtil {
+// public class NetUtil {
 //    private static Logger logger = LoggerFactory.getLogger(NetUtil.class);
 //
 //    /**
@@ -67,4 +67,4 @@
 //        return used;
 //    }
 //
-//}
+// }

@@ -1,15 +1,13 @@
 package com.xxl.job.admin.scheduler.route.strategy;
 
+import java.util.List;
+import java.util.Random;
+
 import com.xxl.job.admin.scheduler.route.ExecutorRouter;
 import com.xxl.job.core.openapi.model.TriggerRequest;
 import com.xxl.tool.response.Response;
 
-import java.util.List;
-import java.util.Random;
-
-/**
- * Created by xuxueli on 17/3/10.
- */
+/** Created by xuxueli on 17/3/10. */
 public class ExecutorRouteRandom extends ExecutorRouter {
 
     private static Random localRandom = new Random();
@@ -19,5 +17,4 @@ public class ExecutorRouteRandom extends ExecutorRouter {
         String address = addressList.get(localRandom.nextInt(addressList.size()));
         return Response.ofSuccess(address);
     }
-
 }

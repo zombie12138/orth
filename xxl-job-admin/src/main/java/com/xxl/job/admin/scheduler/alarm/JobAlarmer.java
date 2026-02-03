@@ -1,9 +1,9 @@
 package com.xxl.job.admin.scheduler.alarm;
 
-import com.xxl.job.admin.model.XxlJobInfo;
-import com.xxl.job.admin.model.XxlJobLog;
-import com.xxl.tool.core.CollectionTool;
-import com.xxl.tool.core.MapTool;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -12,9 +12,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import com.xxl.job.admin.model.XxlJobInfo;
+import com.xxl.job.admin.model.XxlJobLog;
+import com.xxl.tool.core.CollectionTool;
+import com.xxl.tool.core.MapTool;
 
 /**
  * xxl-job alarmer
@@ -41,15 +42,13 @@ public class JobAlarmer implements ApplicationContextAware, InitializingBean {
         }
     }
 
-    /**
-     * job alarm
-     */
+    /** job alarm */
     public boolean alarm(XxlJobInfo info, XxlJobLog jobLog) {
 
         boolean result = false;
         if (CollectionTool.isNotEmpty(jobAlarmList)) {
-            result = true;  // success means all-success
-            for (JobAlarm alarm: jobAlarmList) {
+            result = true; // success means all-success
+            for (JobAlarm alarm : jobAlarmList) {
                 boolean resultItem = false;
                 try {
                     resultItem = alarm.doAlarm(info, jobLog);
@@ -64,5 +63,4 @@ public class JobAlarmer implements ApplicationContextAware, InitializingBean {
 
         return result;
     }
-
 }

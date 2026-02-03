@@ -1,5 +1,7 @@
 package com.xxl.job.core.handler.impl;
 
+import java.io.File;
+
 import com.xxl.job.core.context.XxlJobContext;
 import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.glue.GlueTypeEnum;
@@ -7,11 +9,7 @@ import com.xxl.job.core.handler.IJobHandler;
 import com.xxl.job.core.log.XxlJobFileAppender;
 import com.xxl.job.core.util.ScriptUtil;
 
-import java.io.File;
-
-/**
- * Created by xuxueli on 17/4/27.
- */
+/** Created by xuxueli on 17/4/27. */
 public class ScriptJobHandler extends IJobHandler {
 
     private int jobId;
@@ -19,7 +17,8 @@ public class ScriptJobHandler extends IJobHandler {
     private String gluesource;
     private GlueTypeEnum glueType;
 
-    public ScriptJobHandler(int jobId, long glueUpdatetime, String gluesource, GlueTypeEnum glueType){
+    public ScriptJobHandler(
+            int jobId, long glueUpdatetime, String gluesource, GlueTypeEnum glueType) {
         this.jobId = jobId;
         this.glueUpdatetime = glueUpdatetime;
         this.gluesource = gluesource;
@@ -31,13 +30,12 @@ public class ScriptJobHandler extends IJobHandler {
             File[] glueSrcFileList = glueSrcPath.listFiles();
             if (glueSrcFileList != null) {
                 for (File glueSrcFileItem : glueSrcFileList) {
-                    if (glueSrcFileItem.getName().startsWith(jobId +"_")) {
+                    if (glueSrcFileItem.getName().startsWith(jobId + "_")) {
                         glueSrcFileItem.delete();
                     }
                 }
             }
         }
-
     }
 
     public long getGlueUpdatetime() {
@@ -49,7 +47,7 @@ public class ScriptJobHandler extends IJobHandler {
 
         // valid
         if (!glueType.isScript()) {
-            XxlJobHelper.handleFail("glueType["+ glueType +"] invalid.");
+            XxlJobHelper.handleFail("glueType[" + glueType + "] invalid.");
             return;
         }
 
@@ -57,12 +55,13 @@ public class ScriptJobHandler extends IJobHandler {
         String cmd = glueType.getCmd();
 
         // make script file
-        String scriptFileName = XxlJobFileAppender.getGlueSrcPath()
-                .concat(File.separator)
-                .concat(String.valueOf(jobId))
-                .concat("_")
-                .concat(String.valueOf(glueUpdatetime))
-                .concat(glueType.getSuffix());
+        String scriptFileName =
+                XxlJobFileAppender.getGlueSrcPath()
+                        .concat(File.separator)
+                        .concat(String.valueOf(jobId))
+                        .concat("_")
+                        .concat(String.valueOf(glueUpdatetime))
+                        .concat(glueType.getSuffix());
         File scriptFile = new File(scriptFileName);
         if (!scriptFile.exists()) {
             ScriptUtil.markScriptFile(scriptFileName, gluesource);
@@ -74,22 +73,20 @@ public class ScriptJobHandler extends IJobHandler {
         // script params：0=param、1=分片序号、2=分片总数
         String jobParam = XxlJobHelper.getJobParam();
         String[] scriptParams = new String[3];
-        scriptParams[0] = jobParam!=null?jobParam:"";
+        scriptParams[0] = jobParam != null ? jobParam : "";
         scriptParams[1] = String.valueOf(XxlJobContext.getXxlJobContext().getShardIndex());
         scriptParams[2] = String.valueOf(XxlJobContext.getXxlJobContext().getShardTotal());
 
         // invoke
-        XxlJobHelper.log("----------- script file:"+ scriptFileName +" -----------");
+        XxlJobHelper.log("----------- script file:" + scriptFileName + " -----------");
         int exitValue = ScriptUtil.execToFile(cmd, scriptFileName, logFileName, scriptParams);
 
         if (exitValue == 0) {
             XxlJobHelper.handleSuccess();
             return;
         } else {
-            XxlJobHelper.handleFail("script exit value("+exitValue+") is failed");
-            return ;
+            XxlJobHelper.handleFail("script exit value(" + exitValue + ") is failed");
+            return;
         }
-
     }
-
 }

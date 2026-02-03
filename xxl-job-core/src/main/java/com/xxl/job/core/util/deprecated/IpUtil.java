@@ -1,22 +1,22 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 //
-//import java.io.IOException;
-//import java.net.Inet6Address;
-//import java.net.InetAddress;
-//import java.net.NetworkInterface;
-//import java.net.UnknownHostException;
-//import java.util.Enumeration;
-//import java.util.regex.Pattern;
+// import java.io.IOException;
+// import java.net.Inet6Address;
+// import java.net.InetAddress;
+// import java.net.NetworkInterface;
+// import java.net.UnknownHostException;
+// import java.util.Enumeration;
+// import java.util.regex.Pattern;
 //
-///**
+/// **
 // * ip tool
 // *
 // * @author xuxueli 2016-5-22 11:38:05
 // */
-//public class IpUtil {
+// public class IpUtil {
 //    private static final Logger logger = LoggerFactory.getLogger(IpUtil.class);
 //
 //    private static final String ANYHOST_VALUE = "0.0.0.0";
@@ -203,4 +203,4 @@
 //    }
 //
 //
-//}
+// }

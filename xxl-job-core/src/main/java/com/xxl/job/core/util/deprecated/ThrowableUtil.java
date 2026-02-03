@@ -1,12 +1,12 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-//import java.io.PrintWriter;
-//import java.io.StringWriter;
+// import java.io.PrintWriter;
+// import java.io.StringWriter;
 //
-///**
+/// **
 // * @author xuxueli 2018-10-20 20:07:26
 // */
-//public class ThrowableUtil {
+// public class ThrowableUtil {
 //
 //    /**
 //     * parse error to string
@@ -21,4 +21,4 @@
 //        return errorMsg;
 //    }
 //
-//}
+// }

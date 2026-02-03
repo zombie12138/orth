@@ -1,9 +1,5 @@
 package com.xxl.job.admin.scheduler.route.strategy;
 
-import com.xxl.job.admin.scheduler.route.ExecutorRouter;
-import com.xxl.job.core.openapi.model.TriggerRequest;
-import com.xxl.tool.response.Response;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -11,12 +7,15 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import com.xxl.job.admin.scheduler.route.ExecutorRouter;
+import com.xxl.job.core.openapi.model.TriggerRequest;
+import com.xxl.tool.response.Response;
+
 /**
- * 分组下机器地址相同，不同JOB均匀散列在不同机器上，保证分组下机器分配JOB平均；且每个JOB固定调度其中一台机器；
- *      a、virtual node：解决不均衡问题
- *      b、hash method replace hashCode：String的hashCode可能重复，需要进一步扩大hashCode的取值范围
+ * 分组下机器地址相同，不同JOB均匀散列在不同机器上，保证分组下机器分配JOB平均；且每个JOB固定调度其中一台机器； a、virtual node：解决不均衡问题 b、hash method
+ * replace hashCode：String的hashCode可能重复，需要进一步扩大hashCode的取值范围
  *
- * Created by xuxueli on 17/3/10.
+ * <p>Created by xuxueli on 17/3/10.
  */
 public class ExecutorRouteConsistentHash extends ExecutorRouter {
 
@@ -45,10 +44,11 @@ public class ExecutorRouteConsistentHash extends ExecutorRouter {
         byte[] digest = md5.digest();
 
         // hash code, Truncate to 32-bits
-        long hashCode = ((long) (digest[3] & 0xFF) << 24)
-                | ((long) (digest[2] & 0xFF) << 16)
-                | ((long) (digest[1] & 0xFF) << 8)
-                | (digest[0] & 0xFF);
+        long hashCode =
+                ((long) (digest[3] & 0xFF) << 24)
+                        | ((long) (digest[2] & 0xFF) << 16)
+                        | ((long) (digest[1] & 0xFF) << 8)
+                        | (digest[0] & 0xFF);
 
         return hashCode & 0xffffffffL;
     }
@@ -56,8 +56,8 @@ public class ExecutorRouteConsistentHash extends ExecutorRouter {
     /**
      * get address by jobId
      *
-     * @param jobId         job id
-     * @param addressList   address list
+     * @param jobId job id
+     * @param addressList address list
      * @return address
      */
     public String hashJob(int jobId, List<String> addressList) {
@@ -65,7 +65,7 @@ public class ExecutorRouteConsistentHash extends ExecutorRouter {
         // ------A1------A2-------A3------
         // -----------J1------------------
         TreeMap<Long, String> addressRing = new TreeMap<Long, String>();
-        for (String address: addressList) {
+        for (String address : addressList) {
             for (int i = 0; i < VIRTUAL_NODE_NUM; i++) {
                 long addressHash = hash("SHARD-" + address + "-NODE-" + i);
                 addressRing.put(addressHash, address);
@@ -85,5 +85,4 @@ public class ExecutorRouteConsistentHash extends ExecutorRouter {
         String address = hashJob(triggerParam.getJobId(), addressList);
         return Response.ofSuccess(address);
     }
-
 }

@@ -1,20 +1,21 @@
 package com.xxl.job.admin.web.xxlsso;
 
-import com.xxl.sso.core.auth.interceptor.XxlSsoWebInterceptor;
-import com.xxl.sso.core.bootstrap.XxlSsoBootstrap;
-import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import com.xxl.sso.core.auth.interceptor.XxlSsoWebInterceptor;
+import com.xxl.sso.core.bootstrap.XxlSsoBootstrap;
+
+import jakarta.annotation.Resource;
+
 /**
  * @author xuxueli 2018-11-15
  */
 @Configuration
 public class XxlSsoConfig implements WebMvcConfigurer {
-
 
     @Value("${xxl-sso.token.key}")
     private String tokenKey;
@@ -28,14 +29,9 @@ public class XxlSsoConfig implements WebMvcConfigurer {
     @Value("${xxl-sso.client.login.path}")
     private String loginPath;
 
+    @Resource private SimpleLoginStore loginStore;
 
-    @Resource
-    private SimpleLoginStore loginStore;
-
-
-    /**
-     * 1、配置 XxlSsoBootstrap
-     */
+    /** 1、配置 XxlSsoBootstrap */
     @Bean(initMethod = "start", destroyMethod = "stop")
     public XxlSsoBootstrap xxlSsoBootstrap() {
 
@@ -46,9 +42,7 @@ public class XxlSsoConfig implements WebMvcConfigurer {
         return bootstrap;
     }
 
-    /**
-     * 2、配置 XxlSso 拦截器
-     */
+    /** 2、配置 XxlSso 拦截器 */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 
@@ -58,5 +52,4 @@ public class XxlSsoConfig implements WebMvcConfigurer {
         // 2.2、add interceptor
         registry.addInterceptor(webInterceptor).addPathPatterns("/**");
     }
-
 }

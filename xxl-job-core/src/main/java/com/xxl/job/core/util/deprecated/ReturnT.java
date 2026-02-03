@@ -1,14 +1,14 @@
-//package com.xxl.job.core.openapi.model;
+// package com.xxl.job.core.openapi.model;
 //
-//import java.io.Serializable;
+// import java.io.Serializable;
 //
-///**
+/// **
 // * common return
 // *
 // * @author xuxueli 2015-12-4 16:32:31
 // * @param <T>
 // */
-//public class ReturnT<T> implements Serializable {
+// public class ReturnT<T> implements Serializable {
 //	public static final long serialVersionUID = 42L;
 //
 //	private int code;
@@ -100,4 +100,4 @@
 //		return new ReturnT<T>(FAIL_CODE, "Fail", null);
 //	}
 //
-//}
+// }

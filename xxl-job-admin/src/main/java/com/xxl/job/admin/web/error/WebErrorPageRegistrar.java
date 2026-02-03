@@ -5,9 +5,7 @@ import org.springframework.boot.web.server.ErrorPageRegistrar;
 import org.springframework.boot.web.server.ErrorPageRegistry;
 import org.springframework.stereotype.Component;
 
-/**
- * error page
- */
+/** error page */
 @Component
 public class WebErrorPageRegistrar implements ErrorPageRegistrar {
 

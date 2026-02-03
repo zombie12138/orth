@@ -1,19 +1,19 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 //
-//import java.io.File;
-//import java.io.FileInputStream;
-//import java.io.FileOutputStream;
-//import java.io.IOException;
+// import java.io.File;
+// import java.io.FileInputStream;
+// import java.io.FileOutputStream;
+// import java.io.IOException;
 //
-///**
+/// **
 // * file tool
 // *
 // * @author xuxueli 2017-12-29 17:56:48
 // */
-//public class FileUtil {
+// public class FileUtil {
 //    private static Logger logger = LoggerFactory.getLogger(FileUtil.class);
 //
 //
@@ -156,7 +156,8 @@
 //        LineNumberReader reader = null;
 //        try {
 //            //reader = new LineNumberReader(new FileReader(logFile));
-//            reader = new LineNumberReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+//            reader = new LineNumberReader(new InputStreamReader(new FileInputStream(file),
+// "utf-8"));
 //            String line = null;
 //            while ((line = reader.readLine())!=null) {
 //                if (line!=null && line.trim().length()>0) {
@@ -178,4 +179,4 @@
 //        return result;
 //    }*/
 //
-//}
+// }

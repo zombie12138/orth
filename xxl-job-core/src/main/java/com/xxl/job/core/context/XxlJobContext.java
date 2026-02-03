@@ -3,8 +3,7 @@ package com.xxl.job.core.context;
 /**
  * xxl-job context
  *
- * @author xuxueli 2020-05-21
- * [Dear hj]
+ * @author xuxueli 2020-05-21 [Dear hj]
  */
 public class XxlJobContext {
 
@@ -14,43 +13,29 @@ public class XxlJobContext {
 
     // ---------------------- base info ----------------------
 
-    /**
-     * job id
-     */
+    /** job id */
     private final long jobId;
 
-    /**
-     * job param
-     */
+    /** job param */
     private final String jobParam;
 
     // ---------------------- for log ----------------------
 
-    /**
-     * log id
-     */
+    /** log id */
     private final long logId;
 
-    /**
-     * log timestamp
-     */
+    /** log timestamp */
     private final long logDateTime;
 
-    /**
-     * log filename
-     */
+    /** log filename */
     private final String logFileName;
 
     // ---------------------- for shard ----------------------
 
-    /**
-     * shard index
-     */
+    /** shard index */
     private final int shardIndex;
 
-    /**
-     * shard total
-     */
+    /** shard total */
     private final int shardTotal;
 
     // ---------------------- for handle ----------------------
@@ -58,26 +43,21 @@ public class XxlJobContext {
     /**
      * handleCode：The result status of job execution
      *
-     *      200 : success
-     *      500 : fail
-     *      502 : timeout
-     *
+     * <p>200 : success 500 : fail 502 : timeout
      */
     private int handleCode;
 
-    /**
-     * handleMsg：The simple log msg of job execution
-     */
+    /** handleMsg：The simple log msg of job execution */
     private String handleMsg;
 
-
-    public XxlJobContext(long jobId,
-                         String jobParam,
-                         long logId,
-                         long logDateTime,
-                         String logFileName,
-                         int shardIndex, 
-                         int shardTotal) {
+    public XxlJobContext(
+            long jobId,
+            String jobParam,
+            long logId,
+            long logDateTime,
+            String logFileName,
+            int shardIndex,
+            int shardTotal) {
         this.jobId = jobId;
         this.jobParam = jobParam;
         this.logId = logId;
@@ -86,7 +66,7 @@ public class XxlJobContext {
         this.shardIndex = shardIndex;
         this.shardTotal = shardTotal;
 
-        this.handleCode = HANDLE_CODE_SUCCESS;  // default success
+        this.handleCode = HANDLE_CODE_SUCCESS; // default success
     }
 
     public long getJobId() {
@@ -135,23 +115,17 @@ public class XxlJobContext {
 
     // ---------------------- tool ----------------------
 
-    /**
-     * xxl-job context store
-     */
-    private static final InheritableThreadLocal<XxlJobContext> contextHolder = new InheritableThreadLocal<XxlJobContext>(); // support for child thread of job handler)
+    /** xxl-job context store */
+    private static final InheritableThreadLocal<XxlJobContext> contextHolder =
+            new InheritableThreadLocal<XxlJobContext>(); // support for child thread of job handler)
 
-    /**
-     * set xxl-job context
-     */
-    public static void setXxlJobContext(XxlJobContext xxlJobContext){
+    /** set xxl-job context */
+    public static void setXxlJobContext(XxlJobContext xxlJobContext) {
         contextHolder.set(xxlJobContext);
     }
 
-    /**
-     * get xxl-job context
-     */
-    public static XxlJobContext getXxlJobContext(){
+    /** get xxl-job context */
+    public static XxlJobContext getXxlJobContext() {
         return contextHolder.get();
     }
-
 }

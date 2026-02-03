@@ -1,14 +1,13 @@
 package com.xxl.job.admin.mapper;
 
-import com.xxl.job.admin.model.XxlJobGroup;
+import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.util.List;
+import com.xxl.job.admin.model.XxlJobGroup;
 
-/**
- * Created by xuxueli on 16/9/30.
- */
+/** Created by xuxueli on 16/9/30. */
 @Mapper
 public interface XxlJobGroupMapper {
 
@@ -24,14 +23,15 @@ public interface XxlJobGroupMapper {
 
     public XxlJobGroup load(@Param("id") int id);
 
-    public List<XxlJobGroup> pageList(@Param("offset") int offset,
-                                      @Param("pagesize") int pagesize,
-                                      @Param("appname") String appname,
-                                      @Param("title") String title);
+    public List<XxlJobGroup> pageList(
+            @Param("offset") int offset,
+            @Param("pagesize") int pagesize,
+            @Param("appname") String appname,
+            @Param("title") String title);
 
-    public int pageListCount(@Param("offset") int offset,
-                             @Param("pagesize") int pagesize,
-                             @Param("appname") String appname,
-                             @Param("title") String title);
-
+    public int pageListCount(
+            @Param("offset") int offset,
+            @Param("pagesize") int pagesize,
+            @Param("appname") String appname,
+            @Param("title") String title);
 }

@@ -1,5 +1,7 @@
 package com.xxl.job.admin.scheduler.route.strategy;
 
+import java.util.List;
+
 import com.xxl.job.admin.scheduler.config.XxlJobAdminBootstrap;
 import com.xxl.job.admin.scheduler.route.ExecutorRouter;
 import com.xxl.job.admin.util.I18nUtil;
@@ -7,11 +9,7 @@ import com.xxl.job.core.openapi.ExecutorBiz;
 import com.xxl.job.core.openapi.model.TriggerRequest;
 import com.xxl.tool.response.Response;
 
-import java.util.List;
-
-/**
- * Created by xuxueli on 17/3/10.
- */
+/** Created by xuxueli on 17/3/10. */
 public class ExecutorRouteFailover extends ExecutorRouter {
 
     @Override
@@ -26,13 +24,17 @@ public class ExecutorRouteFailover extends ExecutorRouter {
                 beatResult = executorBiz.beat();
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
-                beatResult = Response.ofFail(e.getMessage() );
+                beatResult = Response.ofFail(e.getMessage());
             }
-            beatResultSB.append( (beatResultSB.length()>0)?"<br><br>":"")
+            beatResultSB
+                    .append((beatResultSB.length() > 0) ? "<br><br>" : "")
                     .append(I18nUtil.getString("jobconf_beat") + "：")
-                    .append("<br>address：").append(address)
-                    .append("<br>code：").append(beatResult.getCode())
-                    .append("<br>msg：").append(beatResult.getMsg());
+                    .append("<br>address：")
+                    .append(address)
+                    .append("<br>code：")
+                    .append(beatResult.getCode())
+                    .append("<br>msg：")
+                    .append(beatResult.getMsg());
 
             // beat success
             if (beatResult.isSuccess()) {
@@ -42,7 +44,6 @@ public class ExecutorRouteFailover extends ExecutorRouter {
                 return beatResult;
             }
         }
-        return Response.ofFail( beatResultSB.toString());
-
+        return Response.ofFail(beatResultSB.toString());
     }
 }

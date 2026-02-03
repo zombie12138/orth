@@ -1,5 +1,10 @@
 package com.xxl.job.admin.web.xxlsso;
 
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Component;
+
 import com.xxl.job.admin.constant.Consts;
 import com.xxl.job.admin.mapper.XxlJobUserMapper;
 import com.xxl.job.admin.model.XxlJobUser;
@@ -7,27 +12,21 @@ import com.xxl.sso.core.model.LoginInfo;
 import com.xxl.sso.core.store.LoginStore;
 import com.xxl.tool.core.MapTool;
 import com.xxl.tool.response.Response;
-import jakarta.annotation.Resource;
-import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
+import jakarta.annotation.Resource;
 
 /**
  * Simple LoginStore
  *
- * 1、store by database；
- * 2、If you have higher performance requirements, it is recommended to use RedisLoginStore；
+ * <p>1、store by database； 2、If you have higher performance requirements, it is recommended to use
+ * RedisLoginStore；
  *
  * @author xuxueli 2025-08-03
  */
 @Component
 public class SimpleLoginStore implements LoginStore {
 
-
-    @Resource
-    private XxlJobUserMapper xxlJobUserMapper;
-
+    @Resource private XxlJobUserMapper xxlJobUserMapper;
 
     @Override
     public Response<String> set(LoginInfo loginInfo) {
@@ -52,9 +51,7 @@ public class SimpleLoginStore implements LoginStore {
         return ret > 0 ? Response.ofSuccess() : Response.ofFail("token remove fail");
     }
 
-    /**
-     * check through DB query
-     */
+    /** check through DB query */
     @Override
     public Response<LoginInfo> get(String userId) {
 
@@ -65,12 +62,10 @@ public class SimpleLoginStore implements LoginStore {
         }
 
         // parse role
-        List<String> roleList = user.getRole()==1? List.of(Consts.ADMIN_ROLE):null;
+        List<String> roleList = user.getRole() == 1 ? List.of(Consts.ADMIN_ROLE) : null;
 
         // parse jobGroup permission
-        Map<String, String> extraInfo = MapTool.newMap(
-                "jobGroups", user.getPermission()
-        );
+        Map<String, String> extraInfo = MapTool.newMap("jobGroups", user.getPermission());
 
         // build LoginInfo
         LoginInfo loginInfo = new LoginInfo(userId, user.getToken());
@@ -80,5 +75,4 @@ public class SimpleLoginStore implements LoginStore {
 
         return Response.ofSuccess(loginInfo);
     }
-
 }

@@ -1,22 +1,22 @@
-//package com.xxl.job.admin.web.interceptor;
+// package com.xxl.job.admin.web.interceptor;
 //
-//import com.xxl.job.admin.util.I18nUtil;
-//import com.xxl.tool.freemarker.FtlTool;
-//import jakarta.servlet.http.HttpServletRequest;
-//import jakarta.servlet.http.HttpServletResponse;
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.web.servlet.AsyncHandlerInterceptor;
-//import org.springframework.web.servlet.ModelAndView;
-//import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-//import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+// import com.xxl.job.admin.util.I18nUtil;
+// import com.xxl.tool.freemarker.FtlTool;
+// import jakarta.servlet.http.HttpServletRequest;
+// import jakarta.servlet.http.HttpServletResponse;
+// import org.springframework.context.annotation.Configuration;
+// import org.springframework.web.servlet.AsyncHandlerInterceptor;
+// import org.springframework.web.servlet.ModelAndView;
+// import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+// import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 //
-///**
+/// **
 // * push cookies to model as cookieMap
 // *
 // * @author xuxueli 2015-12-12 18:09:04
 // */
-//@Configuration
-//public class CommonDataInterceptor implements WebMvcConfigurer {
+// @Configuration
+// public class CommonDataInterceptor implements WebMvcConfigurer {
 //
 //	@Override
 //	public void addInterceptors(InterceptorRegistry registry) {
@@ -36,4 +36,4 @@
 //		}).addPathPatterns("/**");
 //	}
 //
-//}
+// }

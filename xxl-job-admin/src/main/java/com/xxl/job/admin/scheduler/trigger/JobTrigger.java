@@ -1,5 +1,11 @@
 package com.xxl.job.admin.scheduler.trigger;
 
+import java.util.Date;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import com.xxl.job.admin.mapper.XxlJobGroupMapper;
 import com.xxl.job.admin.mapper.XxlJobInfoMapper;
 import com.xxl.job.admin.mapper.XxlJobLogMapper;
@@ -17,12 +23,8 @@ import com.xxl.tool.core.StringTool;
 import com.xxl.tool.exception.ThrowableTool;
 import com.xxl.tool.http.IPTool;
 import com.xxl.tool.response.Response;
-import jakarta.annotation.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-import java.util.Date;
+import jakarta.annotation.Resource;
 
 /**
  * xxl-job trigger
@@ -33,37 +35,27 @@ import java.util.Date;
 public class JobTrigger {
     private static final Logger logger = LoggerFactory.getLogger(JobTrigger.class);
 
-
-    @Resource
-    private XxlJobInfoMapper xxlJobInfoMapper;
-    @Resource
-    private XxlJobGroupMapper xxlJobGroupMapper;
-    @Resource
-    private XxlJobLogMapper xxlJobLogMapper;
-
+    @Resource private XxlJobInfoMapper xxlJobInfoMapper;
+    @Resource private XxlJobGroupMapper xxlJobGroupMapper;
+    @Resource private XxlJobLogMapper xxlJobLogMapper;
 
     /**
      * trigger job
      *
      * @param jobId
      * @param triggerType
-     * @param failRetryCount
-     * 			>=0: use this param
-     * 			<0: use param from job info config
+     * @param failRetryCount >=0: use this param <0: use param from job info config
      * @param executorShardingParam
-     * @param executorParam
-     *          null: use job param
-     *          not null: cover job param
-     * @param addressList
-     *          null: use executor addressList
-     *          not null: cover
+     * @param executorParam null: use job param not null: cover job param
+     * @param addressList null: use executor addressList not null: cover
      */
-    public void trigger(int jobId,
-                               TriggerTypeEnum triggerType,
-                               int failRetryCount,
-                               String executorShardingParam,
-                               String executorParam,
-                               String addressList) {
+    public void trigger(
+            int jobId,
+            TriggerTypeEnum triggerType,
+            int failRetryCount,
+            String executorShardingParam,
+            String executorParam,
+            String addressList) {
 
         // load data
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(jobId);
@@ -74,7 +66,8 @@ public class JobTrigger {
         if (executorParam != null) {
             jobInfo.setExecutorParam(executorParam);
         }
-        int finalFailRetryCount = failRetryCount>=0?failRetryCount:jobInfo.getExecutorFailRetryCount();
+        int finalFailRetryCount =
+                failRetryCount >= 0 ? failRetryCount : jobInfo.getExecutorFailRetryCount();
         XxlJobGroup group = xxlJobGroupMapper.load(jobInfo.getJobGroup());
 
         // cover addressList
@@ -85,27 +78,42 @@ public class JobTrigger {
 
         // sharding param
         int[] shardingParam = null;
-        if (executorShardingParam!=null){
+        if (executorShardingParam != null) {
             String[] shardingArr = executorShardingParam.split("/");
-            if (shardingArr.length==2 && StringTool.isNumeric(shardingArr[0]) && StringTool.isNumeric(shardingArr[1])) {
+            if (shardingArr.length == 2
+                    && StringTool.isNumeric(shardingArr[0])
+                    && StringTool.isNumeric(shardingArr[1])) {
                 shardingParam = new int[2];
                 shardingParam[0] = Integer.parseInt(shardingArr[0]);
                 shardingParam[1] = Integer.parseInt(shardingArr[1]);
             }
         }
-        if (ExecutorRouteStrategyEnum.SHARDING_BROADCAST==ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null)
-                && group.getRegistryList()!=null && !group.getRegistryList().isEmpty()
-                && shardingParam==null) {
+        if (ExecutorRouteStrategyEnum.SHARDING_BROADCAST
+                        == ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null)
+                && group.getRegistryList() != null
+                && !group.getRegistryList().isEmpty()
+                && shardingParam == null) {
             for (int i = 0; i < group.getRegistryList().size(); i++) {
-                processTrigger(group, jobInfo, finalFailRetryCount, triggerType, i, group.getRegistryList().size());
+                processTrigger(
+                        group,
+                        jobInfo,
+                        finalFailRetryCount,
+                        triggerType,
+                        i,
+                        group.getRegistryList().size());
             }
         } else {
             if (shardingParam == null) {
-                shardingParam = new int[]{0, 1};
+                shardingParam = new int[] {0, 1};
             }
-            processTrigger(group, jobInfo, finalFailRetryCount, triggerType, shardingParam[0], shardingParam[1]);
+            processTrigger(
+                    group,
+                    jobInfo,
+                    finalFailRetryCount,
+                    triggerType,
+                    shardingParam[0],
+                    shardingParam[1]);
         }
-
     }
 
     /*private static boolean isNumeric(String str){
@@ -120,24 +128,33 @@ public class JobTrigger {
     /**
      * process trigger with log
      *
-     * @param group                     job group, registry list may be empty
-     * @param jobInfo                   job info
-     * @param finalFailRetryCount       the fail-retry count
-     * @param triggerType               trigger type
-     * @param index                     sharding index
-     * @param total                     sharding index
+     * @param group job group, registry list may be empty
+     * @param jobInfo job info
+     * @param finalFailRetryCount the fail-retry count
+     * @param triggerType trigger type
+     * @param index sharding index
+     * @param total sharding index
      */
-    private void processTrigger(XxlJobGroup group,
-                                XxlJobInfo jobInfo,
-                                int finalFailRetryCount,
-                                TriggerTypeEnum triggerType,
-                                int index,
-                                int total){
+    private void processTrigger(
+            XxlJobGroup group,
+            XxlJobInfo jobInfo,
+            int finalFailRetryCount,
+            TriggerTypeEnum triggerType,
+            int index,
+            int total) {
 
         // param
-        ExecutorBlockStrategyEnum blockStrategy = ExecutorBlockStrategyEnum.match(jobInfo.getExecutorBlockStrategy(), ExecutorBlockStrategyEnum.SERIAL_EXECUTION);  // block strategy
-        ExecutorRouteStrategyEnum executorRouteStrategyEnum = ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null);    // route strategy
-        String shardingParam = (ExecutorRouteStrategyEnum.SHARDING_BROADCAST==executorRouteStrategyEnum)?String.valueOf(index).concat("/").concat(String.valueOf(total)):null;
+        ExecutorBlockStrategyEnum blockStrategy =
+                ExecutorBlockStrategyEnum.match(
+                        jobInfo.getExecutorBlockStrategy(),
+                        ExecutorBlockStrategyEnum.SERIAL_EXECUTION); // block strategy
+        ExecutorRouteStrategyEnum executorRouteStrategyEnum =
+                ExecutorRouteStrategyEnum.match(
+                        jobInfo.getExecutorRouteStrategy(), null); // route strategy
+        String shardingParam =
+                (ExecutorRouteStrategyEnum.SHARDING_BROADCAST == executorRouteStrategyEnum)
+                        ? String.valueOf(index).concat("/").concat(String.valueOf(total))
+                        : null;
 
         // 1、save log-id
         XxlJobLog jobLog = new XxlJobLog();
@@ -165,7 +182,7 @@ public class JobTrigger {
         // 3、init address
         String address = null;
         Response<String> routeAddressResult = null;
-        if (group.getRegistryList()!=null && !group.getRegistryList().isEmpty()) {
+        if (group.getRegistryList() != null && !group.getRegistryList().isEmpty()) {
             if (ExecutorRouteStrategyEnum.SHARDING_BROADCAST == executorRouteStrategyEnum) {
                 if (index < group.getRegistryList().size()) {
                     address = group.getRegistryList().get(index);
@@ -173,13 +190,19 @@ public class JobTrigger {
                     address = group.getRegistryList().get(0);
                 }
             } else {
-                routeAddressResult = executorRouteStrategyEnum.getRouter().route(triggerParam, group.getRegistryList());
+                routeAddressResult =
+                        executorRouteStrategyEnum
+                                .getRouter()
+                                .route(triggerParam, group.getRegistryList());
                 if (routeAddressResult.isSuccess()) {
                     address = routeAddressResult.getData();
                 }
             }
         } else {
-            routeAddressResult = Response.of(XxlJobContext.HANDLE_CODE_FAIL, I18nUtil.getString("jobconf_trigger_address_empty"));
+            routeAddressResult =
+                    Response.of(
+                            XxlJobContext.HANDLE_CODE_FAIL,
+                            I18nUtil.getString("jobconf_trigger_address_empty"));
         }
 
         // 4、trigger remote executor
@@ -193,37 +216,89 @@ public class JobTrigger {
         // 5、collection trigger info
         // trigger config
         StringBuilder triggerMsgSb = new StringBuilder();
-        triggerMsgSb.append(I18nUtil.getString("jobconf_trigger_type")).append("：").append(triggerType.getTitle());
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("jobconf_trigger_admin_adress")).append("：").append(IPTool.getIp());
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("jobconf_trigger_exe_regtype")).append("：")
-                .append( (group.getAddressType() == 0)?I18nUtil.getString("jobgroup_field_addressType_0"):I18nUtil.getString("jobgroup_field_addressType_1") );
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("jobconf_trigger_exe_regaddress")).append("：").append(group.getRegistryList());
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_executorRouteStrategy")).append("：").append(executorRouteStrategyEnum.getTitle());
+        triggerMsgSb
+                .append(I18nUtil.getString("jobconf_trigger_type"))
+                .append("：")
+                .append(triggerType.getTitle());
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("jobconf_trigger_admin_adress"))
+                .append("：")
+                .append(IPTool.getIp());
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("jobconf_trigger_exe_regtype"))
+                .append("：")
+                .append(
+                        (group.getAddressType() == 0)
+                                ? I18nUtil.getString("jobgroup_field_addressType_0")
+                                : I18nUtil.getString("jobgroup_field_addressType_1"));
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("jobconf_trigger_exe_regaddress"))
+                .append("：")
+                .append(group.getRegistryList());
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("jobinfo_field_executorRouteStrategy"))
+                .append("：")
+                .append(executorRouteStrategyEnum.getTitle());
         if (shardingParam != null) {
             triggerMsgSb.append("(").append(shardingParam).append(")");
         }
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_executorBlockStrategy")).append("：").append(blockStrategy.getTitle());
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_timeout")).append("：").append(jobInfo.getExecutorTimeout());
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_executorFailRetryCount")).append("：").append(finalFailRetryCount);
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("jobinfo_field_executorBlockStrategy"))
+                .append("：")
+                .append(blockStrategy.getTitle());
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("jobinfo_field_timeout"))
+                .append("：")
+                .append(jobInfo.getExecutorTimeout());
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("jobinfo_field_executorFailRetryCount"))
+                .append("：")
+                .append(finalFailRetryCount);
 
         // trigger data
-        triggerMsgSb.append("<br><br><span style=\"color:#00c0ef;\" > >>>>>>>>>>>").append(I18nUtil.getString("jobconf_trigger_run")).append("<<<<<<<<<<< </span><br>");
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("joblog_field_executorAddress")).append("：");
+        triggerMsgSb
+                .append("<br><br><span style=\"color:#00c0ef;\" > >>>>>>>>>>>")
+                .append(I18nUtil.getString("jobconf_trigger_run"))
+                .append("<<<<<<<<<<< </span><br>");
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("joblog_field_executorAddress"))
+                .append("：");
         if (StringTool.isNotBlank(address)) {
             triggerMsgSb.append(address);
-        } else if (routeAddressResult!=null && !routeAddressResult.isSuccess() && routeAddressResult.getMsg()!=null) {
+        } else if (routeAddressResult != null
+                && !routeAddressResult.isSuccess()
+                && routeAddressResult.getMsg() != null) {
             triggerMsgSb.append("address route fail, ").append(routeAddressResult.getMsg());
         } else {
             triggerMsgSb.append("address route fail.");
         }
         if (StringTool.isNotBlank(jobInfo.getExecutorHandler())) {
-            triggerMsgSb.append("<br>").append("JobHandler").append("：").append(jobInfo.getExecutorHandler());
+            triggerMsgSb
+                    .append("<br>")
+                    .append("JobHandler")
+                    .append("：")
+                    .append(jobInfo.getExecutorHandler());
         }
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("jobinfo_field_executorparam")).append("：").append(jobInfo.getExecutorParam());
-        triggerMsgSb.append("<br>").append(I18nUtil.getString("joblog_field_triggerMsg")).append("：");
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("jobinfo_field_executorparam"))
+                .append("：")
+                .append(jobInfo.getExecutorParam());
+        triggerMsgSb
+                .append("<br>")
+                .append(I18nUtil.getString("joblog_field_triggerMsg"))
+                .append("：");
         if (triggerResult.isSuccess()) {
             triggerMsgSb.append("success");
-        } else if (triggerResult.getMsg()!=null) {
+        } else if (triggerResult.getMsg() != null) {
             triggerMsgSb.append("error, ").append(triggerResult.getMsg());
         } else {
             triggerMsgSb.append("fail");
@@ -235,7 +310,7 @@ public class JobTrigger {
         jobLog.setExecutorParam(jobInfo.getExecutorParam());
         jobLog.setExecutorShardingParam(shardingParam);
         jobLog.setExecutorFailRetryCount(finalFailRetryCount);
-        //jobLog.setTriggerTime();
+        // jobLog.setTriggerTime();
         jobLog.setTriggerCode(triggerResult.getCode());
         jobLog.setTriggerMsg(triggerMsgSb.toString());
         xxlJobLogMapper.updateTriggerInfo(jobLog);
@@ -246,21 +321,25 @@ public class JobTrigger {
     /**
      * do trigger with address
      *
-     * @param triggerParam  trigger param
-     * @param address       the address
+     * @param triggerParam trigger param
+     * @param address the address
      * @return return
      */
-    private Response<String> doTrigger(TriggerRequest triggerParam, String address){
+    private Response<String> doTrigger(TriggerRequest triggerParam, String address) {
         Response<String> runResult = null;
         try {
             ExecutorBiz executorBiz = XxlJobAdminBootstrap.getExecutorBiz(address);
             runResult = executorBiz.run(triggerParam);
         } catch (Exception e) {
-            logger.error(">>>>>>>>>>> xxl-job trigger error, please check if the executor[{}] is running.", address, e);
+            logger.error(
+                    ">>>>>>>>>>> xxl-job trigger error, please check if the executor[{}] is running.",
+                    address,
+                    e);
             runResult = Response.of(XxlJobContext.HANDLE_CODE_FAIL, ThrowableTool.toString(e));
         }
 
-        StringBuffer runResultSB = new StringBuffer(I18nUtil.getString("jobconf_trigger_run") + "：");
+        StringBuffer runResultSB =
+                new StringBuffer(I18nUtil.getString("jobconf_trigger_run") + "：");
         runResultSB.append("<br>address：").append(address);
         runResultSB.append("<br>code：").append(runResult.getCode());
         runResultSB.append("<br>msg：").append(runResult.getMsg());
@@ -268,5 +347,4 @@ public class JobTrigger {
         runResult.setMsg(runResultSB.toString());
         return runResult;
     }
-
 }

@@ -1,15 +1,15 @@
 package com.xxl.job.admin.scheduler.misfire.strategy;
 
-import com.xxl.job.admin.scheduler.misfire.MisfireHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.xxl.job.admin.scheduler.misfire.MisfireHandler;
 
 public class MisfireDoNothing extends MisfireHandler {
     private static final Logger logger = LoggerFactory.getLogger(MisfireDoNothing.class);
 
     @Override
     public void handle(int jobId) {
-        logger.warn(">>>>>>>>>>> xxl-job, schedule MisfireDoNothing: jobId = " + jobId );
+        logger.warn(">>>>>>>>>>> xxl-job, schedule MisfireDoNothing: jobId = " + jobId);
     }
-
 }

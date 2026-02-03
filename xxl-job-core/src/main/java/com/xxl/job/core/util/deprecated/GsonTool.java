@@ -1,24 +1,25 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-//import com.google.gson.Gson;
-//import com.google.gson.GsonBuilder;
-//import com.google.gson.JsonElement;
-//import com.google.gson.reflect.TypeToken;
+// import com.google.gson.Gson;
+// import com.google.gson.GsonBuilder;
+// import com.google.gson.JsonElement;
+// import com.google.gson.reflect.TypeToken;
 //
-//import java.lang.reflect.Type;
-//import java.util.ArrayList;
-//import java.util.HashMap;
+// import java.lang.reflect.Type;
+// import java.util.ArrayList;
+// import java.util.HashMap;
 //
-///**
+/// **
 // * gson tool （From https://github.com/xuxueli/xxl-tool ）
 // *
 // * @author xuxueli 2020-04-11 20:56:31
 // */
-//public class GsonTool {
+// public class GsonTool {
 //
 //    private static Gson gson = null;
 //    static {
-//        gson= new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss").disableHtmlEscaping().create();
+//        gson= new GsonBuilder().setDateFormat("yyyy-MM-dd
+// HH:mm:ss").disableHtmlEscaping().create();
 //    }
 //
 //    /**
@@ -144,7 +145,8 @@
 //     * @param <K>
 //     * @param <V>
 //     */
-//    public static <K, V> HashMap<K, V> fromJsonMap(String json, Class<K> keyClass, Class<V> valueClass) {
+//    public static <K, V> HashMap<K, V> fromJsonMap(String json, Class<K> keyClass, Class<V>
+// valueClass) {
 //        Type type = TypeToken.getParameterized(HashMap.class, keyClass, valueClass).getType();
 //        return gson.fromJson(json, type);
 //    }
@@ -199,4 +201,4 @@
 //        return gson.fromJson(json, typeOfT);
 //    }
 //
-//}
+// }

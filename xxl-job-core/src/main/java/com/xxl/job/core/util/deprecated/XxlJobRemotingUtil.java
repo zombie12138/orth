@@ -1,23 +1,23 @@
-//package com.xxl.job.core.util;
+// package com.xxl.job.core.util;
 //
-//import com.xxl.tool.gson.GsonTool;
-//import com.xxl.tool.response.Response;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
+// import com.xxl.tool.gson.GsonTool;
+// import com.xxl.tool.response.Response;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 //
-//import javax.net.ssl.*;
-//import java.io.BufferedReader;
-//import java.io.DataOutputStream;
-//import java.io.InputStreamReader;
-//import java.net.HttpURLConnection;
-//import java.net.URL;
-//import java.security.cert.CertificateException;
-//import java.security.cert.X509Certificate;
+// import javax.net.ssl.*;
+// import java.io.BufferedReader;
+// import java.io.DataOutputStream;
+// import java.io.InputStreamReader;
+// import java.net.HttpURLConnection;
+// import java.net.URL;
+// import java.security.cert.CertificateException;
+// import java.security.cert.X509Certificate;
 //
-///**
+/// **
 // * @author xuxueli 2018-11-25 00:55:31
 // */
-//public class XxlJobRemotingUtil {
+// public class XxlJobRemotingUtil {
 //    private static Logger logger = LoggerFactory.getLogger(XxlJobRemotingUtil.class);
 //    public static final String XXL_JOB_ACCESS_TOKEN = "XXL-JOB-ACCESS-TOKEN";
 //
@@ -40,16 +40,19 @@
 //            }
 //        });
 //    }
-//    private static final TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+//    private static final TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
+// {
 //        @Override
 //        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
 //            return new java.security.cert.X509Certificate[]{};
 //        }
 //        @Override
-//        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+//        public void checkClientTrusted(X509Certificate[] chain, String authType) throws
+// CertificateException {
 //        }
 //        @Override
-//        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+//        public void checkServerTrusted(X509Certificate[] chain, String authType) throws
+// CertificateException {
 //        }
 //    }};
 //    // trust-https end
@@ -65,7 +68,8 @@
 //     * @param returnTargClassOfT
 //     * @return
 //     */
-//    public static Response postBody(String url, String accessToken, int timeout, Object requestObj, Class returnTargClassOfT) {
+//    public static Response postBody(String url, String accessToken, int timeout, Object
+// requestObj, Class returnTargClassOfT) {
 //        HttpURLConnection connection = null;
 //        BufferedReader bufferedReader = null;
 //        DataOutputStream dataOutputStream = null;
@@ -110,7 +114,8 @@
 //            }
 //
 //            /*byte[] requestBodyBytes = requestBody.getBytes("UTF-8");
-//            connection.setRequestProperty("Content-Length", String.valueOf(requestBodyBytes.length));
+//            connection.setRequestProperty("Content-Length",
+// String.valueOf(requestBodyBytes.length));
 //            OutputStream outwritestream = connection.getOutputStream();
 //            outwritestream.write(requestBodyBytes);
 //            outwritestream.flush();
@@ -119,11 +124,13 @@
 //            // valid StatusCode
 //            int statusCode = connection.getResponseCode();
 //            if (statusCode != 200) {
-//                return Response.ofFail("xxl-job remoting fail, StatusCode("+ statusCode +") invalid. for url : " + url);
+//                return Response.ofFail("xxl-job remoting fail, StatusCode("+ statusCode +")
+// invalid. for url : " + url);
 //            }
 //
 //            // result
-//            bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+//            bufferedReader = new BufferedReader(new InputStreamReader(connection.getInputStream(),
+// "UTF-8"));
 //            StringBuilder result = new StringBuilder();
 //            String line;
 //            while ((line = bufferedReader.readLine()) != null) {
@@ -133,16 +140,20 @@
 //
 //            // parse returnT
 //            try {
-//                Response returnT = GsonTool.fromJson(resultJson, Response.class, returnTargClassOfT);
+//                Response returnT = GsonTool.fromJson(resultJson, Response.class,
+// returnTargClassOfT);
 //                return returnT;
 //            } catch (Exception e) {
-//                logger.error("xxl-job remoting (url="+url+") response content invalid("+ resultJson +").", e);
-//                return Response.ofFail("xxl-job remoting (url="+url+") response content invalid("+ resultJson +").");
+//                logger.error("xxl-job remoting (url="+url+") response content invalid("+
+// resultJson +").", e);
+//                return Response.ofFail("xxl-job remoting (url="+url+") response content invalid("+
+// resultJson +").");
 //            }
 //
 //        } catch (Exception e) {
 //            logger.error(e.getMessage(), e);
-//            return Response.ofFail("xxl-job remoting error("+ e.getMessage() +"), for url : " + url);
+//            return Response.ofFail("xxl-job remoting error("+ e.getMessage() +"), for url : " +
+// url);
 //        } finally {
 //            try {
 //                if (dataOutputStream != null) {
@@ -160,4 +171,4 @@
 //        }
 //    }
 //
-//}
+// }

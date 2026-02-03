@@ -1,7 +1,7 @@
 package com.xxl.job.admin.controller;
 
-import com.xxl.sso.core.constant.Const;
-import jakarta.servlet.http.Cookie;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -11,39 +11,42 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import com.xxl.sso.core.constant.Const;
+
+import jakarta.servlet.http.Cookie;
 
 public class JobInfoControllerTest extends AbstractSpringMvcTest {
-  private static Logger logger = LoggerFactory.getLogger(JobInfoControllerTest.class);
+    private static Logger logger = LoggerFactory.getLogger(JobInfoControllerTest.class);
 
-  private Cookie cookie;
+    private Cookie cookie;
 
-  @BeforeEach
-  public void login() throws Exception {
-    MvcResult ret = mockMvc.perform(
-        post("/auth/doLogin")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .param("userName", "admin")
-            .param("password", "123456")
-    ).andReturn();
-    cookie = ret.getResponse().getCookie(Const.XXL_SSO_TOKEN);
-  }
+    @BeforeEach
+    public void login() throws Exception {
+        MvcResult ret =
+                mockMvc.perform(
+                                post("/auth/doLogin")
+                                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                        .param("userName", "admin")
+                                        .param("password", "123456"))
+                        .andReturn();
+        cookie = ret.getResponse().getCookie(Const.XXL_SSO_TOKEN);
+    }
 
-  @Test
-  public void testAdd() throws Exception {
-    MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
-    parameters.add("jobGroup", "1");
-    parameters.add("triggerStatus", "-1");
+    @Test
+    public void testAdd() throws Exception {
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
+        parameters.add("jobGroup", "1");
+        parameters.add("triggerStatus", "-1");
 
-    MvcResult ret = mockMvc.perform(
-        post("/jobinfo/pageList")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            //.content(paramsJson)
-            .params(parameters)
-            .cookie(cookie)
-    ).andReturn();
+        MvcResult ret =
+                mockMvc.perform(
+                                post("/jobinfo/pageList")
+                                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                        // .content(paramsJson)
+                                        .params(parameters)
+                                        .cookie(cookie))
+                        .andReturn();
 
-    logger.info(ret.getResponse().getContentAsString());
-  }
-
+        logger.info(ret.getResponse().getContentAsString());
+    }
 }
