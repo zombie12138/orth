@@ -135,8 +135,7 @@ public class ScriptJobHandler extends IJobHandler {
         Long scheduleTime = context.getScheduleTime();
         if (scheduleTime != null) {
             envVars.put(
-                    "ORTH_SCHEDULE_TIME",
-                    ISO_FORMATTER.format(Instant.ofEpochMilli(scheduleTime)));
+                    "ORTH_SCHEDULE_TIME", ISO_FORMATTER.format(Instant.ofEpochMilli(scheduleTime)));
         } else {
             envVars.put("ORTH_SCHEDULE_TIME", "");
         }

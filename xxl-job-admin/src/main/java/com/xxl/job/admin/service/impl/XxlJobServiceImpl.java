@@ -622,7 +622,14 @@ public class XxlJobServiceImpl implements XxlJobService {
         if (startTime == null) {
             XxlJobAdminBootstrap.getInstance()
                     .getJobTriggerPoolHelper()
-                    .trigger(jobId, TriggerTypeEnum.MANUAL, -1, null, executorParam, addressList, null);
+                    .trigger(
+                            jobId,
+                            TriggerTypeEnum.MANUAL,
+                            -1,
+                            null,
+                            executorParam,
+                            addressList,
+                            null);
             logger.info(
                     ">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
                     loginInfo.getUserName(),
@@ -637,7 +644,8 @@ public class XxlJobServiceImpl implements XxlJobService {
 
         // Validate schedule type
         if (scheduleTypeEnum == ScheduleTypeEnum.NONE) {
-            return Response.ofFail(I18nUtil.getString("schedule_type") + " NONE cannot be used for batch trigger");
+            return Response.ofFail(
+                    I18nUtil.getString("schedule_type") + " NONE cannot be used for batch trigger");
         }
 
         // Validate time range (for types that need end time)

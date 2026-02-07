@@ -77,6 +77,8 @@
 						<button class="btn btn-sm btn-danger selectOnlyOne delete" type="button"><i class="fa fa-remove "></i>${I18n.system_opt_del}</button>   <#-- delete -->
 						｜
 						<button class="btn btn-sm btn-default selectOnlyOne job_copy" type="button">${I18n.system_opt_copy}</button>
+						<button class="btn btn-sm btn-default job_export" type="button"><i class="fa fa-download"></i>${I18n.jobinfo_opt_export}</button>
+						<button class="btn btn-sm btn-default job_import" type="button"><i class="fa fa-upload"></i>${I18n.jobinfo_opt_import}</button>
 						<button class="btn btn-sm btn-warning selectOnlyOne job_resume" type="button">${I18n.jobinfo_opt_start}</button>				<#-- 启动 -->
 						<button class="btn btn-sm btn-warning selectOnlyOne job_pause" type="button">${I18n.jobinfo_opt_stop}</button>					<#-- 停止 -->
 						｜
@@ -573,6 +575,42 @@ exit 0
 								</div>
 							</div>
 						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<#-- export modal -->
+		<div class="modal fade" id="jobExportModal" tabindex="-1" role="dialog" aria-hidden="true">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">${I18n.jobinfo_export_title}</h4>
+					</div>
+					<div class="modal-body">
+						<textarea id="exportJsonContent" class="form-control" readonly style="height: 400px; font-family: monospace; font-size: 12px;"></textarea>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" id="copyExportBtn"><i class="fa fa-copy"></i> ${I18n.jobinfo_export_copy_success}</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">${I18n.system_close}</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<#-- import modal -->
+		<div class="modal fade" id="jobImportModal" tabindex="-1" role="dialog" aria-hidden="true">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">${I18n.jobinfo_import_title}</h4>
+					</div>
+					<div class="modal-body">
+						<textarea id="importJsonContent" class="form-control" placeholder="${I18n.jobinfo_import_placeholder}" style="height: 400px; font-family: monospace; font-size: 12px;"></textarea>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" id="confirmImportBtn">${I18n.jobinfo_opt_import}</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">${I18n.system_cancel}</button>
 					</div>
 				</div>
 			</div>
@@ -1491,6 +1529,128 @@ exit 0
 			$('#addModal .form select[name=executorBlockStrategy] option[value='+ row.executorBlockStrategy +']').prop('selected', true);
 			$("#addModal .form input[name='executorTimeout']").val( row.executorTimeout );
 			$("#addModal .form input[name='executorFailRetryCount']").val( row.executorFailRetryCount );
+		});
+
+		// ---------------------- job_export ----------------------
+
+		/**
+		 * job_export (supports single and batch)
+		 */
+		$("#data_operation").on('click', '.job_export', function() {
+			// get select rows
+			var rows = $.adminTable.table.bootstrapTable('getSelections');
+
+			// check if any rows selected
+			if (rows.length === 0) {
+				layer.msg(I18n.system_please_choose + I18n.system_data);
+				return;
+			}
+
+			// collect job ids
+			var ids = rows.map(function(row) { return row.id; });
+
+			// prepare request data (single or batch)
+			var requestData = ids.length === 1 ? { id: ids[0] } : { 'ids[]': ids };
+
+			// call export API
+			$.ajax({
+				type: 'GET',
+				url: base_url + '/jobinfo/export',
+				data: requestData,
+				traditional: true, // for array parameters
+				dataType: 'json',
+				success: function(data) {
+					if (data.code == 200) {
+						// show modal with JSON
+						$('#exportJsonContent').val(data.data);
+						$('#jobExportModal').modal('show');
+					} else {
+						layer.open({
+							title: I18n.system_tips,
+							btn: [I18n.system_ok],
+							content: (data.msg || I18n.system_fail)
+						});
+					}
+				}
+			});
+		});
+
+		// copy export JSON to clipboard
+		$('#copyExportBtn').on('click', function() {
+			var content = $('#exportJsonContent').val();
+			if (content) {
+				// create temporary textarea
+				var $temp = $('<textarea>');
+				$('body').append($temp);
+				$temp.val(content).select();
+				document.execCommand('copy');
+				$temp.remove();
+				
+				layer.msg(I18n.jobinfo_export_copy_success);
+			}
+		});
+
+		// ---------------------- job_import ----------------------
+
+		/**
+		 * job_import
+		 */
+		$("#data_operation").on('click', '.job_import', function() {
+			// clear previous content
+			$('#importJsonContent').val('');
+			// show modal
+			$('#jobImportModal').modal('show');
+		});
+
+		// confirm import (supports single object and batch array)
+		$('#confirmImportBtn').on('click', function() {
+			var jsonContent = $('#importJsonContent').val();
+			if (!jsonContent || jsonContent.trim() === '') {
+				layer.msg(I18n.system_please_input + 'JSON');
+				return;
+			}
+
+			// validate JSON format (accept both object and array)
+			try {
+				var parsed = JSON.parse(jsonContent);
+				// Accept both array and object
+				if (typeof parsed !== 'object' || parsed === null) {
+					throw new Error('Must be JSON object or array');
+				}
+			} catch (e) {
+				layer.msg(I18n.jobinfo_import_json_invalid);
+				return;
+			}
+
+			// call import API (same endpoint handles both single and batch)
+			$.ajax({
+				type: 'POST',
+				url: base_url + '/jobinfo/import',
+				data: jsonContent,
+				contentType: 'application/json',
+				dataType: 'json',
+				success: function(data) {
+					if (data.code == 200) {
+						$('#jobImportModal').modal('hide');
+						layer.open({
+							title: I18n.system_tips,
+							btn: [I18n.system_ok],
+							content: data.data || I18n.system_opt_suc, // show import summary
+							yes: function(index, layero) {
+								layer.close(index);
+								// refresh table
+								$.adminTable.table.bootstrapTable('refresh');
+							}
+						});
+					} else {
+						layer.open({
+							title: I18n.system_tips,
+							btn: [I18n.system_ok],
+							content: (data.msg || I18n.system_fail)
+						});
+					}
+				}
+			});
 		});
 
 	});
