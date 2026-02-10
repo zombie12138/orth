@@ -38,6 +38,11 @@ public class XxlJobInfo {
 
     private String childJobId; // 子任务ID，多个逗号分隔
 
+    private Integer superTaskId; // SuperTask ID (NULL = standalone or template task)
+
+    // Transient field: SuperTask name for display (not persisted to database)
+    private String superTaskName;
+
     private int triggerStatus; // 调度状态：TriggerStatus
     private long triggerLastTime; // 上次调度时间
     private long triggerNextTime; // 下次调度时间
@@ -232,5 +237,21 @@ public class XxlJobInfo {
 
     public void setTriggerNextTime(long triggerNextTime) {
         this.triggerNextTime = triggerNextTime;
+    }
+
+    public Integer getSuperTaskId() {
+        return superTaskId;
+    }
+
+    public void setSuperTaskId(Integer superTaskId) {
+        this.superTaskId = superTaskId;
+    }
+
+    public String getSuperTaskName() {
+        return superTaskName;
+    }
+
+    public void setSuperTaskName(String superTaskName) {
+        this.superTaskName = superTaskName;
     }
 }

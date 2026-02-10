@@ -22,6 +22,8 @@ import com.xxl.job.admin.mapper.XxlJobGroupMapper;
 import com.xxl.job.admin.mapper.XxlJobInfoMapper;
 import com.xxl.job.admin.model.XxlJobGroup;
 import com.xxl.job.admin.model.XxlJobInfo;
+import com.xxl.job.admin.model.dto.BatchCopyRequest;
+import com.xxl.job.admin.model.dto.BatchCopyResult;
 import com.xxl.job.admin.scheduler.exception.XxlJobException;
 import com.xxl.job.admin.scheduler.misfire.MisfireStrategyEnum;
 import com.xxl.job.admin.scheduler.route.ExecutorRouteStrategyEnum;
@@ -105,14 +107,15 @@ public class JobInfoController {
             @RequestParam int triggerStatus,
             @RequestParam String jobDesc,
             @RequestParam String executorHandler,
-            @RequestParam String author) {
+            @RequestParam String author,
+            @RequestParam(required = false) String superTaskName) {
 
         // valid jobGroup permission
         JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
 
         // page
         return xxlJobService.pageList(
-                offset, pagesize, jobGroup, triggerStatus, jobDesc, executorHandler, author);
+                offset, pagesize, jobGroup, triggerStatus, jobDesc, executorHandler, author, superTaskName);
     }
 
     @RequestMapping("/insert")
@@ -344,6 +347,7 @@ public class JobInfoController {
         exportData.put("glueSource", jobInfo.getGlueSource());
         exportData.put("glueRemark", jobInfo.getGlueRemark());
         exportData.put("childJobId", jobInfo.getChildJobId());
+        exportData.put("superTaskId", jobInfo.getSuperTaskId());
         return exportData;
     }
 
@@ -513,5 +517,70 @@ public class JobInfoController {
                             + e.getMessage());
         }
         return Response.ofSuccess(result);
+    }
+
+    /**
+     * Search SuperTasks by ID or description
+     *
+     * @param request HTTP request
+     * @param jobGroup job group ID
+     * @param query search query (job ID or description)
+     * @return list of matching jobs
+     */
+    @RequestMapping("/searchSuperTask")
+    @ResponseBody
+    public Response<List<XxlJobInfo>> searchSuperTask(
+            HttpServletRequest request,
+            @RequestParam int jobGroup,
+            @RequestParam String query) {
+        // valid permission
+        JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
+
+        // search jobs by ID or description
+        List<XxlJobInfo> jobs = xxlJobInfoMapper.searchByIdOrDesc(jobGroup, query);
+        return Response.ofSuccess(jobs);
+    }
+
+    /**
+     * Get job by ID (for SuperTask lookup)
+     *
+     * @param request HTTP request
+     * @param id job ID
+     * @return job info
+     */
+    @RequestMapping("/getJobById")
+    @ResponseBody
+    public Response<XxlJobInfo> getJobById(HttpServletRequest request, @RequestParam int id) {
+        XxlJobInfo job = xxlJobInfoMapper.loadById(id);
+        if (job == null) {
+            return Response.ofFail("Job not found");
+        }
+
+        // valid permission
+        JobGroupPermissionUtil.validJobGroupPermission(request, job.getJobGroup());
+
+        return Response.ofSuccess(job);
+    }
+
+    /**
+     * Batch copy jobs from a template (SuperTask), creating multiple SubTasks
+     *
+     * @param request batch copy request containing mode and configurations
+     * @return batch copy result with success/fail counts
+     */
+    @RequestMapping("/batchCopy")
+    @ResponseBody
+    public Response<BatchCopyResult> batchCopy(@RequestBody BatchCopyRequest request) {
+        try {
+            BatchCopyResult result = xxlJobService.batchCopy(request);
+            if (result.getSuccessCount() > 0) {
+                return Response.ofSuccess(result);
+            } else {
+                return Response.ofFail("All batch copy operations failed: " + result.getErrors());
+            }
+        } catch (Exception e) {
+            logger.error("Batch copy failed", e);
+            return Response.ofFail("Batch copy error: " + e.getMessage());
+        }
     }
 }

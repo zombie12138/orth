@@ -63,6 +63,14 @@
 						<button class="btn btn-block btn-default resetBtn" >${I18n.system_reset}</button>
 					</div>
 				</div>
+				<div class="row" style="margin-top: 10px;" >
+					<div class="col-xs-3">
+						<div class="input-group">
+							<span class="input-group-addon">SuperTask</span>
+							<input type="text" class="form-control" id="superTaskName" placeholder="Search by SuperTask name" >
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -77,6 +85,7 @@
 						<button class="btn btn-sm btn-danger selectOnlyOne delete" type="button"><i class="fa fa-remove "></i>${I18n.system_opt_del}</button>   <#-- delete -->
 						｜
 						<button class="btn btn-sm btn-default selectOnlyOne job_copy" type="button">${I18n.system_opt_copy}</button>
+						<button class="btn btn-sm btn-primary selectOnlyOne job_fork_super" type="button"><i class="fa fa-sitemap"></i>Fork SuperJob</button>
 						<button class="btn btn-sm btn-default job_export" type="button"><i class="fa fa-download"></i>${I18n.jobinfo_opt_export}</button>
 						<button class="btn btn-sm btn-default job_import" type="button"><i class="fa fa-upload"></i>${I18n.jobinfo_opt_import}</button>
 						<button class="btn btn-sm btn-warning selectOnlyOne job_resume" type="button">${I18n.jobinfo_opt_start}</button>				<#-- 启动 -->
@@ -185,6 +194,18 @@
 							<p style="margin: 0 0 10px;text-align: left;border-bottom: 1px solid #e5e5e5;color: gray;">${I18n.jobinfo_conf_advanced}</p>    <#-- 高级配置 -->
 
 							<div class="form-group">
+								<label for="firstname" class="col-sm-2 control-label">SuperTask<font color="black">*</font></label>
+								<div class="col-sm-4">
+									<input type="text" class="form-control superTaskInput" placeholder="Type job ID or description..." autocomplete="off" />
+									<input type="hidden" name="superTaskId" />
+									<small class="help-block">Leave empty for standalone job</small>
+								</div>
+
+								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_childJobId}<font color="black">*</font></label>
+								<div class="col-sm-4"><input type="text" class="form-control" name="childJobId" placeholder="${I18n.jobinfo_field_childJobId_placeholder}" maxlength="100" ></div>
+							</div>
+
+							<div class="form-group">
 								<label for="firstname" class="col-sm-2 control-label">${I18n.jobinfo_field_executorRouteStrategy}<font color="black">*</font></label>
 								<div class="col-sm-4">
 									<select class="form-control" name="executorRouteStrategy" >
@@ -194,11 +215,6 @@
 									</select>
 								</div>
 
-								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_childJobId}<font color="black">*</font></label>
-								<div class="col-sm-4"><input type="text" class="form-control" name="childJobId" placeholder="${I18n.jobinfo_field_childJobId_placeholder}" maxlength="100" ></div>
-							</div>
-
-							<div class="form-group">
 								<label for="firstname" class="col-sm-2 control-label">${I18n.misfire_strategy}<font color="black">*</font></label>
 								<div class="col-sm-4">
 									<select class="form-control" name="misfireStrategy" >
@@ -207,7 +223,9 @@
 										</#list>
 									</select>
 								</div>
+							</div>
 
+							<div class="form-group">
 								<label for="firstname" class="col-sm-2 control-label">${I18n.jobinfo_field_executorBlockStrategy}<font color="black">*</font></label>
 								<div class="col-sm-4">
 									<select class="form-control" name="executorBlockStrategy" >
@@ -216,11 +234,12 @@
 										</#list>
 									</select>
 								</div>
+
+								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_timeout}<font color="black">*</font></label>
+								<div class="col-sm-4"><input type="text" class="form-control" name="executorTimeout" placeholder="${I18n.jobinfo_field_executorTimeout_placeholder}" maxlength="6" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
 							</div>
 
 							<div class="form-group">
-								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_timeout}<font color="black">*</font></label>
-								<div class="col-sm-4"><input type="text" class="form-control" name="executorTimeout" placeholder="${I18n.jobinfo_field_executorTimeout_placeholder}" maxlength="6" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
 								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_executorFailRetryCount}<font color="black">*</font></label>
 								<div class="col-sm-4"><input type="text" class="form-control" name="executorFailRetryCount" placeholder="${I18n.jobinfo_field_executorFailRetryCount_placeholder}" maxlength="4" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
 							</div>
@@ -445,7 +464,24 @@ exit 0
 							<p style="margin: 0 0 10px;text-align: left;border-bottom: 1px solid #e5e5e5;color: gray;">${I18n.jobinfo_conf_advanced}</p>    <#-- 高级配置 -->
 
 							<div class="form-group">
-								<label for="firstname" class="col-sm-2 control-label">${I18n.jobinfo_field_executorRouteStrategy}<font color="red">*</font></label>
+								<label for="firstname" class="col-sm-2 control-label">SuperTask<font color="black">*</font></label>
+								<div class="col-sm-4">
+									<input type="text" class="form-control superTaskInput" placeholder="Type job ID or description..." autocomplete="off" />
+									<input type="hidden" name="superTaskId" />
+									<span class="help-block" style="margin: 0;">
+										<small>Leave empty for standalone job</small><br>
+										<a href="javascript:void(0);" class="editSuperTaskLink" style="display:none;">
+											<i class="fa fa-edit"></i> Edit SuperTask Code
+										</a>
+									</span>
+								</div>
+
+								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_childJobId}<font color="black">*</font></label>
+								<div class="col-sm-4"><input type="text" class="form-control" name="childJobId" placeholder="${I18n.jobinfo_field_childJobId_placeholder}" maxlength="100" ></div>
+							</div>
+
+							<div class="form-group">
+								<label for="firstname" class="col-sm-2 control-label">${I18n.jobinfo_field_executorRouteStrategy}<font color="black">*</font></label>
 								<div class="col-sm-4">
 									<select class="form-control" name="executorRouteStrategy" >
 										<#list ExecutorRouteStrategyEnum as item>
@@ -454,11 +490,6 @@ exit 0
 									</select>
 								</div>
 
-								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_childJobId}<font color="black">*</font></label>
-								<div class="col-sm-4"><input type="text" class="form-control" name="childJobId" placeholder="${I18n.jobinfo_field_childJobId_placeholder}" maxlength="100" ></div>
-							</div>
-
-							<div class="form-group">
 								<label for="firstname" class="col-sm-2 control-label">${I18n.misfire_strategy}<font color="black">*</font></label>
 								<div class="col-sm-4">
 									<select class="form-control" name="misfireStrategy" >
@@ -467,8 +498,10 @@ exit 0
 										</#list>
 									</select>
 								</div>
+							</div>
 
-								<label for="firstname" class="col-sm-2 control-label">${I18n.jobinfo_field_executorBlockStrategy}<font color="red">*</font></label>
+							<div class="form-group">
+								<label for="firstname" class="col-sm-2 control-label">${I18n.jobinfo_field_executorBlockStrategy}<font color="black">*</font></label>
 								<div class="col-sm-4">
 									<select class="form-control" name="executorBlockStrategy" >
 										<#list ExecutorBlockStrategyEnum as item>
@@ -476,11 +509,12 @@ exit 0
 										</#list>
 									</select>
 								</div>
+
+								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_timeout}<font color="black">*</font></label>
+								<div class="col-sm-4"><input type="text" class="form-control" name="executorTimeout" placeholder="${I18n.jobinfo_field_executorTimeout_placeholder}" maxlength="6" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
 							</div>
 
 							<div class="form-group">
-								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_timeout}<font color="black">*</font></label>
-								<div class="col-sm-4"><input type="text" class="form-control" name="executorTimeout" placeholder="${I18n.jobinfo_field_executorTimeout_placeholder}" maxlength="6" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
 								<label for="lastname" class="col-sm-2 control-label">${I18n.jobinfo_field_executorFailRetryCount}<font color="black">*</font></label>
 								<div class="col-sm-4"><input type="text" class="form-control" name="executorFailRetryCount" placeholder="${I18n.jobinfo_field_executorFailRetryCount_placeholder}" maxlength="4" onkeyup="this.value=this.value.replace(/\D/g,'')" onafterpaste="this.value=this.value.replace(/\D/g,'')" ></div>
 							</div>
@@ -616,6 +650,31 @@ exit 0
 			</div>
 		</div>
 
+		<#-- fork superjob modal -->
+		<div class="modal fade" id="jobForkSuperModal" tabindex="-1" role="dialog" aria-hidden="true">
+			<div class="modal-dialog modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">Fork SuperJob - Batch Create SubTasks</h4>
+					</div>
+					<div class="modal-body">
+						<div class="form-group">
+							<label>Instructions:</label>
+							<p class="help-block">
+								Edit the JSON array below to define SubTasks. Each object represents one SubTask.<br>
+								The SuperTask's code will be inherited by all SubTasks. You only need to provide different parameters for each SubTask.
+							</p>
+						</div>
+						<textarea id="forkSuperJsonContent" class="form-control" placeholder="Edit JSON array..." style="height: 450px; font-family: monospace; font-size: 12px;"></textarea>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" id="confirmForkSuperBtn"><i class="fa fa-check"></i> Create SubTasks</button>
+						<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<!-- 2-content end -->
 
 	</section>
@@ -671,6 +730,7 @@ exit 0
 				obj.jobDesc = $('#jobDesc').val();
 				obj.executorHandler = $('#executorHandler').val();
 				obj.author = $('#author').val();
+				obj.superTaskName = $('#superTaskName').val();
 				obj.offset = params.offset;
 				obj.pagesize = params.limit;
 				return obj;
@@ -702,7 +762,7 @@ exit 0
 				,{
 					title: I18n.jobinfo_field_jobdesc,
 					field: 'jobDesc',
-					width: '25',
+					width: '20',
 					widthUnit: '%',
 					align: 'left',
 					formatter: function(value, row, index) {
@@ -710,6 +770,25 @@ exit 0
 							return '<span title="' + value + '">' + value.substr(0, 15) + '...</span>';
 						} else {
 							return value;
+						}
+					}
+				},{
+					title: 'SuperTask',
+					field: 'superTaskName',
+					width: '15',
+					widthUnit: '%',
+					align: 'left',
+					formatter: function(value, row, index) {
+						var displayName = value || row.jobDesc;
+						var badgeClass = value ? 'label-primary' : 'label-default';
+						var title = value ? ('SubTask of: ' + value) : 'Standalone Job';
+
+						if (displayName.length > 12) {
+							return '<small class="label ' + badgeClass + '" title="' + title + '">' +
+							       displayName.substr(0, 12) + '...</small>';
+						} else {
+							return '<small class="label ' + badgeClass + '" title="' + title + '">' +
+							       displayName + '</small>';
 						}
 					}
 				},{
@@ -727,7 +806,7 @@ exit 0
 				},{
 					title: I18n.jobinfo_field_gluetype,
 					field: 'glueType',
-					width: '25',
+					width: '20',
 					widthUnit: '%',
 					formatter: function(value, row, index) {
 						// find glueType title
@@ -1372,6 +1451,150 @@ exit 0
 			}
 		});
 
+		// ---------------------- SuperTask field handling ----------------------
+
+		/**
+		 * Initialize SuperTask autocomplete for a modal
+		 */
+		function initSuperTaskAutocomplete(modalId) {
+			var $input = $(modalId + ' .superTaskInput');
+			var $hidden = $(modalId + ' input[name="superTaskId"]');
+			var $modal = $(modalId);
+			var searchTimeout = null;
+
+			// Clear on modal close
+			$modal.on('hidden.bs.modal', function() {
+				$input.val('');
+				$hidden.val('');
+				$(modalId + ' .editSuperTaskLink').hide();
+			});
+
+			// Listen for input changes - search database
+			$input.on('input', function() {
+				var query = $(this).val().trim();
+				var jobGroup = $(modalId + ' select[name="jobGroup"]').val();
+
+				if (query.length < 1) {
+					$hidden.val('');
+					$(modalId + ' .editSuperTaskLink').hide();
+					$('.superTaskDropdown').remove();
+					return;
+				}
+
+				// Debounce search (300ms delay)
+				clearTimeout(searchTimeout);
+				searchTimeout = setTimeout(function() {
+
+				// Query database for matching jobs (e.g., "4" finds 4, 14, 40, "04test")
+				$.ajax({
+					type: 'GET',
+					url: base_url + '/jobinfo/searchSuperTask',
+					data: { jobGroup: jobGroup, query: query },
+					dataType: 'json',
+					success: function(data) {
+						if (data.code == 200 && data.data && data.data.length > 0) {
+							showSuggestions($input, data.data, function(selectedJob) {
+								$input.val(selectedJob.id + ' - ' + selectedJob.jobDesc);
+								$hidden.val(selectedJob.id);
+								$(modalId + ' .editSuperTaskLink').show().data('superTaskId', selectedJob.id);
+							});
+						} else {
+							$('.superTaskDropdown').remove();
+						}
+					}
+				});
+				}, 300); // End debounce timeout
+			});
+
+			// Clear when job group changes
+			$(modalId + ' select[name="jobGroup"]').on('change', function() {
+				$input.val('');
+				$hidden.val('');
+				$(modalId + ' .editSuperTaskLink').hide();
+				$('.superTaskDropdown').remove();
+			});
+		}
+
+		/**
+		 * Show autocomplete suggestions dropdown
+		 */
+		function showSuggestions($input, matches, onSelect) {
+			// Remove existing dropdown
+			$('.superTaskDropdown').remove();
+
+			if (matches.length === 0) return;
+
+			// Create dropdown
+			var $dropdown = $('<div class="superTaskDropdown"></div>').css({
+				position: 'absolute',
+				zIndex: 10000,
+				backgroundColor: '#fff',
+				border: '1px solid #ccc',
+				maxHeight: '200px',
+				overflowY: 'auto',
+				width: $input.outerWidth(),
+				boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+			});
+
+			matches.forEach(function(job) {
+				// Build display text: ID - Description (params: ...)
+				var displayText = '<strong>' + job.id + '</strong> - ' + job.jobDesc;
+				if (job.executorParam && job.executorParam.trim()) {
+					var paramPreview = job.executorParam.length > 50
+						? job.executorParam.substring(0, 50) + '...'
+						: job.executorParam;
+					displayText += '<br><small style="color: #888;">params: ' + paramPreview + '</small>';
+				}
+
+				var $item = $('<div></div>')
+					.html(displayText)
+					.css({
+						padding: '8px 12px',
+						cursor: 'pointer',
+						borderBottom: '1px solid #eee'
+					})
+					.hover(
+						function() { $(this).css('backgroundColor', '#f0f8ff'); },
+						function() { $(this).css('backgroundColor', '#fff'); }
+					)
+					.on('click', function(e) {
+						e.stopPropagation();
+						onSelect(job);
+						$dropdown.remove();
+					});
+				$dropdown.append($item);
+			});
+
+			// Position dropdown
+			var offset = $input.offset();
+			$dropdown.css({
+				top: offset.top + $input.outerHeight(),
+				left: offset.left
+			});
+
+			$('body').append($dropdown);
+
+			// Close on outside click
+			$(document).one('click', function() {
+				$dropdown.remove();
+			});
+		}
+
+		// Initialize autocomplete for both modals
+		initSuperTaskAutocomplete('#addModal');
+		initSuperTaskAutocomplete('#updateModal');
+
+		// Handle "Edit SuperTask Code" link click
+		$(".editSuperTaskLink").on('click', function(e) {
+			e.preventDefault();
+			var superTaskId = $(this).data('superTaskId');
+			if (superTaskId) {
+				var modalId = $(this).closest('.modal').attr('id');
+				$('#' + modalId).modal('hide');
+				window.open(base_url + '/jobcode?jobId=' + superTaskId);
+			}
+		});
+
 		// ---------------------- update ----------------------
 
 		/**
@@ -1438,6 +1661,17 @@ exit 0
 				$('#updateModal .form select[name=executorBlockStrategy] option[value='+ row.executorBlockStrategy +']').prop('selected', true);
 				$("#updateModal .form input[name='executorTimeout']").val( row.executorTimeout );
 				$("#updateModal .form input[name='executorFailRetryCount']").val( row.executorFailRetryCount );
+
+				// Fill SuperTask field
+				if (row.superTaskId && row.superTaskName) {
+					$('#updateModal .superTaskInput').val(row.superTaskId + ' - ' + row.superTaskName);
+					$('#updateModal input[name="superTaskId"]').val(row.superTaskId);
+					$("#updateModal .editSuperTaskLink").show().data('superTaskId', row.superTaskId);
+				} else {
+					$('#updateModal .superTaskInput').val('');
+					$('#updateModal input[name="superTaskId"]').val('');
+					$("#updateModal .editSuperTaskLink").hide();
+				}
 
 			},
 			readFormData: function() {
@@ -1529,6 +1763,15 @@ exit 0
 			$('#addModal .form select[name=executorBlockStrategy] option[value='+ row.executorBlockStrategy +']').prop('selected', true);
 			$("#addModal .form input[name='executorTimeout']").val( row.executorTimeout );
 			$("#addModal .form input[name='executorFailRetryCount']").val( row.executorFailRetryCount );
+
+			// Fill SuperTask field (when copying)
+			if (row.superTaskId && row.superTaskName) {
+				$('#addModal .superTaskInput').val(row.superTaskId + ' - ' + row.superTaskName);
+				$('#addModal input[name="superTaskId"]').val(row.superTaskId);
+			} else {
+				$('#addModal .superTaskInput').val('');
+				$('#addModal input[name="superTaskId"]').val('');
+			}
 		});
 
 		// ---------------------- job_export ----------------------
@@ -1649,6 +1892,119 @@ exit 0
 							content: (data.msg || I18n.system_fail)
 						});
 					}
+				}
+			});
+		});
+
+		// ---------------------- job_fork_super (SuperJob batch copy) ----------------------
+
+		/**
+		 * job_fork_super - Fork a SuperJob by creating multiple SubTasks
+		 */
+		$("#data_operation").on('click', '.job_fork_super', function() {
+			// get select rows
+			var rows = $.adminTable.table.bootstrapTable('getSelections');
+
+			// check if exactly one row is selected
+			if (rows.length !== 1) {
+				layer.msg(I18n.system_please_choose + I18n.system_one + I18n.system_data);
+				return;
+			}
+			var row = rows[0];
+
+			// Generate template JSON array with 3 sample SubTasks
+			var templateJson = {
+				"templateJobId": row.id,
+				"mode": "advanced",
+				"tasks": [
+					{
+						"jobDesc": row.jobDesc + " - SubTask 1",
+						"executorParam": "param1"
+					},
+					{
+						"jobDesc": row.jobDesc + " - SubTask 2",
+						"executorParam": "param2"
+					},
+					{
+						"jobDesc": row.jobDesc + " - SubTask 3",
+						"executorParam": "param3"
+					}
+				]
+			};
+
+			// Pretty print JSON
+			var prettyJson = JSON.stringify(templateJson, null, 2);
+
+			// Populate modal
+			$('#forkSuperJsonContent').val(prettyJson);
+			$('#jobForkSuperModal').modal('show');
+		});
+
+		// confirm fork super (batch copy)
+		$('#confirmForkSuperBtn').on('click', function() {
+			var jsonContent = $('#forkSuperJsonContent').val();
+			if (!jsonContent || jsonContent.trim() === '') {
+				layer.msg(I18n.system_please_input + 'JSON');
+				return;
+			}
+
+			// validate JSON format
+			var requestData;
+			try {
+				requestData = JSON.parse(jsonContent);
+				if (typeof requestData !== 'object' || requestData === null) {
+					throw new Error('Must be JSON object');
+				}
+				if (!requestData.templateJobId || !requestData.mode || !requestData.tasks) {
+					throw new Error('Missing required fields: templateJobId, mode, tasks');
+				}
+			} catch (e) {
+				layer.msg('Invalid JSON: ' + e.message);
+				return;
+			}
+
+			// call batchCopy API
+			$.ajax({
+				type: 'POST',
+				url: base_url + '/jobinfo/batchCopy',
+				data: JSON.stringify(requestData),
+				contentType: 'application/json',
+				dataType: 'json',
+				success: function(data) {
+					if (data.code == 200) {
+						$('#jobForkSuperModal').modal('hide');
+						var result = data.data;
+						var message = 'Successfully created ' + result.successCount + ' SubTasks';
+						if (result.failCount > 0) {
+							message += '\nFailed: ' + result.failCount;
+							if (result.errors && result.errors.length > 0) {
+								message += '\nErrors: ' + result.errors.join('; ');
+							}
+						}
+						layer.open({
+							title: I18n.system_tips,
+							btn: [I18n.system_ok],
+							content: message.replace(/\n/g, '<br>'),
+							yes: function(index, layero) {
+								layer.close(index);
+								// refresh table
+								$.adminTable.table.bootstrapTable('refresh');
+							}
+						});
+					} else {
+						layer.open({
+							title: I18n.system_tips,
+							btn: [I18n.system_ok],
+							content: (data.msg || I18n.system_fail)
+						});
+					}
+				},
+				error: function(xhr, status, error) {
+					console.log("Error: " + error);
+					layer.open({
+						icon: '2',
+						content: 'Fork SuperJob failed: ' + error
+					});
 				}
 			});
 		});

@@ -91,6 +91,16 @@
 	</header>
 	<!-- 2-header end -->
 
+	<!-- SubTask notification bar -->
+	<#if jobInfo.superTaskId?? && jobInfo.superTaskId gt 0>
+		<div style="background: #d9edf7; padding: 6px 20px; border-bottom: 1px solid #bce8f1; text-align: center; font-size: 13px;">
+			<i class="fa fa-info-circle" style="color: #31708f;"></i> <span style="color: #31708f;">This SubTask overrides its own script.</span>
+			<a href="${request.contextPath}/jobcode?jobId=${jobInfo.superTaskId}" style="margin-left: 15px; font-weight: bold; color: #337ab7;">
+				<i class="fa fa-edit"></i> Edit SuperTask Template Instead
+			</a>
+		</div>
+	</#if>
+
 	<!-- 3-content start -->
 	<div class="content-wrapper" id="ideWindow" >
 	</div>

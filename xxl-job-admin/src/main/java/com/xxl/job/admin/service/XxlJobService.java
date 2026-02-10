@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.xxl.job.admin.model.XxlJobInfo;
+import com.xxl.job.admin.model.dto.BatchCopyRequest;
+import com.xxl.job.admin.model.dto.BatchCopyResult;
 import com.xxl.sso.core.model.LoginInfo;
 import com.xxl.tool.response.PageModel;
 import com.xxl.tool.response.Response;
@@ -24,7 +26,8 @@ public interface XxlJobService {
             int triggerStatus,
             String jobDesc,
             String executorHandler,
-            String author);
+            String author,
+            String superTaskName);
 
     /** add job */
     public Response<String> add(XxlJobInfo jobInfo, LoginInfo loginInfo);
@@ -63,4 +66,7 @@ public interface XxlJobService {
 
     /** chart info */
     public Response<Map<String, Object>> chartInfo(Date startDate, Date endDate);
+
+    /** batch copy jobs from template */
+    public BatchCopyResult batchCopy(BatchCopyRequest request);
 }

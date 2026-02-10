@@ -33,6 +33,9 @@
 
 		<result column="child_jobid" property="childJobId" />
 
+		<result column="super_task_id" property="superTaskId" />
+		<result column="super_task_name" property="superTaskName" />
+
 		<result column="trigger_status" property="triggerStatus" />
 		<result column="trigger_last_time" property="triggerLastTime" />
 		<result column="trigger_next_time" property="triggerNextTime" />
@@ -60,14 +63,17 @@
 		t.glue_remark,
 		t.glue_updatetime,
 		t.child_jobid,
+		t.super_task_id,
 		t.trigger_status,
 		t.trigger_last_time,
 		t.trigger_next_time
 	</sql>
 
 	<select id="pageList" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
-		SELECT <include refid="Base_Column_List" />
+		SELECT <include refid="Base_Column_List" />,
+		       st.job_desc AS super_task_name
 		FROM xxl_job_info AS t
+		LEFT JOIN xxl_job_info AS st ON t.super_task_id = st.id
 		<trim prefix="WHERE" prefixOverrides="AND | OR" >
 			<if test="jobGroup gt 0">
 				AND t.job_group = #{jobGroup}
@@ -84,14 +90,18 @@
 			<if test="author != null and author != ''">
 				AND t.author like CONCAT(CONCAT('%', #{author}), '%')
 			</if>
+			<if test="superTaskName != null and superTaskName != ''">
+				AND (t.job_desc like CONCAT(CONCAT('%', #{superTaskName}), '%') OR st.job_desc like CONCAT(CONCAT('%', #{superTaskName}), '%'))
+			</if>
 		</trim>
-		ORDER BY id DESC
+		ORDER BY t.id DESC
 		LIMIT #{offset}, #{pagesize}
 	</select>
 
 	<select id="pageListCount" parameterType="java.util.HashMap" resultType="int">
 		SELECT count(1)
 		FROM xxl_job_info AS t
+		LEFT JOIN xxl_job_info AS st ON t.super_task_id = st.id
 		<trim prefix="WHERE" prefixOverrides="AND | OR" >
 			<if test="jobGroup gt 0">
 				AND t.job_group = #{jobGroup}
@@ -107,6 +117,9 @@
 			</if>
 			<if test="author != null and author != ''">
 				AND t.author like CONCAT(CONCAT('%', #{author}), '%')
+			</if>
+			<if test="superTaskName != null and superTaskName != ''">
+				AND (t.job_desc like CONCAT(CONCAT('%', #{superTaskName}), '%') OR st.job_desc like CONCAT(CONCAT('%', #{superTaskName}), '%'))
 			</if>
 		</trim>
 	</select>
@@ -133,6 +146,7 @@
 			glue_remark,
 			glue_updatetime,
 			child_jobid,
+			super_task_id,
 			trigger_status,
 			trigger_last_time,
 			trigger_next_time
@@ -157,6 +171,7 @@
 			#{glueRemark},
 			#{glueUpdatetime},
 			#{childJobId},
+			#{superTaskId},
 			#{triggerStatus},
 			#{triggerLastTime},
 			#{triggerNextTime}
@@ -195,6 +210,7 @@
 			glue_remark = #{glueRemark},
 			glue_updatetime = #{glueUpdatetime},
 			child_jobid = #{childJobId},
+			super_task_id = #{superTaskId},
 			trigger_status = #{triggerStatus},
 			trigger_last_time = #{triggerLastTime},
 			trigger_next_time = #{triggerNextTime}
@@ -269,5 +285,30 @@
 			</foreach>
 			AND trigger_status = 1
 	</update>-->
+
+	<select id="findBySuperTaskId" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
+		SELECT <include refid="Base_Column_List" />
+		FROM xxl_job_info AS t
+		WHERE t.super_task_id = #{superTaskId}
+		ORDER BY id ASC
+	</select>
+
+	<select id="countBySuperTaskId" parameterType="java.util.HashMap" resultType="int">
+		SELECT count(1)
+		FROM xxl_job_info
+		WHERE super_task_id = #{superTaskId}
+	</select>
+
+	<select id="searchByIdOrDesc" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
+		SELECT <include refid="Base_Column_List" />
+		FROM xxl_job_info AS t
+		WHERE t.job_group = #{jobGroup}
+		AND (
+			CAST(t.id AS CHAR) LIKE CONCAT('%', #{query}, '%')
+			OR t.job_desc LIKE CONCAT('%', #{query}, '%')
+		)
+		ORDER BY t.id ASC
+		LIMIT 20
+	</select>
 
 </mapper>

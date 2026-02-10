@@ -68,6 +68,25 @@ public class JobTrigger {
         if (executorParam != null) {
             jobInfo.setExecutorParam(executorParam);
         }
+
+        // If SubTask, inherit code from SuperTask
+        if (jobInfo.getSuperTaskId() != null) {
+            XxlJobInfo superTask = xxlJobInfoMapper.loadById(jobInfo.getSuperTaskId());
+            if (superTask != null) {
+                // Inherit code-related fields from SuperTask
+                jobInfo.setExecutorHandler(superTask.getExecutorHandler());
+                jobInfo.setGlueType(superTask.getGlueType());
+                jobInfo.setGlueSource(superTask.getGlueSource());
+                jobInfo.setGlueUpdatetime(superTask.getGlueUpdatetime());
+            } else {
+                logger.warn(
+                        ">>>>>>>>>>>> trigger fail, SuperTask not found, jobId={}, superTaskId={}",
+                        jobId,
+                        jobInfo.getSuperTaskId());
+                return;
+            }
+        }
+
         int finalFailRetryCount =
                 failRetryCount >= 0 ? failRetryCount : jobInfo.getExecutorFailRetryCount();
         XxlJobGroup group = xxlJobGroupMapper.load(jobInfo.getJobGroup());

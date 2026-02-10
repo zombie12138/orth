@@ -22,7 +22,8 @@ public interface XxlJobInfoMapper {
             @Param("triggerStatus") int triggerStatus,
             @Param("jobDesc") String jobDesc,
             @Param("executorHandler") String executorHandler,
-            @Param("author") String author);
+            @Param("author") String author,
+            @Param("superTaskName") String superTaskName);
 
     public int pageListCount(
             @Param("offset") int offset,
@@ -31,7 +32,8 @@ public interface XxlJobInfoMapper {
             @Param("triggerStatus") int triggerStatus,
             @Param("jobDesc") String jobDesc,
             @Param("executorHandler") String executorHandler,
-            @Param("author") String author);
+            @Param("author") String author,
+            @Param("superTaskName") String superTaskName);
 
     public int save(XxlJobInfo info);
 
@@ -65,4 +67,30 @@ public interface XxlJobInfoMapper {
      * @return
      */
     public int scheduleUpdate(XxlJobInfo xxlJobInfo);
+
+    /**
+     * find all SubTasks by SuperTask ID
+     *
+     * @param superTaskId SuperTask ID
+     * @return list of SubTasks
+     */
+    public List<XxlJobInfo> findBySuperTaskId(@Param("superTaskId") int superTaskId);
+
+    /**
+     * count SubTasks by SuperTask ID
+     *
+     * @param superTaskId SuperTask ID
+     * @return count of SubTasks
+     */
+    public int countBySuperTaskId(@Param("superTaskId") int superTaskId);
+
+    /**
+     * Search jobs by ID or description (for SuperTask autocomplete)
+     *
+     * @param jobGroup job group ID
+     * @param query search query (matches job ID or description)
+     * @return list of matching jobs (max 20)
+     */
+    public List<XxlJobInfo> searchByIdOrDesc(
+            @Param("jobGroup") int jobGroup, @Param("query") String query);
 }

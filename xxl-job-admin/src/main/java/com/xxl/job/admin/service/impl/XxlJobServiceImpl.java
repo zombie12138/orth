@@ -12,6 +12,9 @@ import com.xxl.job.admin.mapper.*;
 import com.xxl.job.admin.model.XxlJobGroup;
 import com.xxl.job.admin.model.XxlJobInfo;
 import com.xxl.job.admin.model.XxlJobLogReport;
+import com.xxl.job.admin.model.dto.BatchCopyRequest;
+import com.xxl.job.admin.model.dto.BatchCopyResult;
+import com.xxl.job.admin.model.dto.SubTaskConfig;
 import com.xxl.job.admin.scheduler.config.XxlJobAdminBootstrap;
 import com.xxl.job.admin.scheduler.cron.CronExpression;
 import com.xxl.job.admin.scheduler.misfire.MisfireStrategyEnum;
@@ -56,7 +59,8 @@ public class XxlJobServiceImpl implements XxlJobService {
             int triggerStatus,
             String jobDesc,
             String executorHandler,
-            String author) {
+            String author,
+            String superTaskName) {
 
         // page list
         List<XxlJobInfo> list =
@@ -67,7 +71,8 @@ public class XxlJobServiceImpl implements XxlJobService {
                         triggerStatus,
                         jobDesc,
                         executorHandler,
-                        author);
+                        author,
+                        superTaskName);
         int list_count =
                 xxlJobInfoMapper.pageListCount(
                         offset,
@@ -76,7 +81,8 @@ public class XxlJobServiceImpl implements XxlJobService {
                         triggerStatus,
                         jobDesc,
                         executorHandler,
-                        author);
+                        author,
+                        superTaskName);
 
         // package result
         PageModel<XxlJobInfo> pageModel = new PageModel<>();
@@ -422,6 +428,7 @@ public class XxlJobServiceImpl implements XxlJobService {
         exists_jobInfo.setExecutorTimeout(jobInfo.getExecutorTimeout());
         exists_jobInfo.setExecutorFailRetryCount(jobInfo.getExecutorFailRetryCount());
         exists_jobInfo.setChildJobId(jobInfo.getChildJobId());
+        exists_jobInfo.setSuperTaskId(jobInfo.getSuperTaskId());
         exists_jobInfo.setTriggerNextTime(nextTriggerTime);
 
         exists_jobInfo.setUpdateTime(new Date());
@@ -448,6 +455,15 @@ public class XxlJobServiceImpl implements XxlJobService {
         // valid jobGroup permission
         if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, xxlJobInfo.getJobGroup())) {
             return Response.ofFail(I18nUtil.getString("system_permission_limit"));
+        }
+
+        // Check if this is a SuperTask with SubTasks
+        int subTaskCount = xxlJobInfoMapper.countBySuperTaskId(id);
+        if (subTaskCount > 0) {
+            return Response.ofFail(
+                    "Cannot delete SuperTask: "
+                            + subTaskCount
+                            + " SubTask(s) exist. Delete SubTasks first or break the association.");
         }
 
         xxlJobInfoMapper.delete(id);
@@ -947,5 +963,165 @@ public class XxlJobServiceImpl implements XxlJobService {
         result.put("triggerCountFailTotal", triggerCountFailTotal);
 
         return Response.ofSuccess(result);
+    }
+
+    @Override
+    public BatchCopyResult batchCopy(BatchCopyRequest request) {
+        BatchCopyResult result = new BatchCopyResult();
+
+        // 1. Load template job
+        XxlJobInfo templateJob = xxlJobInfoMapper.loadById(request.getTemplateJobId());
+        if (templateJob == null) {
+            result.addError("Template job not found: " + request.getTemplateJobId());
+            return result;
+        }
+
+        // 2. Parse configurations based on mode
+        List<SubTaskConfig> configs = new ArrayList<>();
+        if ("simple".equals(request.getMode())) {
+            // Simple mode: create configs from param list
+            if (request.getParams() == null || request.getParams().isEmpty()) {
+                result.addError("Params list is required for simple mode");
+                return result;
+            }
+
+            for (int i = 0; i < request.getParams().size(); i++) {
+                SubTaskConfig config = new SubTaskConfig();
+                config.setExecutorParam(request.getParams().get(i));
+
+                // Apply common overrides
+                if (request.getJobDesc() != null) {
+                    config.setJobDesc(request.getJobDesc());
+                }
+                if (request.getAuthor() != null) {
+                    config.setAuthor(request.getAuthor());
+                }
+                if (request.getScheduleConf() != null) {
+                    config.setScheduleConf(request.getScheduleConf());
+                }
+                if (request.getScheduleType() != null) {
+                    config.setScheduleType(request.getScheduleType());
+                }
+                if (request.getAlarmEmail() != null) {
+                    config.setAlarmEmail(request.getAlarmEmail());
+                }
+
+                configs.add(config);
+            }
+        } else if ("advanced".equals(request.getMode())) {
+            // Advanced mode: use provided task configs
+            if (request.getTasks() == null || request.getTasks().isEmpty()) {
+                result.addError("Tasks list is required for advanced mode");
+                return result;
+            }
+            configs = request.getTasks();
+        } else {
+            result.addError(
+                    "Invalid mode: " + request.getMode() + ". Must be 'simple' or 'advanced'");
+            return result;
+        }
+
+        // 3. Create SubTasks
+        for (int i = 0; i < configs.size(); i++) {
+            try {
+                SubTaskConfig config = configs.get(i);
+
+                // Clone template job
+                XxlJobInfo subTask = new XxlJobInfo();
+                subTask.setJobGroup(templateJob.getJobGroup());
+                subTask.setJobDesc(templateJob.getJobDesc());
+                subTask.setAuthor(templateJob.getAuthor());
+                subTask.setAlarmEmail(templateJob.getAlarmEmail());
+                subTask.setScheduleType(templateJob.getScheduleType());
+                subTask.setScheduleConf(templateJob.getScheduleConf());
+                subTask.setMisfireStrategy(templateJob.getMisfireStrategy());
+                subTask.setExecutorRouteStrategy(templateJob.getExecutorRouteStrategy());
+                subTask.setExecutorHandler(templateJob.getExecutorHandler());
+                subTask.setExecutorParam(templateJob.getExecutorParam());
+                subTask.setExecutorBlockStrategy(templateJob.getExecutorBlockStrategy());
+                subTask.setExecutorTimeout(templateJob.getExecutorTimeout());
+                subTask.setExecutorFailRetryCount(templateJob.getExecutorFailRetryCount());
+                subTask.setGlueType(templateJob.getGlueType());
+                subTask.setGlueSource(templateJob.getGlueSource());
+                subTask.setGlueRemark(templateJob.getGlueRemark());
+                subTask.setChildJobId(templateJob.getChildJobId());
+
+                // Set SuperTask association
+                subTask.setSuperTaskId(templateJob.getId());
+
+                // Apply config overrides
+                if (config.getExecutorParam() != null) {
+                    subTask.setExecutorParam(config.getExecutorParam());
+                }
+                if (config.getJobDesc() != null) {
+                    subTask.setJobDesc(config.getJobDesc());
+                }
+                if (config.getAuthor() != null) {
+                    subTask.setAuthor(config.getAuthor());
+                }
+                if (config.getScheduleConf() != null) {
+                    subTask.setScheduleConf(config.getScheduleConf());
+                }
+                if (config.getScheduleType() != null) {
+                    subTask.setScheduleType(config.getScheduleType());
+                }
+                if (config.getAlarmEmail() != null) {
+                    subTask.setAlarmEmail(config.getAlarmEmail());
+                }
+
+                // Generate job name
+                String jobName =
+                        generateSubTaskName(
+                                templateJob.getJobDesc(), request.getNameTemplate(), i + 1);
+                subTask.setJobDesc(jobName);
+
+                // Set timestamps
+                subTask.setAddTime(new Date());
+                subTask.setUpdateTime(new Date());
+                subTask.setGlueUpdatetime(new Date());
+
+                // Default: stopped status
+                subTask.setTriggerStatus(TriggerStatus.STOPPED.getValue());
+                subTask.setTriggerLastTime(0);
+                subTask.setTriggerNextTime(0);
+
+                // Save to database
+                int savedId = xxlJobInfoMapper.save(subTask);
+                if (savedId > 0) {
+                    result.addCreatedJobId(subTask.getId());
+                    logger.info(
+                            "SubTask created successfully: id={}, executorParam={}",
+                            subTask.getId(),
+                            subTask.getExecutorParam());
+                } else {
+                    result.addError("Failed to save SubTask " + (i + 1));
+                }
+
+            } catch (Exception e) {
+                logger.error("Failed to create SubTask {}: {}", i + 1, e.getMessage(), e);
+                result.addError("SubTask " + (i + 1) + ": " + e.getMessage());
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Generate SubTask name from template
+     *
+     * @param originName original job name
+     * @param nameTemplate name template with placeholders: {origin}, {index}
+     * @param index subtask index (1-based)
+     * @return generated name
+     */
+    private String generateSubTaskName(String originName, String nameTemplate, int index) {
+        if (StringTool.isBlank(nameTemplate)) {
+            // Default template: "{origin}-{index}"
+            return originName + "-" + index;
+        }
+
+        return nameTemplate
+                .replace("{origin}", originName)
+                .replace("{index}", String.valueOf(index));
     }
 }
