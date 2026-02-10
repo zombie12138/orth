@@ -32,3 +32,10 @@ Orth is a customized fork of xxl-job under the Abyss project, designed for high-
 - Add clear comments for distributed locks: acquisition timing, release conditions
 - Document state machine transitions: conditions, side effects, failure handling
 - Explain retry logic and failure recovery mechanisms
+
+## Development Workflow
+
+- **ALWAYS update `/arch/` documentation** when adding new features or refactoring
+- **ALWAYS run `mvn clean package` before building Docker images**
+- Document API design, database schema changes, UI patterns, and integration flows
+- Run `mvn spotless:apply` before committing to ensure code formatting

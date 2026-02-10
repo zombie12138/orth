@@ -207,6 +207,22 @@ This enables backfilling missed executions for batch data collection tasks.
   - State machine transitions (conditions, side effects, failure handling)
   - Retry logic and failure recovery mechanisms
 
+## Development Workflow
+
+### Architecture Documentation
+
+- **ALWAYS update architecture docs** when adding new features or refactoring
+- Create/update docs in `/arch/` directory for significant changes
+- Document: API design, database schema changes, UI patterns, integration flows
+- Include diagrams (Mermaid), code examples, and use case scenarios
+
+### Build Process
+
+- **ALWAYS run `mvn clean package` before building Docker images**
+- Ensures Docker containers use the latest compiled code
+- Required for admin module: `cd xxl-job-admin && mvn clean package -DskipTests`
+- Run `mvn spotless:apply` before committing to ensure code formatting
+
 ## Testing
 
 Tests are skipped by default (`maven.test.skip=true` in pom.xml). Framework configured but not actively maintained.
