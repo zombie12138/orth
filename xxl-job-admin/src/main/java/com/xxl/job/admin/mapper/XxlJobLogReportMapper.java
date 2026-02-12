@@ -9,21 +9,21 @@ import org.apache.ibatis.annotations.Param;
 import com.xxl.job.admin.model.XxlJobLogReport;
 
 /**
- * job log
+ * MyBatis mapper for job log report operations.
  *
- * @author xuxueli 2019-11-22
+ * <p>Provides aggregated statistics and metrics for job execution monitoring and dashboard
+ * displays.
  */
 @Mapper
 public interface XxlJobLogReportMapper {
 
-    /*public int save(XxlJobLogReport xxlJobLogReport);
+    /** Insert or update daily log report statistics (upsert). */
+    int saveOrUpdate(XxlJobLogReport xxlJobLogReport);
 
-    public int update(XxlJobLogReport xxlJobLogReport);*/
-
-    public int saveOrUpdate(XxlJobLogReport xxlJobLogReport);
-
-    public List<XxlJobLogReport> queryLogReport(
+    /** Query log reports for a date range. */
+    List<XxlJobLogReport> queryLogReport(
             @Param("triggerDayFrom") Date triggerDayFrom, @Param("triggerDayTo") Date triggerDayTo);
 
-    public XxlJobLogReport queryLogReportTotal();
+    /** Query total aggregated statistics across all days. */
+    XxlJobLogReport queryLogReportTotal();
 }

@@ -23,7 +23,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * index controller
+ * Login controller for authentication and password management.
+ *
+ * <p>Handles operations including:
+ *
+ * <ul>
+ *   <li>User login with cookie-based session
+ *   <li>User logout
+ *   <li>Password updates for logged-in users
+ * </ul>
  *
  * @author xuxueli 2015-12-19 16:13:16
  */
@@ -31,14 +39,25 @@ import jakarta.servlet.http.HttpServletResponse;
 @RequestMapping("/auth")
 public class LoginController {
 
+    private static final int MIN_PASSWORD_LENGTH = 4;
+    private static final int MAX_PASSWORD_LENGTH = 20;
+    private static final String REMEMBER_ME_FLAG = "on";
+
     @Resource private XxlJobUserMapper xxlJobUserMapper;
 
+    /**
+     * Displays the login page or redirects to home if already authenticated.
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param modelAndView the model and view
+     * @return the login view or redirect to home
+     */
     @RequestMapping("/login")
     @XxlSso(login = false)
     public ModelAndView login(
             HttpServletRequest request, HttpServletResponse response, ModelAndView modelAndView) {
 
-        // xxl-sso, logincheck
         Response<LoginInfo> loginInfoResponse =
                 XxlSsoHelper.loginCheckWithCookie(request, response);
 
@@ -46,9 +65,20 @@ public class LoginController {
             modelAndView.setView(new RedirectView("/", true, false));
             return modelAndView;
         }
+
         return new ModelAndView("base/login");
     }
 
+    /**
+     * Processes login request and creates session.
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @param userName the username
+     * @param password the password
+     * @param ifRemember the "remember me" flag
+     * @return success or failure response
+     */
     @RequestMapping(value = "/doLogin", method = RequestMethod.POST)
     @ResponseBody
     @XxlSso(login = false)
@@ -59,82 +89,108 @@ public class LoginController {
             String password,
             String ifRemember) {
 
-        // param
-        boolean ifRem = StringTool.isNotBlank(ifRemember) && "on".equals(ifRemember);
         if (StringTool.isBlank(userName) || StringTool.isBlank(password)) {
             return Response.ofFail(I18nUtil.getString("login_param_empty"));
         }
 
-        // valid user、status
-        XxlJobUser xxlJobUser = xxlJobUserMapper.loadByUserName(userName);
-        if (xxlJobUser == null) {
+        boolean rememberMe = REMEMBER_ME_FLAG.equals(ifRemember);
+        XxlJobUser user = xxlJobUserMapper.loadByUserName(userName);
+
+        if (user == null) {
             return Response.ofFail(I18nUtil.getString("login_param_unvalid"));
         }
 
-        // valid passowrd
         String passwordHash = SHA256Tool.sha256(password);
-        if (!passwordHash.equals(xxlJobUser.getPassword())) {
+        if (!passwordHash.equals(user.getPassword())) {
             return Response.ofFail(I18nUtil.getString("login_param_unvalid"));
         }
 
-        // xxl-sso, do login
-        LoginInfo loginInfo =
-                new LoginInfo(String.valueOf(xxlJobUser.getId()), UUIDTool.getSimpleUUID());
-        Response<String> result = XxlSsoHelper.loginWithCookie(loginInfo, response, ifRem);
+        LoginInfo loginInfo = new LoginInfo(String.valueOf(user.getId()), UUIDTool.getSimpleUUID());
+        Response<String> result = XxlSsoHelper.loginWithCookie(loginInfo, response, rememberMe);
 
         return Response.of(result.getCode(), result.getMsg());
     }
 
+    /**
+     * Processes logout request and clears session.
+     *
+     * @param request the HTTP request
+     * @param response the HTTP response
+     * @return success or failure response
+     */
     @RequestMapping(value = "/logout", method = RequestMethod.POST)
     @ResponseBody
     @XxlSso(login = false)
     public Response<String> logout(HttpServletRequest request, HttpServletResponse response) {
-
-        // xxl-sso, do logout
         Response<String> result = XxlSsoHelper.logoutWithCookie(request, response);
-
         return Response.of(result.getCode(), result.getMsg());
     }
 
+    /**
+     * Updates the password for the currently logged-in user.
+     *
+     * @param request the HTTP request for login info
+     * @param oldPassword the old password
+     * @param password the new password
+     * @return success or failure response
+     */
     @RequestMapping("/updatePwd")
     @ResponseBody
     @XxlSso
     public Response<String> updatePwd(
             HttpServletRequest request, String oldPassword, String password) {
 
-        // valid
-        if (oldPassword == null || oldPassword.trim().isEmpty()) {
-            return Response.ofFail(
-                    I18nUtil.getString("system_please_input")
-                            + I18nUtil.getString("change_pwd_field_oldpwd"));
-        }
-        if (password == null || password.trim().isEmpty()) {
-            return Response.ofFail(
-                    I18nUtil.getString("system_please_input")
-                            + I18nUtil.getString("change_pwd_field_oldpwd"));
-        }
-        password = password.trim();
-        if (!(password.length() >= 4 && password.length() <= 20)) {
-            return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
+        Response<String> validationResult = validatePasswordUpdate(oldPassword, password);
+        if (!validationResult.isSuccess()) {
+            return validationResult;
         }
 
-        // md5 password
-        String oldPasswordHash = SHA256Tool.sha256(oldPassword);
-        String passwordHash = SHA256Tool.sha256(password);
-
-        // valid old pwd
         Response<LoginInfo> loginInfoResponse = XxlSsoHelper.loginCheckWithAttr(request);
-        XxlJobUser existUser =
+        XxlJobUser existingUser =
                 xxlJobUserMapper.loadByUserName(loginInfoResponse.getData().getUserName());
-        if (!oldPasswordHash.equals(existUser.getPassword())) {
+
+        String oldPasswordHash = SHA256Tool.sha256(oldPassword);
+        if (!oldPasswordHash.equals(existingUser.getPassword())) {
             return Response.ofFail(
                     I18nUtil.getString("change_pwd_field_oldpwd")
                             + I18nUtil.getString("system_unvalid"));
         }
 
-        // write new
-        existUser.setPassword(passwordHash);
-        xxlJobUserMapper.update(existUser);
+        String newPasswordHash = SHA256Tool.sha256(password);
+        existingUser.setPassword(newPasswordHash);
+        xxlJobUserMapper.update(existingUser);
+
+        return Response.ofSuccess();
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    /**
+     * Validates password update input parameters.
+     *
+     * @param oldPassword the old password
+     * @param newPassword the new password
+     * @return success if valid, failure with error message otherwise
+     */
+    private Response<String> validatePasswordUpdate(String oldPassword, String newPassword) {
+        if (StringTool.isBlank(oldPassword)) {
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_input")
+                            + I18nUtil.getString("change_pwd_field_oldpwd"));
+        }
+
+        if (StringTool.isBlank(newPassword)) {
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_input")
+                            + I18nUtil.getString("change_pwd_field_oldpwd"));
+        }
+
+        String trimmedPassword = newPassword.trim();
+        int passwordLength = trimmedPassword.length();
+
+        if (passwordLength < MIN_PASSWORD_LENGTH || passwordLength > MAX_PASSWORD_LENGTH) {
+            return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
+        }
 
         return Response.ofSuccess();
     }

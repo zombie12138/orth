@@ -8,14 +8,16 @@ import org.apache.ibatis.annotations.Param;
 import com.xxl.job.admin.model.XxlJobInfo;
 
 /**
- * job info
+ * MyBatis mapper for job configuration operations.
  *
- * @author xuxueli 2016-1-12 18:03:45
+ * <p>Core mapper for managing job definitions, scheduling state, and SuperTask relationships.
+ * Provides specialized queries for time-ring scheduling algorithm.
  */
 @Mapper
 public interface XxlJobInfoMapper {
 
-    public List<XxlJobInfo> pageList(
+    /** Query paginated job list with optional filters. */
+    List<XxlJobInfo> pageList(
             @Param("offset") int offset,
             @Param("pagesize") int pagesize,
             @Param("jobGroup") int jobGroup,
@@ -25,7 +27,8 @@ public interface XxlJobInfoMapper {
             @Param("author") String author,
             @Param("superTaskName") String superTaskName);
 
-    public int pageListCount(
+    /** Count total jobs matching pageList query criteria. */
+    int pageListCount(
             @Param("offset") int offset,
             @Param("pagesize") int pagesize,
             @Param("jobGroup") int jobGroup,
@@ -35,62 +38,71 @@ public interface XxlJobInfoMapper {
             @Param("author") String author,
             @Param("superTaskName") String superTaskName);
 
-    public int save(XxlJobInfo info);
+    /** Create new job. */
+    int save(XxlJobInfo info);
 
-    public XxlJobInfo loadById(@Param("id") int id);
+    /** Load job by ID. */
+    XxlJobInfo loadById(@Param("id") int id);
 
-    public int update(XxlJobInfo xxlJobInfo);
+    /** Update job configuration. */
+    int update(XxlJobInfo xxlJobInfo);
 
-    public int delete(@Param("id") long id);
+    /** Delete job by ID. */
+    int delete(@Param("id") long id);
 
-    public List<XxlJobInfo> getJobsByGroup(@Param("jobGroup") int jobGroup);
+    /** Get all jobs in a specific executor group. */
+    List<XxlJobInfo> getJobsByGroup(@Param("jobGroup") int jobGroup);
 
-    public int findAllCount();
+    /** Count total jobs in the system. */
+    int findAllCount();
 
     /**
-     * find schedule job, limit "trigger_status = 1"
+     * Query jobs due for scheduling (time-ring pre-read).
      *
-     * @param maxNextTime
-     * @param pagesize
-     * @return
+     * <p>Only returns jobs with triggerStatus=1 (STARTED) and triggerNextTime &lt;= maxNextTime.
+     * Used by JobScheduleHelper to populate the time-ring buffer.
+     *
+     * @param maxNextTime maximum next trigger time (current time + pre-read window)
+     * @param pagesize batch size for pre-read
+     * @return list of jobs ready to schedule
      */
-    public List<XxlJobInfo> scheduleJobQuery(
+    List<XxlJobInfo> scheduleJobQuery(
             @Param("maxNextTime") long maxNextTime, @Param("pagesize") int pagesize);
 
     /**
-     * update schedule job
+     * Update job trigger state after scheduling (with optimistic locking).
      *
-     * <p>1、can only update "trigger_status = 1", Avoid stopping tasks from being opened 2、valid
-     * "triggerStatus gte 0", filter illegal state
+     * <p>Requirements: 1) Only updates jobs with triggerStatus=1 (prevents stopped jobs from being
+     * rescheduled) 2) Validates triggerStatus &gt;= 0 (filters illegal states)
      *
-     * @param xxlJobInfo
-     * @return
+     * @param xxlJobInfo job with updated trigger times
+     * @return 1 if updated successfully, 0 if state conflict
      */
-    public int scheduleUpdate(XxlJobInfo xxlJobInfo);
+    int scheduleUpdate(XxlJobInfo xxlJobInfo);
 
     /**
-     * find all SubTasks by SuperTask ID
+     * Find all SubTasks linked to a SuperTask template.
      *
-     * @param superTaskId SuperTask ID
-     * @return list of SubTasks
+     * @param superTaskId SuperTask template ID
+     * @return list of SubTask instances
      */
-    public List<XxlJobInfo> findBySuperTaskId(@Param("superTaskId") int superTaskId);
+    List<XxlJobInfo> findBySuperTaskId(@Param("superTaskId") int superTaskId);
 
     /**
-     * count SubTasks by SuperTask ID
+     * Count SubTasks linked to a SuperTask template.
      *
-     * @param superTaskId SuperTask ID
-     * @return count of SubTasks
+     * @param superTaskId SuperTask template ID
+     * @return count of SubTask instances
      */
-    public int countBySuperTaskId(@Param("superTaskId") int superTaskId);
+    int countBySuperTaskId(@Param("superTaskId") int superTaskId);
 
     /**
-     * Search jobs by ID or description (for SuperTask autocomplete)
+     * Search jobs by ID or description (for SuperTask autocomplete).
      *
      * @param jobGroup job group ID
      * @param query search query (matches job ID or description)
      * @return list of matching jobs (max 20)
      */
-    public List<XxlJobInfo> searchByIdOrDesc(
+    List<XxlJobInfo> searchByIdOrDesc(
             @Param("jobGroup") int jobGroup, @Param("query") String query);
 }

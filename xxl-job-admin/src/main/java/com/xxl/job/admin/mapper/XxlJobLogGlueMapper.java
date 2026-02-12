@@ -8,18 +8,23 @@ import org.apache.ibatis.annotations.Param;
 import com.xxl.job.admin.model.XxlJobLogGlue;
 
 /**
- * job log for glue
+ * MyBatis mapper for GLUE code version history operations.
  *
- * @author xuxueli 2016-5-19 18:04:56
+ * <p>Manages version control for dynamically edited job code (GLUE mode) enabling auditing and
+ * rollback capabilities.
  */
 @Mapper
 public interface XxlJobLogGlueMapper {
 
-    public int save(XxlJobLogGlue xxlJobLogGlue);
+    /** Save new GLUE code version. */
+    int save(XxlJobLogGlue xxlJobLogGlue);
 
-    public List<XxlJobLogGlue> findByJobId(@Param("jobId") int jobId);
+    /** Find all GLUE versions for a specific job. */
+    List<XxlJobLogGlue> findByJobId(@Param("jobId") int jobId);
 
-    public int removeOld(@Param("jobId") int jobId, @Param("limit") int limit);
+    /** Remove old GLUE versions, keeping only the most recent ones up to the limit. */
+    int removeOld(@Param("jobId") int jobId, @Param("limit") int limit);
 
-    public int deleteByJobId(@Param("jobId") int jobId);
+    /** Delete all GLUE versions for a specific job. */
+    int deleteByJobId(@Param("jobId") int jobId);
 }

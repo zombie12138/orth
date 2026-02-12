@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,7 +40,16 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * index controller
+ * Job log controller for managing and viewing job execution logs.
+ *
+ * <p>Handles operations including:
+ *
+ * <ul>
+ *   <li>Viewing and filtering job execution logs
+ *   <li>Killing running jobs
+ *   <li>Clearing old logs with various retention policies
+ *   <li>Viewing detailed log content from executors
+ * </ul>
  *
  * @author xuxueli 2015-12-19 16:13:16
  */
@@ -50,11 +58,31 @@ import jakarta.servlet.http.HttpServletRequest;
 public class JobLogController {
     private static final Logger logger = LoggerFactory.getLogger(JobLogController.class);
 
+    private static final int CLEAR_TYPE_ONE_MONTH = 1;
+    private static final int CLEAR_TYPE_THREE_MONTHS = 2;
+    private static final int CLEAR_TYPE_SIX_MONTHS = 3;
+    private static final int CLEAR_TYPE_ONE_YEAR = 4;
+    private static final int CLEAR_TYPE_1K = 5;
+    private static final int CLEAR_TYPE_10K = 6;
+    private static final int CLEAR_TYPE_30K = 7;
+    private static final int CLEAR_TYPE_100K = 8;
+    private static final int CLEAR_TYPE_ALL = 9;
+    private static final int BATCH_DELETE_SIZE = 1000;
+
     @Resource private XxlJobGroupMapper xxlJobGroupMapper;
     @Resource public XxlJobInfoMapper xxlJobInfoMapper;
     @Resource public XxlJobLogMapper xxlJobLogMapper;
-    @Autowired private XxlJobService xxlJobService;
+    @Resource private XxlJobService xxlJobService;
 
+    /**
+     * Displays the job log list page with filtered job groups and jobs.
+     *
+     * @param request the HTTP request
+     * @param model the model for view rendering
+     * @param jobGroup the job group filter (optional)
+     * @param jobId the job ID filter (optional)
+     * @return the view name for log list page
+     */
     @RequestMapping
     public String index(
             HttpServletRequest request,
@@ -63,61 +91,18 @@ public class JobLogController {
                     Integer jobGroup,
             @RequestParam(value = "jobId", required = false, defaultValue = "0") Integer jobId) {
 
-        // find all jobGroup
         List<XxlJobGroup> jobGroupListTotal = xxlJobGroupMapper.findAll();
-
-        // filter JobGroupList
         List<XxlJobGroup> jobGroupList =
                 JobGroupPermissionUtil.filterJobGroupByPermission(request, jobGroupListTotal);
+
         if (CollectionTool.isEmpty(jobGroupList)) {
             throw new XxlJobException(I18nUtil.getString("jobgroup_empty"));
         }
 
-        // parse jobGroup
-        if (jobId > 0) {
-            // assign jobId (+ jobGroup)
-            XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(jobId);
-            if (jobInfo == null) {
-                // jobId not exist, inteceptor
-                throw new RuntimeException(
-                        I18nUtil.getString("jobinfo_field_id")
-                                + I18nUtil.getString("system_unvalid"));
-            }
-            jobGroup = jobInfo.getJobGroup();
-        } else if (jobGroup > 0) {
-            // assign jobGroup
-            Integer finalJobGroup = jobGroup;
-            if (CollectionTool.isEmpty(
-                    jobGroupListTotal.stream()
-                            .filter(item -> item.getId() == finalJobGroup)
-                            .toList())) {
-                // jobGroup not exist, use first
-                jobGroup = jobGroupList.get(0).getId();
-            }
-            jobId = 0;
-        } else {
-            // default first valid jobGroup
-            jobGroup = jobGroupList.get(0).getId();
-            jobId = 0;
-        }
-
-        /*// valid permission
-        JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);*/
-
-        // find jobList
+        jobGroup = resolveJobGroup(jobId, jobGroup, jobGroupListTotal, jobGroupList);
         List<XxlJobInfo> jobInfoList = xxlJobInfoMapper.getJobsByGroup(jobGroup);
+        jobId = resolveJobId(jobId, jobInfoList);
 
-        // parse jobId
-        if (CollectionTool.isEmpty(jobInfoList)) {
-            jobId = 0;
-        } else {
-            if (!jobInfoList.stream().map(XxlJobInfo::getId).toList().contains(jobId)) {
-                // jobId not exist, use first
-                jobId = jobInfoList.get(0).getId();
-            }
-        }
-
-        // write
         model.addAttribute("JobGroupList", jobGroupList);
         model.addAttribute("jobInfoList", jobInfoList);
         model.addAttribute("jobGroup", jobGroup);
@@ -126,6 +111,18 @@ public class JobLogController {
         return "biz/log.list";
     }
 
+    /**
+     * Retrieves a paginated list of job logs with optional filtering.
+     *
+     * @param request the HTTP request for permission validation
+     * @param offset the starting offset for pagination
+     * @param pagesize the page size
+     * @param jobGroup the job group ID
+     * @param jobId the job ID
+     * @param logStatus the log status filter
+     * @param filterTime the time range filter (format: "start - end")
+     * @return paginated response containing job logs
+     */
     @RequestMapping("/pageList")
     @ResponseBody
     public Response<PageModel<XxlJobLog>> pageList(
@@ -137,121 +134,70 @@ public class JobLogController {
             @RequestParam int logStatus,
             @RequestParam String filterTime) {
 
-        // valid jobGroup permission
         JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
 
-        // valid jobId
         if (jobId < 1) {
             return Response.ofFail(
                     I18nUtil.getString("system_please_choose") + I18nUtil.getString("jobinfo_job"));
         }
 
-        // parse param
-        Date triggerTimeStart = null;
-        Date triggerTimeEnd = null;
-        if (StringTool.isNotBlank(filterTime)) {
-            String[] temp = filterTime.split(" - ");
-            if (temp.length == 2) {
-                triggerTimeStart = DateTool.parseDateTime(temp[0]);
-                triggerTimeEnd = DateTool.parseDateTime(temp[1]);
-            }
-        }
-
-        // page query
+        Date[] timeRange = parseFilterTime(filterTime);
         List<XxlJobLog> list =
                 xxlJobLogMapper.pageList(
-                        offset,
-                        pagesize,
-                        jobGroup,
-                        jobId,
-                        triggerTimeStart,
-                        triggerTimeEnd,
-                        logStatus);
-        int list_count =
+                        offset, pagesize, jobGroup, jobId, timeRange[0], timeRange[1], logStatus);
+        int totalCount =
                 xxlJobLogMapper.pageListCount(
-                        offset,
-                        pagesize,
-                        jobGroup,
-                        jobId,
-                        triggerTimeStart,
-                        triggerTimeEnd,
-                        logStatus);
+                        offset, pagesize, jobGroup, jobId, timeRange[0], timeRange[1], logStatus);
 
-        // package result
         PageModel<XxlJobLog> pageModel = new PageModel<>();
         pageModel.setData(list);
-        pageModel.setTotal(list_count);
+        pageModel.setTotal(totalCount);
 
         return Response.ofSuccess(pageModel);
     }
 
-    /** filter xss tag */
-    private String filter(String originData) {
-
-        // exclude tag
-        Map<String, String> excludeTagMap = new HashMap<String, String>();
-        excludeTagMap.put("<br>", "###TAG_BR###");
-        excludeTagMap.put("<b>", "###TAG_BOLD###");
-        excludeTagMap.put("</b>", "###TAG_BOLD_END###");
-
-        // replace
-        for (String key : excludeTagMap.keySet()) {
-            String value = excludeTagMap.get(key);
-            originData = originData.replaceAll(key, value);
-        }
-
-        // htmlEscape
-        originData = HtmlUtils.htmlEscape(originData, "UTF-8");
-
-        // replace back
-        for (String key : excludeTagMap.keySet()) {
-            String value = excludeTagMap.get(key);
-            originData = originData.replaceAll(value, key);
-        }
-
-        return originData;
-    }
-
+    /**
+     * Kills a running job by log ID.
+     *
+     * @param request the HTTP request for permission validation
+     * @param id the log ID
+     * @return success or failure response
+     */
     @RequestMapping("/logKill")
     @ResponseBody
     public Response<String> logKill(HttpServletRequest request, @RequestParam("id") long id) {
-        // base check
         XxlJobLog log = xxlJobLogMapper.load(id);
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(log.getJobId());
+
         if (jobInfo == null) {
             return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
         }
-        if (XxlJobContext.HANDLE_CODE_SUCCESS != log.getTriggerCode()) {
+
+        if (log.getTriggerCode() != XxlJobContext.HANDLE_CODE_SUCCESS) {
             return Response.ofFail(I18nUtil.getString("joblog_kill_log_limit"));
         }
 
-        // valid JobGroup permission
         JobGroupPermissionUtil.validJobGroupPermission(request, jobInfo.getJobGroup());
 
-        // request of kill
-        Response<String> runResult = null;
-        try {
-            ExecutorBiz executorBiz = XxlJobAdminBootstrap.getExecutorBiz(log.getExecutorAddress());
-            runResult = executorBiz.kill(new KillRequest(jobInfo.getId()));
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            runResult = Response.ofFail(e.getMessage());
+        Response<String> killResult = sendKillRequest(log, jobInfo);
+
+        if (killResult.getCode() == XxlJobContext.HANDLE_CODE_SUCCESS) {
+            updateLogAfterKill(log, killResult);
+            return Response.ofSuccess(killResult.getMsg());
         }
 
-        if (XxlJobContext.HANDLE_CODE_SUCCESS == runResult.getCode()) {
-            log.setHandleCode(XxlJobContext.HANDLE_CODE_FAIL);
-            log.setHandleMsg(
-                    I18nUtil.getString("joblog_kill_log_byman")
-                            + ":"
-                            + (runResult.getMsg() != null ? runResult.getMsg() : ""));
-            log.setHandleTime(new Date());
-            XxlJobAdminBootstrap.getInstance().getJobCompleter().complete(log);
-            return Response.ofSuccess(runResult.getMsg());
-        } else {
-            return Response.ofFail(runResult.getMsg());
-        }
+        return Response.ofFail(killResult.getMsg());
     }
 
+    /**
+     * Clears old job logs based on retention policy type.
+     *
+     * @param request the HTTP request for permission validation
+     * @param jobGroup the job group ID
+     * @param jobId the job ID
+     * @param type the clear type (1-9 representing different retention policies)
+     * @return success or failure response
+     */
     @RequestMapping("/clearLog")
     @ResponseBody
     public Response<String> clearLog(
@@ -259,108 +205,107 @@ public class JobLogController {
             @RequestParam("jobGroup") int jobGroup,
             @RequestParam("jobId") int jobId,
             @RequestParam("type") int type) {
-        // valid JobGroup permission
+
         JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
 
-        // valid jobId
         if (jobId < 1) {
             return Response.ofFail(
                     I18nUtil.getString("system_please_choose") + I18nUtil.getString("jobinfo_job"));
         }
 
-        // opt
         Date clearBeforeTime = null;
         int clearBeforeNum = 0;
-        if (type == 1) {
-            clearBeforeTime = DateTool.addMonths(new Date(), -1); // 清理一个月之前日志数据
-        } else if (type == 2) {
-            clearBeforeTime = DateTool.addMonths(new Date(), -3); // 清理三个月之前日志数据
-        } else if (type == 3) {
-            clearBeforeTime = DateTool.addMonths(new Date(), -6); // 清理六个月之前日志数据
-        } else if (type == 4) {
-            clearBeforeTime = DateTool.addYears(new Date(), -1); // 清理一年之前日志数据
-        } else if (type == 5) {
-            clearBeforeNum = 1000; // 清理一千条以前日志数据
-        } else if (type == 6) {
-            clearBeforeNum = 10000; // 清理一万条以前日志数据
-        } else if (type == 7) {
-            clearBeforeNum = 30000; // 清理三万条以前日志数据
-        } else if (type == 8) {
-            clearBeforeNum = 100000; // 清理十万条以前日志数据
-        } else if (type == 9) {
-            clearBeforeNum = 0; // 清理所有日志数据
-        } else {
-            return Response.ofFail(I18nUtil.getString("joblog_clean_type_unvalid"));
+
+        switch (type) {
+            case CLEAR_TYPE_ONE_MONTH:
+                clearBeforeTime = DateTool.addMonths(new Date(), -1);
+                break;
+            case CLEAR_TYPE_THREE_MONTHS:
+                clearBeforeTime = DateTool.addMonths(new Date(), -3);
+                break;
+            case CLEAR_TYPE_SIX_MONTHS:
+                clearBeforeTime = DateTool.addMonths(new Date(), -6);
+                break;
+            case CLEAR_TYPE_ONE_YEAR:
+                clearBeforeTime = DateTool.addYears(new Date(), -1);
+                break;
+            case CLEAR_TYPE_1K:
+                clearBeforeNum = 1000;
+                break;
+            case CLEAR_TYPE_10K:
+                clearBeforeNum = 10000;
+                break;
+            case CLEAR_TYPE_30K:
+                clearBeforeNum = 30000;
+                break;
+            case CLEAR_TYPE_100K:
+                clearBeforeNum = 100000;
+                break;
+            case CLEAR_TYPE_ALL:
+                clearBeforeNum = 0;
+                break;
+            default:
+                return Response.ofFail(I18nUtil.getString("joblog_clean_type_unvalid"));
         }
 
-        List<Long> logIds = null;
-        do {
-            logIds =
-                    xxlJobLogMapper.findClearLogIds(
-                            jobGroup, jobId, clearBeforeTime, clearBeforeNum, 1000);
-            if (logIds != null && !logIds.isEmpty()) {
-                xxlJobLogMapper.clearLog(logIds);
-            }
-        } while (logIds != null && !logIds.isEmpty());
-
+        clearLogsBatch(jobGroup, jobId, clearBeforeTime, clearBeforeNum);
         return Response.ofSuccess();
     }
 
+    /**
+     * Displays the detailed log page for a specific log entry.
+     *
+     * @param request the HTTP request for permission validation
+     * @param id the log ID
+     * @param model the model for view rendering
+     * @return the view name for log detail page
+     */
     @RequestMapping("/logDetailPage")
     public String logDetailPage(
             HttpServletRequest request, @RequestParam("id") long id, Model model) {
 
-        // base check
         XxlJobLog jobLog = xxlJobLogMapper.load(id);
         if (jobLog == null) {
             throw new RuntimeException(I18nUtil.getString("joblog_logid_unvalid"));
         }
 
-        // valid permission
         JobGroupPermissionUtil.validJobGroupPermission(request, jobLog.getJobGroup());
-
-        // load jobInfo
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(jobLog.getJobId());
 
-        // data
         model.addAttribute("triggerCode", jobLog.getTriggerCode());
         model.addAttribute("handleCode", jobLog.getHandleCode());
         model.addAttribute("logId", jobLog.getId());
         model.addAttribute("jobInfo", jobInfo);
+
         return "biz/log.detail";
     }
 
+    /**
+     * Retrieves log content from executor starting from a specific line number.
+     *
+     * @param logId the log ID
+     * @param fromLineNum the starting line number
+     * @return log result containing log content and metadata
+     */
     @RequestMapping("/logDetailCat")
     @ResponseBody
     public Response<LogResult> logDetailCat(
             @RequestParam("logId") long logId, @RequestParam("fromLineNum") int fromLineNum) {
         try {
-            // valid
-            XxlJobLog jobLog = xxlJobLogMapper.load(logId); // todo, need to improve performance
+            XxlJobLog jobLog = xxlJobLogMapper.load(logId);
             if (jobLog == null) {
                 return Response.ofFail(I18nUtil.getString("joblog_logid_unvalid"));
             }
 
-            // log cat
             ExecutorBiz executorBiz =
                     XxlJobAdminBootstrap.getExecutorBiz(jobLog.getExecutorAddress());
             Response<LogResult> logResult =
                     executorBiz.log(
                             new LogRequest(jobLog.getTriggerTime().getTime(), logId, fromLineNum));
 
-            // is end
-            if (logResult.getData() != null
-                    && logResult.getData().getFromLineNum() > logResult.getData().getToLineNum()) {
-                if (jobLog.getHandleCode() > 0) {
-                    logResult.getData().setEnd(true);
-                }
-            }
-
-            // fix xss
-            if (logResult.getData() != null
-                    && StringTool.isNotBlank(logResult.getData().getLogContent())) {
-                String newLogContent = filter(logResult.getData().getLogContent());
-                logResult.getData().setLogContent(newLogContent);
+            if (logResult.getData() != null) {
+                markLogEndIfComplete(jobLog, logResult);
+                sanitizeLogContent(logResult);
             }
 
             return logResult;
@@ -368,5 +313,177 @@ public class JobLogController {
             logger.error("logId({}) logDetailCat error: {}", logId, e.getMessage(), e);
             return Response.ofFail(e.getMessage());
         }
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    /**
+     * Resolves the job group ID based on provided parameters.
+     *
+     * @param jobId the job ID
+     * @param jobGroup the job group ID
+     * @param jobGroupListTotal all available job groups
+     * @param jobGroupList filtered job groups by permission
+     * @return the resolved job group ID
+     */
+    private Integer resolveJobGroup(
+            Integer jobId,
+            Integer jobGroup,
+            List<XxlJobGroup> jobGroupListTotal,
+            List<XxlJobGroup> jobGroupList) {
+
+        if (jobId > 0) {
+            XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(jobId);
+            if (jobInfo == null) {
+                throw new RuntimeException(
+                        I18nUtil.getString("jobinfo_field_id")
+                                + I18nUtil.getString("system_unvalid"));
+            }
+            return jobInfo.getJobGroup();
+        }
+
+        if (jobGroup > 0) {
+            Integer finalJobGroup = jobGroup;
+            boolean groupExists =
+                    jobGroupListTotal.stream().anyMatch(item -> item.getId() == finalJobGroup);
+            if (!groupExists) {
+                return jobGroupList.get(0).getId();
+            }
+            return jobGroup;
+        }
+
+        return jobGroupList.get(0).getId();
+    }
+
+    /**
+     * Resolves the job ID based on the available jobs in the group.
+     *
+     * @param jobId the job ID
+     * @param jobInfoList list of jobs in the group
+     * @return the resolved job ID (0 if invalid or empty list)
+     */
+    private Integer resolveJobId(Integer jobId, List<XxlJobInfo> jobInfoList) {
+        if (CollectionTool.isEmpty(jobInfoList)) {
+            return 0;
+        }
+
+        boolean jobExists = jobInfoList.stream().anyMatch(job -> job.getId() == jobId);
+        return jobExists ? jobId : jobInfoList.get(0).getId();
+    }
+
+    /**
+     * Parses the filter time string into start and end dates.
+     *
+     * @param filterTime the time range string (format: "start - end")
+     * @return array with [startDate, endDate], or [null, null] if invalid
+     */
+    private Date[] parseFilterTime(String filterTime) {
+        Date[] result = new Date[2];
+
+        if (StringTool.isNotBlank(filterTime)) {
+            String[] parts = filterTime.split(" - ");
+            if (parts.length == 2) {
+                result[0] = DateTool.parseDateTime(parts[0]);
+                result[1] = DateTool.parseDateTime(parts[1]);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Sends a kill request to the executor.
+     *
+     * @param log the job log
+     * @param jobInfo the job info
+     * @return the kill response
+     */
+    private Response<String> sendKillRequest(XxlJobLog log, XxlJobInfo jobInfo) {
+        try {
+            ExecutorBiz executorBiz = XxlJobAdminBootstrap.getExecutorBiz(log.getExecutorAddress());
+            return executorBiz.kill(new KillRequest(jobInfo.getId()));
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            return Response.ofFail(e.getMessage());
+        }
+    }
+
+    /**
+     * Updates the log after a successful kill operation.
+     *
+     * @param log the job log to update
+     * @param killResult the kill result
+     */
+    private void updateLogAfterKill(XxlJobLog log, Response<String> killResult) {
+        log.setHandleCode(XxlJobContext.HANDLE_CODE_FAIL);
+        log.setHandleMsg(
+                I18nUtil.getString("joblog_kill_log_byman")
+                        + ":"
+                        + (killResult.getMsg() != null ? killResult.getMsg() : ""));
+        log.setHandleTime(new Date());
+        XxlJobAdminBootstrap.getInstance().getJobCompleter().complete(log);
+    }
+
+    /**
+     * Clears logs in batches based on retention criteria.
+     *
+     * @param jobGroup the job group ID
+     * @param jobId the job ID
+     * @param clearBeforeTime the cutoff date (null if using count-based clearing)
+     * @param clearBeforeNum the number of logs to keep (0 for all)
+     */
+    private void clearLogsBatch(int jobGroup, int jobId, Date clearBeforeTime, int clearBeforeNum) {
+        List<Long> logIds;
+        do {
+            logIds =
+                    xxlJobLogMapper.findClearLogIds(
+                            jobGroup, jobId, clearBeforeTime, clearBeforeNum, BATCH_DELETE_SIZE);
+            if (CollectionTool.isNotEmpty(logIds)) {
+                xxlJobLogMapper.clearLog(logIds);
+            }
+        } while (CollectionTool.isNotEmpty(logIds));
+    }
+
+    /**
+     * Marks the log as ended if all content has been read and job is complete.
+     *
+     * @param jobLog the job log
+     * @param logResult the log result to update
+     */
+    private void markLogEndIfComplete(XxlJobLog jobLog, Response<LogResult> logResult) {
+        if (logResult.getData().getFromLineNum() > logResult.getData().getToLineNum()
+                && jobLog.getHandleCode() > 0) {
+            logResult.getData().setEnd(true);
+        }
+    }
+
+    /**
+     * Sanitizes log content to prevent XSS attacks while preserving safe HTML tags.
+     *
+     * @param logResult the log result containing content to sanitize
+     */
+    private void sanitizeLogContent(Response<LogResult> logResult) {
+        if (logResult.getData() == null
+                || StringTool.isBlank(logResult.getData().getLogContent())) {
+            return;
+        }
+
+        String content = logResult.getData().getLogContent();
+        Map<String, String> safeTags = new HashMap<>();
+        safeTags.put("<br>", "###TAG_BR###");
+        safeTags.put("<b>", "###TAG_BOLD###");
+        safeTags.put("</b>", "###TAG_BOLD_END###");
+
+        for (Map.Entry<String, String> entry : safeTags.entrySet()) {
+            content = content.replace(entry.getKey(), entry.getValue());
+        }
+
+        content = HtmlUtils.htmlEscape(content, "UTF-8");
+
+        for (Map.Entry<String, String> entry : safeTags.entrySet()) {
+            content = content.replace(entry.getValue(), entry.getKey());
+        }
+
+        logResult.getData().setLogContent(content);
     }
 }

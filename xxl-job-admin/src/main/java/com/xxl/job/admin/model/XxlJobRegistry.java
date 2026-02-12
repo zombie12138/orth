@@ -2,7 +2,12 @@ package com.xxl.job.admin.model;
 
 import java.util.Date;
 
-/** Created by xuxueli on 16/9/30. */
+/**
+ * Executor registry entity for service discovery.
+ *
+ * <p>Stores executor heartbeat information for automatic service registration and health
+ * monitoring.
+ */
 public class XxlJobRegistry {
 
     private int id;

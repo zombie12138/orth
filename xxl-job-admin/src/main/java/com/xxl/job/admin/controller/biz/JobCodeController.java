@@ -27,18 +27,38 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * job code controller
+ * Job code controller for managing GLUE job scripts and code.
+ *
+ * <p>Handles operations including:
+ *
+ * <ul>
+ *   <li>Viewing and editing job code (GLUE scripts)
+ *   <li>Saving code changes with version history
+ *   <li>Managing code backup retention (max 30 versions)
+ * </ul>
  *
  * @author xuxueli 2015-12-19 16:13:16
  */
 @Controller
 @RequestMapping("/jobcode")
 public class JobCodeController {
+
     private static final Logger logger = LoggerFactory.getLogger(JobCodeController.class);
+    private static final int MIN_REMARK_LENGTH = 4;
+    private static final int MAX_REMARK_LENGTH = 100;
+    private static final int MAX_CODE_BACKUPS = 30;
 
     @Resource private XxlJobInfoMapper xxlJobInfoMapper;
     @Resource private XxlJobLogGlueMapper xxlJobLogGlueMapper;
 
+    /**
+     * Displays the job code editor page.
+     *
+     * @param request the HTTP request for permission validation
+     * @param model the model for view rendering
+     * @param jobId the job ID
+     * @return the view name for job code editor page
+     */
     @RequestMapping
     public String index(HttpServletRequest request, Model model, @RequestParam("jobId") int jobId) {
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(jobId);
@@ -47,21 +67,29 @@ public class JobCodeController {
         if (jobInfo == null) {
             throw new RuntimeException(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
         }
+
         if (GlueTypeEnum.BEAN == GlueTypeEnum.match(jobInfo.getGlueType())) {
             throw new RuntimeException(I18nUtil.getString("jobinfo_glue_gluetype_unvalid"));
         }
 
-        // valid jobGroup permission
         JobGroupPermissionUtil.validJobGroupPermission(request, jobInfo.getJobGroup());
 
-        // Glue类型-字典
         model.addAttribute("GlueTypeEnum", GlueTypeEnum.values());
-
         model.addAttribute("jobInfo", jobInfo);
         model.addAttribute("jobLogGlues", jobLogGlues);
+
         return "biz/job.code";
     }
 
+    /**
+     * Saves job code changes and creates a backup in version history.
+     *
+     * @param request the HTTP request for permission validation
+     * @param id the job ID
+     * @param glueSource the source code content
+     * @param glueRemark the version remark/description
+     * @return success or failure response
+     */
     @RequestMapping("/save")
     @ResponseBody
     public Response<String> save(
@@ -70,58 +98,120 @@ public class JobCodeController {
             @RequestParam("glueSource") String glueSource,
             @RequestParam("glueRemark") String glueRemark) {
 
-        // valid
-        if (StringTool.isBlank(glueSource)) {
-            return Response.ofFail(
-                    (I18nUtil.getString("system_please_input")
-                            + I18nUtil.getString("jobinfo_glue_source")));
+        Response<String> validationResult = validateCodeInput(glueSource, glueRemark);
+        if (!validationResult.isSuccess()) {
+            return validationResult;
         }
-        if (glueRemark == null) {
-            return Response.ofFail(
-                    (I18nUtil.getString("system_please_input")
-                            + I18nUtil.getString("jobinfo_glue_remark")));
-        }
-        if (glueRemark.length() < 4 || glueRemark.length() > 100) {
-            return Response.ofFail(I18nUtil.getString("jobinfo_glue_remark_limit"));
-        }
-        XxlJobInfo existsJobInfo = xxlJobInfoMapper.loadById(id);
-        if (existsJobInfo == null) {
+
+        XxlJobInfo existingJob = xxlJobInfoMapper.loadById(id);
+        if (existingJob == null) {
             return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
         }
 
-        // valid jobGroup permission
         LoginInfo loginInfo =
-                JobGroupPermissionUtil.validJobGroupPermission(
-                        request, existsJobInfo.getJobGroup());
+                JobGroupPermissionUtil.validJobGroupPermission(request, existingJob.getJobGroup());
 
-        // update new code
-        existsJobInfo.setGlueSource(glueSource);
-        existsJobInfo.setGlueRemark(glueRemark);
-        existsJobInfo.setGlueUpdatetime(new Date());
+        updateJobCode(existingJob, glueSource, glueRemark);
+        saveCodeBackup(existingJob, glueSource, glueRemark);
+        cleanOldCodeBackups(existingJob.getId());
+        logCodeUpdate(loginInfo, existingJob, glueSource, glueRemark);
 
-        existsJobInfo.setUpdateTime(new Date());
-        xxlJobInfoMapper.update(existsJobInfo);
+        return Response.ofSuccess();
+    }
 
-        // log old code
-        XxlJobLogGlue xxlJobLogGlue = new XxlJobLogGlue();
-        xxlJobLogGlue.setJobId(existsJobInfo.getId());
-        xxlJobLogGlue.setGlueType(existsJobInfo.getGlueType());
-        xxlJobLogGlue.setGlueSource(glueSource);
-        xxlJobLogGlue.setGlueRemark(glueRemark);
+    // ==================== Private Helper Methods ====================
 
-        xxlJobLogGlue.setAddTime(new Date());
-        xxlJobLogGlue.setUpdateTime(new Date());
-        xxlJobLogGlueMapper.save(xxlJobLogGlue);
+    /**
+     * Validates code input parameters.
+     *
+     * @param glueSource the source code
+     * @param glueRemark the version remark
+     * @return success if valid, failure with error message otherwise
+     */
+    private Response<String> validateCodeInput(String glueSource, String glueRemark) {
+        if (StringTool.isBlank(glueSource)) {
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_input")
+                            + I18nUtil.getString("jobinfo_glue_source"));
+        }
 
-        // remove code backup more than 30
-        xxlJobLogGlueMapper.removeOld(existsJobInfo.getId(), 30);
+        if (glueRemark == null) {
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_input")
+                            + I18nUtil.getString("jobinfo_glue_remark"));
+        }
 
-        // write operation log
+        int remarkLength = glueRemark.length();
+        if (remarkLength < MIN_REMARK_LENGTH || remarkLength > MAX_REMARK_LENGTH) {
+            return Response.ofFail(I18nUtil.getString("jobinfo_glue_remark_limit"));
+        }
+
+        return Response.ofSuccess();
+    }
+
+    /**
+     * Updates the job with new code.
+     *
+     * @param jobInfo the job to update
+     * @param glueSource the new source code
+     * @param glueRemark the version remark
+     */
+    private void updateJobCode(XxlJobInfo jobInfo, String glueSource, String glueRemark) {
+        jobInfo.setGlueSource(glueSource);
+        jobInfo.setGlueRemark(glueRemark);
+        jobInfo.setGlueUpdatetime(new Date());
+        jobInfo.setUpdateTime(new Date());
+        xxlJobInfoMapper.update(jobInfo);
+    }
+
+    /**
+     * Saves a backup of the code in version history.
+     *
+     * @param jobInfo the job info
+     * @param glueSource the source code
+     * @param glueRemark the version remark
+     */
+    private void saveCodeBackup(XxlJobInfo jobInfo, String glueSource, String glueRemark) {
+        XxlJobLogGlue logGlue = new XxlJobLogGlue();
+        logGlue.setJobId(jobInfo.getId());
+        logGlue.setGlueType(jobInfo.getGlueType());
+        logGlue.setGlueSource(glueSource);
+        logGlue.setGlueRemark(glueRemark);
+        logGlue.setAddTime(new Date());
+        logGlue.setUpdateTime(new Date());
+
+        xxlJobLogGlueMapper.save(logGlue);
+    }
+
+    /**
+     * Removes old code backups keeping only the most recent versions.
+     *
+     * @param jobId the job ID
+     */
+    private void cleanOldCodeBackups(int jobId) {
+        xxlJobLogGlueMapper.removeOld(jobId, MAX_CODE_BACKUPS);
+    }
+
+    /**
+     * Logs the code update operation.
+     *
+     * @param loginInfo the user performing the update
+     * @param jobInfo the job info
+     * @param glueSource the source code
+     * @param glueRemark the version remark
+     */
+    private void logCodeUpdate(
+            LoginInfo loginInfo, XxlJobInfo jobInfo, String glueSource, String glueRemark) {
+        XxlJobLogGlue logEntry = new XxlJobLogGlue();
+        logEntry.setJobId(jobInfo.getId());
+        logEntry.setGlueType(jobInfo.getGlueType());
+        logEntry.setGlueSource(glueSource);
+        logEntry.setGlueRemark(glueRemark);
+
         logger.info(
-                ">>>>>>>>>>> xxl-job operation log: operator = {}, type = {}, content = {}",
+                ">>>>>>>>>>> orth operation log: operator = {}, type = {}, content = {}",
                 loginInfo.getUserName(),
                 "jobcode-update",
-                GsonTool.toJson(xxlJobLogGlue));
-        return Response.ofSuccess();
+                GsonTool.toJson(logEntry));
     }
 }

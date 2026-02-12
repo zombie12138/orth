@@ -1,16 +1,24 @@
 package com.xxl.job.admin.model;
 
 /**
- * @author xuxueli 2019-05-04 16:43:12
+ * User account entity for authentication and authorization.
+ *
+ * <p>Represents system users with role-based access control (RBAC) and executor group permissions.
  */
 public class XxlJobUser {
 
+    /** User role: Normal user with limited permissions */
+    public static final int ROLE_USER = 0;
+
+    /** User role: Administrator with full system access */
+    public static final int ROLE_ADMIN = 1;
+
     private int id;
-    private String username; // 账号
-    private String password; // 密码
-    private String token; // 登录token
-    private int role; // 角色：0-普通用户、1-管理员
-    private String permission; // 权限：执行器ID列表，多个逗号分割
+    private String username; // Account username
+    private String password; // Hashed password
+    private String token; // Login session token
+    private int role; // User role (ROLE_USER or ROLE_ADMIN)
+    private String permission; // Executor group IDs (comma-separated)
 
     public int getId() {
         return id;

@@ -3,6 +3,7 @@ package com.xxl.job.core.context;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,163 +14,144 @@ import com.xxl.job.core.log.XxlJobFileAppender;
 import com.xxl.tool.core.DateTool;
 
 /**
- * helper for xxl-job
+ * Helper utilities for accessing Orth job execution context.
  *
- * @author xuxueli 2020-11-05
+ * <p>Provides convenient static methods to retrieve job metadata, log messages, and set job
+ * execution results. All methods safely handle cases where no job context is available.
  */
 public class XxlJobHelper {
 
-    // ---------------------- job info ----------------------
+    private static final Logger logger = LoggerFactory.getLogger("orth-job-logger");
+
+    // ---------------------- Helper Methods ----------------------
 
     /**
-     * current JobId
+     * Gets the current job context as an Optional.
      *
-     * @return jobId
+     * @return Optional containing context, or empty if not in job execution
+     */
+    private static Optional<XxlJobContext> getContext() {
+        return Optional.ofNullable(XxlJobContext.getXxlJobContext());
+    }
+
+    // ---------------------- Job Info ----------------------
+
+    /**
+     * Gets the current job ID.
+     *
+     * @return job ID, or -1 if not in job execution context
      */
     public static long getJobId() {
-        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
-        if (xxlJobContext == null) {
-            return -1;
-        }
-
-        return xxlJobContext.getJobId();
+        return getContext().map(XxlJobContext::getJobId).orElse(-1L);
     }
 
     /**
-     * current JobParam
+     * Gets the current job parameters.
      *
-     * @return jobParam
+     * @return job parameters, or null if not in job execution context
      */
     public static String getJobParam() {
-        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
-        if (xxlJobContext == null) {
-            return null;
-        }
-
-        return xxlJobContext.getJobParam();
+        return getContext().map(XxlJobContext::getJobParam).orElse(null);
     }
 
-    // ---------------------- log info ----------------------
+    // ---------------------- Log Info ----------------------
 
     /**
-     * current job log time
+     * Gets the current job log ID.
      *
-     * @return logDateTime
+     * @return log ID, or -1 if not in job execution context
      */
     public static long getLogId() {
-        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
-        if (xxlJobContext == null) {
-            return -1;
-        }
-
-        return xxlJobContext.getLogId();
+        return getContext().map(XxlJobContext::getLogId).orElse(-1L);
     }
 
     /**
-     * current job log time
+     * Gets the current job log timestamp.
      *
-     * @return logDateTime
+     * @return log timestamp (milliseconds), or -1 if not in job execution context
      */
     public static long getLogDateTime() {
-        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
-        if (xxlJobContext == null) {
-            return -1;
-        }
-
-        return xxlJobContext.getLogDateTime();
+        return getContext().map(XxlJobContext::getLogDateTime).orElse(-1L);
     }
 
     /**
-     * current job log filename
+     * Gets the current job log file name.
      *
-     * @return logFileName
+     * @return log file name, or null if not in job execution context
      */
     public static String getLogFileName() {
-        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
-        if (xxlJobContext == null) {
-            return null;
-        }
-
-        return xxlJobContext.getLogFileName();
+        return getContext().map(XxlJobContext::getLogFileName).orElse(null);
     }
 
-    // ---------------------- shard info ----------------------
+    // ---------------------- Shard Info ----------------------
 
     /**
-     * current ShardIndex
+     * Gets the current shard index for broadcast/sharding jobs.
      *
-     * @return shardIndex
+     * @return shard index, or -1 if not in job execution context
      */
     public static int getShardIndex() {
-        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
-        if (xxlJobContext == null) {
-            return -1;
-        }
-
-        return xxlJobContext.getShardIndex();
+        return getContext().map(XxlJobContext::getShardIndex).orElse(-1);
     }
 
     /**
-     * current ShardTotal
+     * Gets the total shard count for broadcast/sharding jobs.
      *
-     * @return shardTotal
+     * @return total shard count, or -1 if not in job execution context
      */
     public static int getShardTotal() {
-        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
-        if (xxlJobContext == null) {
-            return -1;
-        }
-
-        return xxlJobContext.getShardTotal();
+        return getContext().map(XxlJobContext::getShardTotal).orElse(-1);
     }
 
-    // ---------------------- schedule info ----------------------
+    // ---------------------- Schedule Info ----------------------
 
     /**
-     * Get theoretical schedule time (milliseconds), null for manual/API triggers
+     * Gets the theoretical schedule time (milliseconds) for CRON/FIX_RATE triggers.
      *
-     * @return schedule time in milliseconds, or null if manually triggered
+     * @return schedule time in milliseconds, or null for manual/API triggers or if not in job
+     *     context
      */
     public static Long getScheduleTime() {
-        XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
-        if (xxlJobContext == null) {
-            return null;
-        }
-
-        return xxlJobContext.getScheduleTime();
+        return getContext().map(XxlJobContext::getScheduleTime).orElse(null);
     }
 
-    // ---------------------- tool for log ----------------------
-
-    private static final Logger logger = LoggerFactory.getLogger("xxl-job logger");
+    // ---------------------- SuperTask Info ----------------------
 
     /**
-     * append log with pattern
+     * Gets the super parameter for SubTasks.
      *
-     * @param appendLogPattern like "aaa {} bbb {} ccc"
-     * @param appendLogArguments like "111, true"
+     * @return super parameter, or null for standalone/SuperTask jobs or if not in job context
+     */
+    public static String getSuperTaskParam() {
+        return getContext().map(XxlJobContext::getSuperTaskParam).orElse(null);
+    }
+
+    // ---------------------- Logging ----------------------
+
+    /**
+     * Appends a log message with SLF4J-style pattern and arguments.
+     *
+     * <p>Example: {@code log("Processing {} records with status {}", 100, "SUCCESS")}
+     *
+     * @param appendLogPattern log message pattern (e.g., "aaa {} bbb {} ccc")
+     * @param appendLogArguments pattern arguments
+     * @return true if log was written to file, false if only logged to console
      */
     public static boolean log(String appendLogPattern, Object... appendLogArguments) {
-
         FormattingTuple ft = MessageFormatter.arrayFormat(appendLogPattern, appendLogArguments);
         String appendLog = ft.getMessage();
-
-        /*appendLog = appendLogPattern;
-        if (appendLogArguments!=null && appendLogArguments.length>0) {
-            appendLog = MessageFormat.format(appendLogPattern, appendLogArguments);
-        }*/
 
         StackTraceElement callInfo = new Throwable().getStackTrace()[1];
         return logDetail(callInfo, appendLog);
     }
 
     /**
-     * append exception stack
+     * Appends an exception stack trace to the job log.
      *
-     * @param e exception to log return true if log success
+     * @param e exception to log
+     * @return true if log was written to file, false if only logged to console
      */
     public static boolean log(Throwable e) {
-
         StringWriter stringWriter = new StringWriter();
         e.printStackTrace(new PrintWriter(stringWriter));
         String appendLog = stringWriter.toString();
@@ -179,10 +161,13 @@ public class XxlJobHelper {
     }
 
     /**
-     * append log
+     * Internal method to append detailed log with source location and thread info.
      *
-     * @param callInfo call info
-     * @param appendLog append log
+     * <p>Format: {@code yyyy-MM-dd HH:mm:ss [ClassName#MethodName]-[LineNumber]-[ThreadName] log}
+     *
+     * @param callInfo stack trace element of the caller
+     * @param appendLog log message to append
+     * @return true if log was written to file, false if only logged to console
      */
     private static boolean logDetail(StackTraceElement callInfo, String appendLog) {
         XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
@@ -190,30 +175,16 @@ public class XxlJobHelper {
             return false;
         }
 
-        /*// "yyyy-MM-dd HH:mm:ss [ClassName]-[MethodName]-[LineNumber]-[ThreadName] log";
-        StackTraceElement[] stackTraceElements = new Throwable().getStackTrace();
-        StackTraceElement callInfo = stackTraceElements[1];*/
-
         String formatAppendLog =
-                DateTool.formatDateTime(new Date())
-                        + " "
-                        + "["
-                        + callInfo.getClassName()
-                        + "#"
-                        + callInfo.getMethodName()
-                        + "]"
-                        + "-"
-                        + "["
-                        + callInfo.getLineNumber()
-                        + "]"
-                        + "-"
-                        + "["
-                        + Thread.currentThread().getName()
-                        + "]"
-                        + " "
-                        + (appendLog != null ? appendLog : "");
+                String.format(
+                        "%s [%s#%s]-[%d]-[%s] %s",
+                        DateTool.formatDateTime(new Date()),
+                        callInfo.getClassName(),
+                        callInfo.getMethodName(),
+                        callInfo.getLineNumber(),
+                        Thread.currentThread().getName(),
+                        appendLog != null ? appendLog : "");
 
-        // appendlog
         String logFileName = xxlJobContext.getLogFileName();
 
         if (logFileName != null && !logFileName.trim().isEmpty()) {
@@ -225,70 +196,71 @@ public class XxlJobHelper {
         }
     }
 
-    // ---------------------- tool for handleResult ----------------------
+    // ---------------------- Job Result Handling ----------------------
 
     /**
-     * handle success
+     * Marks the job execution as successful (status code 200).
      *
-     * @return true if handle success
+     * @return true if status was set, false if not in job execution context
      */
     public static boolean handleSuccess() {
         return handleResult(XxlJobContext.HANDLE_CODE_SUCCESS, null);
     }
 
     /**
-     * handle success with log msg
+     * Marks the job execution as successful with a custom message.
      *
-     * @param handleMsg log msg
-     * @return true if handle success
+     * @param handleMsg result message to record
+     * @return true if status was set, false if not in job execution context
      */
     public static boolean handleSuccess(String handleMsg) {
         return handleResult(XxlJobContext.HANDLE_CODE_SUCCESS, handleMsg);
     }
 
     /**
-     * handle fail
+     * Marks the job execution as failed (status code 500).
      *
-     * @return true if handle fail
+     * @return true if status was set, false if not in job execution context
      */
     public static boolean handleFail() {
         return handleResult(XxlJobContext.HANDLE_CODE_FAIL, null);
     }
 
     /**
-     * handle fail with log msg
+     * Marks the job execution as failed with a custom message.
      *
-     * @param handleMsg log msg
-     * @return true if handle fail
+     * @param handleMsg failure message to record
+     * @return true if status was set, false if not in job execution context
      */
     public static boolean handleFail(String handleMsg) {
         return handleResult(XxlJobContext.HANDLE_CODE_FAIL, handleMsg);
     }
 
     /**
-     * handle timeout
+     * Marks the job execution as timed out (status code 502).
      *
-     * @return true if handle timeout
+     * @return true if status was set, false if not in job execution context
      */
     public static boolean handleTimeout() {
         return handleResult(XxlJobContext.HANDLE_CODE_TIMEOUT, null);
     }
 
     /**
-     * handle timeout with log msg
+     * Marks the job execution as timed out with a custom message.
      *
-     * @param handleMsg log msg
-     * @return true if handle timeout
+     * @param handleMsg timeout message to record
+     * @return true if status was set, false if not in job execution context
      */
     public static boolean handleTimeout(String handleMsg) {
         return handleResult(XxlJobContext.HANDLE_CODE_TIMEOUT, handleMsg);
     }
 
     /**
-     * @param handleCode
-     *     <p>200 : success 500 : fail 502 : timeout
-     * @param handleMsg log msg
-     * @return true if handle success
+     * Sets the job execution result with a custom status code and message.
+     *
+     * @param handleCode result status code (200: success, 500: fail, 502: timeout)
+     * @param handleMsg result message (optional)
+     * @return true if status was set, false if not in job execution context
      */
     public static boolean handleResult(int handleCode, String handleMsg) {
         XxlJobContext xxlJobContext = XxlJobContext.getXxlJobContext();
@@ -301,5 +273,9 @@ public class XxlJobHelper {
             xxlJobContext.setHandleMsg(handleMsg);
         }
         return true;
+    }
+
+    private XxlJobHelper() {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 }

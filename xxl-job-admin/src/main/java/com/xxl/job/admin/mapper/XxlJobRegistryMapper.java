@@ -8,34 +8,37 @@ import org.apache.ibatis.annotations.Param;
 
 import com.xxl.job.admin.model.XxlJobRegistry;
 
-/** Created by xuxueli on 16/9/30. */
+/**
+ * MyBatis mapper for executor registry operations.
+ *
+ * <p>Manages executor heartbeat registrations for service discovery and health monitoring with
+ * automatic cleanup of stale entries.
+ */
 @Mapper
 public interface XxlJobRegistryMapper {
 
-    public List<Integer> findDead(@Param("timeout") int timeout, @Param("nowTime") Date nowTime);
+    /** Find dead (timed-out) registry entries. */
+    List<Integer> findDead(@Param("timeout") int timeout, @Param("nowTime") Date nowTime);
 
-    public int removeDead(@Param("ids") List<Integer> ids);
+    /** Remove dead registry entries by IDs. */
+    int removeDead(@Param("ids") List<Integer> ids);
 
-    public List<XxlJobRegistry> findAll(
-            @Param("timeout") int timeout, @Param("nowTime") Date nowTime);
+    /** Find all active registry entries (not timed out). */
+    List<XxlJobRegistry> findAll(@Param("timeout") int timeout, @Param("nowTime") Date nowTime);
 
-    public int registrySaveOrUpdate(
+    /**
+     * Insert or update executor registry entry (upsert).
+     *
+     * <p>Creates new entry if not exists, updates timestamp if exists.
+     */
+    int registrySaveOrUpdate(
             @Param("registryGroup") String registryGroup,
             @Param("registryKey") String registryKey,
             @Param("registryValue") String registryValue,
             @Param("updateTime") Date updateTime);
 
-    /*public int registryUpdate(@Param("registryGroup") String registryGroup,
-                              @Param("registryKey") String registryKey,
-                              @Param("registryValue") String registryValue,
-                              @Param("updateTime") Date updateTime);
-
-    public int registrySave(@Param("registryGroup") String registryGroup,
-                            @Param("registryKey") String registryKey,
-                            @Param("registryValue") String registryValue,
-                            @Param("updateTime") Date updateTime);*/
-
-    public int registryDelete(
+    /** Delete specific registry entry. */
+    int registryDelete(
             @Param("registryGroup") String registryGroup,
             @Param("registryKey") String registryKey,
             @Param("registryValue") String registryValue);

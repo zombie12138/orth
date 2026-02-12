@@ -1,11 +1,15 @@
 package com.xxl.job.core.constant;
 
-/** Created by xuxueli on 17/5/9. */
+/**
+ * Registry type enumeration for service discovery.
+ *
+ * <p>Defines the type of service being registered in the distributed scheduling system.
+ */
 public enum RegistType {
 
-    /** executor registry */
+    /** Executor node registration (worker instances that execute tasks) */
     EXECUTOR,
 
-    /** admin registry */
-    ADMIN;
+    /** Admin node registration (scheduler instances that manage tasks) */
+    ADMIN
 }

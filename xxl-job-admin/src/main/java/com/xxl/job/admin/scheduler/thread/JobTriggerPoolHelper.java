@@ -10,97 +10,121 @@ import com.xxl.job.admin.scheduler.config.XxlJobAdminBootstrap;
 import com.xxl.job.admin.scheduler.trigger.TriggerTypeEnum;
 
 /**
- * job trigger thread pool helper
+ * Job trigger thread pool helper with adaptive fast/slow pool routing.
+ *
+ * <p>Manages two thread pools for job triggering:
+ *
+ * <ul>
+ *   <li><b>Fast Pool</b>: Default pool for normal jobs (200 threads, 2000 queue)
+ *   <li><b>Slow Pool</b>: Dedicated pool for long-running jobs (100 threads, 5000 queue)
+ * </ul>
+ *
+ * <p><b>Adaptive Routing Algorithm</b>:
+ *
+ * <ul>
+ *   <li>Tracks job timeout counts (execution > 500ms) per minute
+ *   <li>Jobs with 10+ timeouts in 1 minute are routed to slow pool
+ *   <li>Prevents slow jobs from blocking fast jobs
+ * </ul>
  *
  * @author xuxueli 2018-07-03 21:08:07
  */
 public class JobTriggerPoolHelper {
-    private static Logger logger = LoggerFactory.getLogger(JobTriggerPoolHelper.class);
+    private static final Logger logger = LoggerFactory.getLogger(JobTriggerPoolHelper.class);
 
-    // ---------------------- trigger pool ----------------------
+    // Thread pool configuration constants
+    private static final int CORE_POOL_SIZE = 10;
+    private static final long KEEP_ALIVE_SECONDS = 60L;
+    private static final int FAST_POOL_QUEUE_SIZE = 2000;
+    private static final int SLOW_POOL_QUEUE_SIZE = 5000;
+
+    // Timeout tracking constants
+    private static final int SLOW_POOL_TIMEOUT_THRESHOLD = 10; // 10 timeouts per minute
+    private static final long TRIGGER_TIMEOUT_MS = 500; // 500ms threshold
+    private static final long MS_TO_MIN = 60000; // Milliseconds to minutes conversion
 
     // fast/slow thread pool
     private ThreadPoolExecutor fastTriggerPool = null;
     private ThreadPoolExecutor slowTriggerPool = null;
 
-    /** start */
+    /**
+     * Start the fast and slow trigger thread pools.
+     *
+     * <p>Pool configurations:
+     *
+     * <ul>
+     *   <li>Fast pool: core=10, max=configurable (default 200), queue=2000
+     *   <li>Slow pool: core=10, max=configurable (default 100), queue=5000
+     * </ul>
+     */
     public void start() {
         fastTriggerPool =
                 new ThreadPoolExecutor(
-                        10,
+                        CORE_POOL_SIZE,
                         XxlJobAdminBootstrap.getInstance().getTriggerPoolFastMax(),
-                        60L,
+                        KEEP_ALIVE_SECONDS,
                         TimeUnit.SECONDS,
-                        new LinkedBlockingQueue<Runnable>(2000),
-                        new ThreadFactory() {
-                            @Override
-                            public Thread newThread(Runnable r) {
-                                return new Thread(
+                        new LinkedBlockingQueue<>(FAST_POOL_QUEUE_SIZE),
+                        r ->
+                                new Thread(
                                         r,
-                                        "xxl-job, admin JobTriggerPoolHelper-fastTriggerPool-"
-                                                + r.hashCode());
-                            }
-                        },
-                        new RejectedExecutionHandler() {
-                            @Override
-                            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                                        "orth, admin JobTriggerPoolHelper-fastTriggerPool-"
+                                                + r.hashCode()),
+                        (r, executor) ->
                                 logger.error(
-                                        ">>>>>>>>>>> xxl-job, admin JobTriggerPoolHelper-fastTriggerPool execute too fast, Runnable="
-                                                + r.toString());
-                            }
-                        });
+                                        ">>>>>>>>>>> orth, admin JobTriggerPoolHelper-fastTriggerPool execute too fast, Runnable={}",
+                                        r.toString()));
 
         slowTriggerPool =
                 new ThreadPoolExecutor(
-                        10,
+                        CORE_POOL_SIZE,
                         XxlJobAdminBootstrap.getInstance().getTriggerPoolSlowMax(),
-                        60L,
+                        KEEP_ALIVE_SECONDS,
                         TimeUnit.SECONDS,
-                        new LinkedBlockingQueue<Runnable>(5000),
-                        new ThreadFactory() {
-                            @Override
-                            public Thread newThread(Runnable r) {
-                                return new Thread(
+                        new LinkedBlockingQueue<>(SLOW_POOL_QUEUE_SIZE),
+                        r ->
+                                new Thread(
                                         r,
-                                        "xxl-job, admin JobTriggerPoolHelper-slowTriggerPool-"
-                                                + r.hashCode());
-                            }
-                        },
-                        new RejectedExecutionHandler() {
-                            @Override
-                            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                                        "orth, admin JobTriggerPoolHelper-slowTriggerPool-"
+                                                + r.hashCode()),
+                        (r, executor) ->
                                 logger.error(
-                                        ">>>>>>>>>>> xxl-job, admin JobTriggerPoolHelper-slowTriggerPool execute too fast, Runnable="
-                                                + r.toString());
-                            }
-                        });
+                                        ">>>>>>>>>>> orth, admin JobTriggerPoolHelper-slowTriggerPool execute too fast, Runnable={}",
+                                        r.toString()));
     }
 
-    /** stop */
+    /**
+     * Stop both trigger thread pools immediately.
+     *
+     * <p>Uses shutdownNow() to attempt to stop all actively executing tasks.
+     */
     public void stop() {
-        // triggerPool.shutdown();
         fastTriggerPool.shutdownNow();
         slowTriggerPool.shutdownNow();
-        logger.info(">>>>>>>>> xxl-job trigger thread pool shutdown success.");
+        logger.info(">>>>>>>>> orth trigger thread pool shutdown success.");
     }
 
-    // job timeout count
-    private volatile long minTim = System.currentTimeMillis() / 60000; // ms > min
+    // job timeout count tracking (per minute)
+    private volatile long currentMinute = System.currentTimeMillis() / MS_TO_MIN;
     private volatile ConcurrentMap<Integer, AtomicInteger> jobTimeoutCountMap =
             new ConcurrentHashMap<>();
 
     // ---------------------- tool ----------------------
 
     /**
-     * trigger job
+     * Trigger a job execution with adaptive pool routing.
      *
-     * @param jobId job id
-     * @param triggerType trigger type
-     * @param failRetryCount >=0: use this param <0: use param from job info config
-     * @param executorShardingParam sharding param
-     * @param executorParam null: use job param not null: cover job param
-     * @param addressList executor address list
-     * @param scheduleTime theoretical schedule time (milliseconds), null for manual/API triggers
+     * <p>Jobs are routed to fast or slow pool based on recent timeout history. Jobs with 10+
+     * timeouts (>500ms) in the current minute are sent to the slow pool to prevent blocking fast
+     * jobs.
+     *
+     * @param jobId job ID
+     * @param triggerType trigger type (CRON, MANUAL, API, etc.)
+     * @param failRetryCount retry count (>=0: use this value, <0: use job config)
+     * @param executorShardingParam sharding parameters for distributed execution
+     * @param executorParam execution parameters (null: use job param, not null: override job param)
+     * @param addressList executor address list (null: auto-discover from group)
+     * @param scheduleTime theoretical schedule time in milliseconds (null for manual/API triggers)
      */
     public void trigger(
             final int jobId,
@@ -111,16 +135,15 @@ public class JobTriggerPoolHelper {
             final String addressList,
             final Long scheduleTime) {
 
-        // choose thread pool
-        ThreadPoolExecutor triggerPool_ = fastTriggerPool;
+        // choose thread pool based on recent timeout history
+        ThreadPoolExecutor selectedTriggerPool = fastTriggerPool;
         AtomicInteger jobTimeoutCount = jobTimeoutCountMap.get(jobId);
-        if (jobTimeoutCount != null
-                && jobTimeoutCount.get() > 10) { // job-timeout 10 times in 1 min
-            triggerPool_ = slowTriggerPool;
+        if (jobTimeoutCount != null && jobTimeoutCount.get() > SLOW_POOL_TIMEOUT_THRESHOLD) {
+            selectedTriggerPool = slowTriggerPool;
         }
 
-        // trigger
-        triggerPool_.execute(
+        // trigger execution in selected pool
+        selectedTriggerPool.execute(
                 new Runnable() {
                     @Override
                     public void run() {
@@ -128,7 +151,7 @@ public class JobTriggerPoolHelper {
                         long start = System.currentTimeMillis();
 
                         try {
-                            // do trigger
+                            // execute trigger
                             XxlJobAdminBootstrap.getInstance()
                                     .getJobTrigger()
                                     .trigger(
@@ -143,16 +166,16 @@ public class JobTriggerPoolHelper {
                             logger.error(e.getMessage(), e);
                         } finally {
 
-                            // check timeout-count-map
-                            long minTim_now = System.currentTimeMillis() / 60000;
-                            if (minTim != minTim_now) {
-                                minTim = minTim_now;
+                            // reset timeout count map every minute
+                            long nowMinute = System.currentTimeMillis() / MS_TO_MIN;
+                            if (currentMinute != nowMinute) {
+                                currentMinute = nowMinute;
                                 jobTimeoutCountMap.clear();
                             }
 
-                            // incr timeout-count-map
+                            // increment timeout count if execution exceeded threshold
                             long cost = System.currentTimeMillis() - start;
-                            if (cost > 500) { // ob-timeout threshold 500ms
+                            if (cost > TRIGGER_TIMEOUT_MS) {
                                 AtomicInteger timeoutCount =
                                         jobTimeoutCountMap.putIfAbsent(jobId, new AtomicInteger(1));
                                 if (timeoutCount != null) {

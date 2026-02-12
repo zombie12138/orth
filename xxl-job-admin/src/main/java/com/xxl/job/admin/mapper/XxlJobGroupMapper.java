@@ -7,29 +7,42 @@ import org.apache.ibatis.annotations.Param;
 
 import com.xxl.job.admin.model.XxlJobGroup;
 
-/** Created by xuxueli on 16/9/30. */
+/**
+ * MyBatis mapper for executor group operations.
+ *
+ * <p>Manages executor groups and their address configurations for job routing and service
+ * discovery.
+ */
 @Mapper
 public interface XxlJobGroupMapper {
 
-    public List<XxlJobGroup> findAll();
+    /** Find all executor groups. */
+    List<XxlJobGroup> findAll();
 
-    public List<XxlJobGroup> findByAddressType(@Param("addressType") int addressType);
+    /** Find executor groups by address type (AUTO or MANUAL). */
+    List<XxlJobGroup> findByAddressType(@Param("addressType") int addressType);
 
-    public int save(XxlJobGroup xxlJobGroup);
+    /** Create new executor group. */
+    int save(XxlJobGroup xxlJobGroup);
 
-    public int update(XxlJobGroup xxlJobGroup);
+    /** Update executor group. */
+    int update(XxlJobGroup xxlJobGroup);
 
-    public int remove(@Param("id") int id);
+    /** Delete executor group by ID. */
+    int remove(@Param("id") int id);
 
-    public XxlJobGroup load(@Param("id") int id);
+    /** Load executor group by ID. */
+    XxlJobGroup load(@Param("id") int id);
 
-    public List<XxlJobGroup> pageList(
+    /** Query paginated executor groups with optional filters. */
+    List<XxlJobGroup> pageList(
             @Param("offset") int offset,
             @Param("pagesize") int pagesize,
             @Param("appname") String appname,
             @Param("title") String title);
 
-    public int pageListCount(
+    /** Count total executor groups matching pageList query criteria. */
+    int pageListCount(
             @Param("offset") int offset,
             @Param("pagesize") int pagesize,
             @Param("appname") String appname,

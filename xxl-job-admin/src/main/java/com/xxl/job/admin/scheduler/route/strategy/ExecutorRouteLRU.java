@@ -1,6 +1,5 @@
 package com.xxl.job.admin.scheduler.route.strategy;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,69 +10,126 @@ import com.xxl.job.core.openapi.model.TriggerRequest;
 import com.xxl.tool.response.Response;
 
 /**
- * 单个JOB对应的每个执行器，最久为使用的优先被选举 a、LFU(Least Frequently Used)：最不经常使用，频率/次数 b(*)、LRU(Least Recently
- * Used)：最近最久未使用，时间
+ * Least Recently Used (LRU) routing strategy for the Orth scheduler.
  *
- * <p>Created by xuxueli on 17/3/10.
+ * <p>This strategy routes jobs to the executor that was least recently used. Each job maintains an
+ * access-ordered map of executors, automatically tracking usage recency through map access
+ * patterns.
+ *
+ * <p>Algorithm:
+ *
+ * <ol>
+ *   <li>Maintain per-job LRU map (access-ordered LinkedHashMap)
+ *   <li>On each trigger, select the eldest (least recently used) executor
+ *   <li>Accessing the executor moves it to the end of the order
+ *   <li>Periodically clear maps to prevent unbounded growth
+ * </ol>
+ *
+ * <p>Load distribution characteristics:
+ *
+ * <ul>
+ *   <li>Fair distribution based on recent usage, not cumulative counts
+ *   <li>Self-balancing: naturally rotates through executors
+ *   <li>Adaptive to usage patterns over time
+ * </ul>
+ *
+ * <p>Use cases:
+ *
+ * <ul>
+ *   <li>Jobs requiring balanced distribution based on recent activity
+ *   <li>Workloads where recent load matters more than cumulative history
+ *   <li>Scenarios where executor usage should rotate regularly
+ * </ul>
+ *
+ * <p>Implementation notes:
+ *
+ * <ul>
+ *   <li>Uses LinkedHashMap with accessOrder=true for automatic LRU tracking
+ *   <li>Entire cache cleared every 24 hours to prevent memory growth
+ *   <li>Dynamically handles executor additions/removals
+ *   <li>Thread-safe through synchronized access to per-job maps
+ * </ul>
+ *
+ * @author xuxueli 2017-03-10
  */
 public class ExecutorRouteLRU extends ExecutorRouter {
 
+    private static final long CACHE_CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000L; // 24 hours
+    private static final int LRU_MAP_INITIAL_CAPACITY = 16;
+    private static final float LRU_MAP_LOAD_FACTOR = 0.75f;
+    private static final boolean LRU_MAP_ACCESS_ORDER = true;
+
     /**
-     * job lru map
+     * Per-job LRU map: jobId → LinkedHashMap(address → address)
      *
-     * <p><jobId, <address, address>>
+     * <p>LinkedHashMap configured with accessOrder=true maintains insertion/access order,
+     * automatically tracking least recently used entries.
      */
-    private static ConcurrentMap<Integer, LinkedHashMap<String, String>> jobLRUMap =
-            new ConcurrentHashMap<Integer, LinkedHashMap<String, String>>();
+    private static final ConcurrentMap<Integer, LinkedHashMap<String, String>> jobLRUMap =
+            new ConcurrentHashMap<>();
 
-    private static long CACHE_VALID_TIME = 0;
+    private static volatile long cacheValidUntil = 0;
 
-    public String route(int jobId, List<String> addressList) {
+    /**
+     * Routes to the least recently used executor for the given job.
+     *
+     * @param jobId the job identifier
+     * @param addressList the available executor addresses
+     * @return the executor address least recently used
+     */
+    public String selectLeastRecentlyUsed(int jobId, List<String> addressList) {
+        // Periodic cache cleanup to prevent unbounded memory growth
+        cleanupCacheIfNeeded();
 
-        // cache clear
-        if (System.currentTimeMillis() > CACHE_VALID_TIME) {
-            jobLRUMap.clear();
-            CACHE_VALID_TIME = System.currentTimeMillis() + 1000 * 60 * 60 * 24;
-        }
+        // Get or create LRU map for this job
+        var lruMap =
+                jobLRUMap.computeIfAbsent(
+                        jobId,
+                        id ->
+                                new LinkedHashMap<>(
+                                        LRU_MAP_INITIAL_CAPACITY,
+                                        LRU_MAP_LOAD_FACTOR,
+                                        LRU_MAP_ACCESS_ORDER));
 
-        // init lru
-        LinkedHashMap<String, String> lruItem = jobLRUMap.get(jobId);
-        if (lruItem == null) {
-            /**
-             * LinkedHashMap a、accessOrder：true=访问顺序排序（get/put时排序）；false=插入顺序排期；
-             * b、removeEldestEntry：新增元素时将会调用，返回true时会删除最老元素；可封装LinkedHashMap并重写该方法，比如定义最大容量，超出是返回true即可实现固定长度的LRU算法；
-             */
-            lruItem = new LinkedHashMap<>(16, 0.75f, true);
-            jobLRUMap.putIfAbsent(jobId, lruItem);
-        }
-
-        // put new
-        for (String address : addressList) {
-            if (!lruItem.containsKey(address)) {
-                lruItem.put(address, address);
+        // Synchronize on the LRU map to ensure thread-safe updates
+        synchronized (lruMap) {
+            // Add new executors
+            for (var address : addressList) {
+                if (!lruMap.containsKey(address)) {
+                    lruMap.put(address, address);
+                }
             }
-        }
-        // remove old
-        List<String> delKeys = new ArrayList<>();
-        for (String existKey : lruItem.keySet()) {
-            if (!addressList.contains(existKey)) {
-                delKeys.add(existKey);
-            }
-        }
-        if (!delKeys.isEmpty()) {
-            for (String delKey : delKeys) {
-                lruItem.remove(delKey);
-            }
-        }
 
-        // load first elment, eldest entry
-        String eldestKey = lruItem.entrySet().iterator().next().getKey();
-        return lruItem.get(eldestKey);
+            // Remove stale executors no longer in the address list
+            lruMap.keySet().removeIf(address -> !addressList.contains(address));
+
+            // Get least recently used (first) entry
+            var eldestKey = lruMap.entrySet().iterator().next().getKey();
+
+            // Access the entry to move it to the end (most recently used)
+            return lruMap.get(eldestKey);
+        }
     }
 
+    /** Clears the LRU cache if the cleanup interval has elapsed. */
+    private void cleanupCacheIfNeeded() {
+        var currentTime = System.currentTimeMillis();
+        if (currentTime > cacheValidUntil) {
+            jobLRUMap.clear();
+            cacheValidUntil = currentTime + CACHE_CLEANUP_INTERVAL_MS;
+        }
+    }
+
+    /**
+     * Routes to the least recently used executor.
+     *
+     * @param triggerParam the trigger request containing the job ID
+     * @param addressList the available executor addresses
+     * @return the selected executor address
+     */
     @Override
     public Response<String> route(TriggerRequest triggerParam, List<String> addressList) {
-        String address = route(triggerParam.getJobId(), addressList);
+        var address = selectLeastRecentlyUsed(triggerParam.getJobId(), addressList);
         return Response.ofSuccess(address);
     }
 }

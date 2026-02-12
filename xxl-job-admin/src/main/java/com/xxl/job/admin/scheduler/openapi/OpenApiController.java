@@ -31,7 +31,7 @@ public class OpenApiController {
     public Object api(
             HttpServletRequest request,
             @PathVariable("uri") String uri,
-            @RequestHeader(Const.XXL_JOB_ACCESS_TOKEN) String accesstoken,
+            @RequestHeader(Const.ORTH_ACCESS_TOKEN) String accesstoken,
             @RequestBody(required = false) String requestBody) {
 
         // valid

@@ -3,13 +3,20 @@ package com.xxl.job.admin.mapper;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * job lock
+ * MyBatis mapper for distributed lock operations.
  *
- * @author xuxueli 2016-1-12 18:03:45
+ * <p>Provides database-level pessimistic locking using SELECT FOR UPDATE to ensure single-scheduler
+ * execution in clustered deployments.
  */
 @Mapper
 public interface XxlJobLockMapper {
 
-    /** get schedule lock */
+    /**
+     * Acquire schedule lock using SELECT FOR UPDATE.
+     *
+     * <p>Blocks until lock is available. Lock is automatically released at transaction commit.
+     *
+     * @return lock name (always "schedule_lock")
+     */
     String scheduleLock();
 }

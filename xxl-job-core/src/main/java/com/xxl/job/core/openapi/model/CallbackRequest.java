@@ -2,18 +2,50 @@ package com.xxl.job.core.openapi.model;
 
 import java.io.Serializable;
 
-/** Created by xuxueli on 17/3/2. */
+/**
+ * Job execution callback request.
+ *
+ * <p>Executors send this request to admin when a job execution completes (success or failure). The
+ * admin updates the execution log record in the database with the handle result.
+ *
+ * <p>Callback flow:
+ *
+ * <ol>
+ *   <li>Executor receives trigger request
+ *   <li>Executor executes job handler
+ *   <li>Executor collects execution result (exit code, error message, duration)
+ *   <li>Executor sends callback request to admin
+ *   <li>Admin updates {@code xxl_job_log.handle_code} and {@code handle_msg}
+ * </ol>
+ *
+ * @author xuxueli 2017-03-02
+ */
 public class CallbackRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
+    /** Log ID (identifies the execution instance) */
     private long logId;
+
+    /** Log date (timestamp when log was created, used for log file path) */
     private long logDateTim;
 
+    /** Handle result code (200=success, 500=failure) */
     private int handleCode;
+
+    /** Handle result message (empty on success, error message on failure) */
     private String handleMsg;
 
+    /** Default constructor for JSON deserialization */
     public CallbackRequest() {}
 
+    /**
+     * Constructs a callback request with all fields.
+     *
+     * @param logId log ID
+     * @param logDateTim log creation timestamp
+     * @param handleCode handle result code (200=success, 500=failure)
+     * @param handleMsg handle result message
+     */
     public CallbackRequest(long logId, long logDateTim, int handleCode, String handleMsg) {
         this.logId = logId;
         this.logDateTim = logDateTim;
@@ -55,7 +87,7 @@ public class CallbackRequest implements Serializable {
 
     @Override
     public String toString() {
-        return "HandleCallbackParam{"
+        return "CallbackRequest{"
                 + "logId="
                 + logId
                 + ", logDateTim="

@@ -33,9 +33,26 @@
 // import java.util.concurrent.ConcurrentHashMap;
 //
 /// **
-// * base quartz scheduler util
+// * Quartz-based dynamic scheduler for job management.
+// *
 // * @author xuxueli 2015-12-19 16:13:53
+// * @deprecated This Quartz scheduler is deprecated. Use the new bootstrap architecture in
+// *             {@link com.xxl.job.admin.scheduler.config.XxlJobAdminBootstrap} instead.
+// *             Migration: Replace Quartz scheduling with time-ring scheduler. The new system uses:
+// *             - {@link com.xxl.job.admin.scheduler.thread.JobScheduleHelper} for time-ring
+// scheduling
+// *             - {@link com.xxl.job.admin.scheduler.thread.JobTriggerPoolHelper} for trigger
+// execution
+// *             - {@link com.xxl.job.admin.scheduler.thread.JobRegistryHelper} for executor
+// registration
+// *             - {@link com.xxl.job.admin.scheduler.thread.JobCompleteHelper} for callback
+// handling
+// *             Orth replaced Quartz with a lightweight time-ring algorithm (60-slot ring with 5s
+// *             pre-read) for better performance in high-frequency scheduling scenarios. The new
+// *             design eliminates Quartz dependency and provides fine-grained control over
+// *             scheduling behavior.
 // */
+// @Deprecated
 // public final class XxlJobDynamicScheduler {
 //    private static final Logger logger =
 // LoggerFactory.getLogger(XxlJobDynamicScheduler_old.class);
@@ -66,7 +83,7 @@
 //        // admin-server
 //        initRpcProvider();
 //
-//        logger.info(">>>>>>>>> init xxl-job admin success.");
+//        logger.info(">>>>>>>>> init orth admin success.");
 //    }
 //
 //

@@ -3,19 +3,19 @@ package com.xxl.job.admin.model;
 import java.util.Date;
 
 /**
- * xxl-job log for glue, used to track job code process
+ * GLUE code version history entity.
  *
- * @author xuxueli 2016-5-19 17:57:46
+ * <p>Tracks version history of dynamically edited job code (GLUE mode) for auditing and rollback.
  */
 public class XxlJobLogGlue {
 
     private int id;
-    private int jobId; // 任务主键ID
-    private String glueType; // GLUE类型	#com.xxl.job.core.glue.GlueTypeEnum
-    private String glueSource;
-    private String glueRemark;
-    private Date addTime;
-    private Date updateTime;
+    private int jobId; // Job ID reference
+    private String glueType; // GLUE type from GlueTypeEnum
+    private String glueSource; // GLUE source code
+    private String glueRemark; // Version comment/remark
+    private Date addTime; // Creation timestamp
+    private Date updateTime; // Last update timestamp
 
     public int getId() {
         return id;

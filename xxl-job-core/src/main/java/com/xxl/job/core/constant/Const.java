@@ -1,18 +1,26 @@
 package com.xxl.job.core.constant;
 
-/** Created by xuxueli on 17/5/10. */
+/**
+ * Core constants for the Orth executor framework.
+ *
+ * <p>Defines shared constants for OpenAPI authentication and executor registry timeouts.
+ */
 public class Const {
 
-    // ---------------------- for openapi ----------------------
+    // ---------------------- OpenAPI Authentication ----------------------
 
-    /** access token */
-    public static final String XXL_JOB_ACCESS_TOKEN = "XXL-JOB-ACCESS-TOKEN";
+    /** HTTP header name for access token authentication */
+    public static final String ORTH_ACCESS_TOKEN = "ORTH-ACCESS-TOKEN";
 
-    // ---------------------- for registry ----------------------
+    // ---------------------- Executor Registry ----------------------
 
-    /** registry beat interval, default 30s */
+    /** Interval (seconds) between executor heartbeat registrations */
     public static final int BEAT_TIMEOUT = 30;
 
-    /** registry dead timeout, default 90s */
+    /** Timeout (seconds) after which an executor is considered dead (3 missed heartbeats) */
     public static final int DEAD_TIMEOUT = BEAT_TIMEOUT * 3;
+
+    private Const() {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
+    }
 }

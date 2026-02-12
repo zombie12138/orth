@@ -8,10 +8,16 @@
 // import org.slf4j.LoggerFactory;
 //
 /// **
-// * ftl util
+// * Freemarker template utility for static model generation.
 // *
 // * @author xuxueli 2018-01-17 20:37:48
+// * @deprecated This utility is deprecated. Use RESTful API controllers with JSON responses
+// *             instead of server-side Freemarker templates.
+// *             Migration: Replace Freemarker views with Spring REST controllers returning JSON.
+// *             For internationalization, use {@link com.xxl.job.admin.util.I18nUtil} directly.
+// *             Orth prefers API-first architecture for better frontend flexibility.
 // */
+// @Deprecated
 // public class FtlUtil {
 //    private static Logger logger = LoggerFactory.getLogger(FtlUtil.class);
 //

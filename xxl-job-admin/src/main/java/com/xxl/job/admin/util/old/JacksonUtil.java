@@ -11,13 +11,22 @@
 // import java.io.IOException;
 //
 /// **
-// * Jackson util
+// * Jackson JSON serialization utility.
 // *
-// * 1、obj need private and set/get；
-// * 2、do not support inner class；
+// * Requirements:
+// * 1. Objects need private fields with getters/setters
+// * 2. Does not support inner classes
 // *
 // * @author xuxueli 2015-9-25 18:02:56
+// * @deprecated This utility is deprecated. Use Spring Boot's built-in JSON serialization via
+// *             {@code @RestController} and Jackson auto-configuration instead.
+// *             Migration: Remove manual JSON serialization. Use {@code @RequestBody} and
+// *             {@code @ResponseBody} annotations with Spring's ObjectMapper bean.
+// *             For custom serialization, configure ObjectMapper in Spring configuration.
+// *             Orth relies on Spring Boot's Jackson auto-configuration for consistent JSON
+// handling.
 // */
+// @Deprecated
 // public class JacksonUtil {
 //	private static Logger logger = LoggerFactory.getLogger(JacksonUtil.class);
 //

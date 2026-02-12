@@ -2,6 +2,11 @@ package com.xxl.job.admin.model;
 
 import java.util.Date;
 
+/**
+ * Daily job execution statistics report entity.
+ *
+ * <p>Tracks job execution metrics aggregated by day for monitoring and analytics.
+ */
 public class XxlJobLogReport {
 
     private int id;
@@ -9,7 +14,7 @@ public class XxlJobLogReport {
     private Date triggerDay;
 
     private int runningCount;
-    private int sucCount;
+    private int successCount;
     private int failCount;
 
     public int getId() {
@@ -36,12 +41,12 @@ public class XxlJobLogReport {
         this.runningCount = runningCount;
     }
 
-    public int getSucCount() {
-        return sucCount;
+    public int getSuccessCount() {
+        return successCount;
     }
 
-    public void setSucCount(int sucCount) {
-        this.sucCount = sucCount;
+    public void setSuccessCount(int successCount) {
+        this.successCount = successCount;
     }
 
     public int getFailCount() {

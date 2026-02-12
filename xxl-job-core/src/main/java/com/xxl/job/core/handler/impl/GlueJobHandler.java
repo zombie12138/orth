@@ -4,15 +4,22 @@ import com.xxl.job.core.context.XxlJobHelper;
 import com.xxl.job.core.handler.IJobHandler;
 
 /**
- * glue job handler
+ * Glue-based job handler for dynamically compiled Groovy code.
  *
- * @author xuxueli 2016-5-19 21:05:45
+ * <p>Wraps a dynamically compiled job handler and logs the glue version (update timestamp) before
+ * each execution. The admin console compiles Groovy code into handlers at runtime.
  */
 public class GlueJobHandler extends IJobHandler {
 
-    private long glueUpdatetime;
-    private IJobHandler jobHandler;
+    private final long glueUpdatetime;
+    private final IJobHandler jobHandler;
 
+    /**
+     * Constructs a glue job handler.
+     *
+     * @param jobHandler the dynamically compiled handler instance
+     * @param glueUpdatetime the glue code update timestamp (version identifier)
+     */
     public GlueJobHandler(IJobHandler jobHandler, long glueUpdatetime) {
         this.jobHandler = jobHandler;
         this.glueUpdatetime = glueUpdatetime;
@@ -24,17 +31,17 @@ public class GlueJobHandler extends IJobHandler {
 
     @Override
     public void execute() throws Exception {
-        XxlJobHelper.log("----------- glue.version:" + glueUpdatetime + " -----------");
+        XxlJobHelper.log("----------- glue.version: {} -----------", glueUpdatetime);
         jobHandler.execute();
     }
 
     @Override
     public void init() throws Exception {
-        this.jobHandler.init();
+        jobHandler.init();
     }
 
     @Override
     public void destroy() throws Exception {
-        this.jobHandler.destroy();
+        jobHandler.destroy();
     }
 }

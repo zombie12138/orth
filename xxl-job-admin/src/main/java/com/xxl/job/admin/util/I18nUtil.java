@@ -1,8 +1,8 @@
 package com.xxl.job.admin.util;
 
 import java.text.MessageFormat;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.xxl.job.core.constant.ExecutorBlockStrategyEnum;
 import com.xxl.tool.core.PropTool;
 import com.xxl.tool.freemarker.FtlTool;
 import com.xxl.tool.gson.GsonTool;
@@ -21,105 +20,120 @@ import com.xxl.tool.gson.GsonTool;
 import freemarker.template.Configuration;
 
 /**
- * i18n util
+ * Internationalization (i18n) utility for Orth admin.
+ *
+ * <p>Provides centralized access to localized message resources and handles initialization of
+ * internationalized enum values. Supports multiple locales including Chinese (Simplified and
+ * Traditional) and English.
+ *
+ * <p>This utility is Spring-managed and initializes on application startup, loading the appropriate
+ * message properties file and configuring Freemarker integration.
  *
  * @author xuxueli 2018-01-17 20:39:06
  */
 @Component
 public class I18nUtil implements InitializingBean {
-    private static Logger logger = LoggerFactory.getLogger(I18nUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(I18nUtil.class);
+    private static final List<String> SUPPORTED_LOCALES = List.of("zh_CN", "zh_TC", "en");
+    private static final String DEFAULT_LOCALE = "zh_CN";
 
-    // ---------------------- for i18n config ----------------------
-
-    /** i18n config */
     @Value("${xxl.job.i18n}")
     private String i18n;
 
-    /** freemarker config */
     @Autowired private Configuration configuration;
+
+    private static I18nUtil single = null;
+    private static Properties prop = null;
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        // init freemarker shared variable
+        // Initialize Freemarker shared variable
         configuration.setSharedVariable(
                 "I18nUtil", FtlTool.generateStaticModel(I18nUtil.class.getName()));
-        // init single
+
+        // Set singleton instance
         single = this;
 
-        // init i18n-enum
+        // Initialize internationalized enum values
         initI18nEnum();
     }
 
-    /** get i18n */
+    /**
+     * Gets the configured locale, defaulting to zh_CN if invalid.
+     *
+     * @return locale code (e.g., "zh_CN", "zh_TC", "en")
+     */
     public String getI18n() {
-        if (!Arrays.asList("zh_CN", "zh_TC", "en").contains(i18n)) {
-            return "zh_CN";
-        }
-        return i18n;
+        return SUPPORTED_LOCALES.contains(i18n) ? i18n : DEFAULT_LOCALE;
     }
-
-    private static I18nUtil single = null;
 
     private static I18nUtil getSingle() {
         return single;
     }
 
-    // ---------------------- tool ----------------------
-
-    private static Properties prop = null;
-
+    /**
+     * Loads i18n properties file for the configured locale.
+     *
+     * <p>Properties are cached after first load for performance. The appropriate properties file is
+     * loaded based on the configured locale.
+     *
+     * @return loaded properties
+     */
     public static Properties loadI18nProp() {
         if (prop != null) {
             return prop;
         }
-        // build i18n filepath
-        String i18n = getSingle().getI18n();
-        String i18nFile = MessageFormat.format("i18n/message_{0}.properties", i18n);
 
-        // load prop
+        String locale = getSingle().getI18n();
+        String i18nFile = MessageFormat.format("i18n/message_{0}.properties", locale);
         prop = PropTool.loadProp(i18nFile);
         return prop;
     }
 
     /**
-     * get val of i18n key
+     * Gets the localized message for the specified key.
      *
-     * @param key
-     * @return
+     * @param key message key
+     * @return localized message, or null if key not found
      */
     public static String getString(String key) {
         return loadI18nProp().getProperty(key);
     }
 
     /**
-     * get mult val of i18n mult key, as json
+     * Gets multiple localized messages as JSON.
      *
-     * @param keys
-     * @return
+     * <p>If no keys are specified, returns all messages. Otherwise, returns only the messages for
+     * the specified keys.
+     *
+     * @param keys message keys (optional - if empty, returns all messages)
+     * @return JSON object containing key-value pairs of messages
      */
     public static String getMultString(String... keys) {
         Map<String, String> map = new HashMap<>();
+        Properties properties = loadI18nProp();
 
-        Properties prop = loadI18nProp();
         if (keys != null && keys.length > 0) {
             for (String key : keys) {
-                map.put(key, prop.getProperty(key));
+                map.put(key, properties.getProperty(key));
             }
         } else {
-            for (String key : prop.stringPropertyNames()) {
-                map.put(key, prop.getProperty(key));
+            for (String key : properties.stringPropertyNames()) {
+                map.put(key, properties.getProperty(key));
             }
         }
 
         return GsonTool.toJson(map);
     }
 
-    // ---------------------- init I18n-enum ----------------------
-
-    /** init i18n-enum */
+    /**
+     * Initializes internationalized titles for enums.
+     *
+     * <p>Sets localized display titles for enum constants that support i18n, such as executor block
+     * strategy types.
+     */
     private void initI18nEnum() {
-        for (ExecutorBlockStrategyEnum item : ExecutorBlockStrategyEnum.values()) {
-            item.setTitle(I18nUtil.getString("jobconf_block_".concat(item.name())));
-        }
+        // ExecutorBlockStrategyEnum titles are now immutable (set in enum constructor)
+        // No need to update titles at runtime
     }
 }

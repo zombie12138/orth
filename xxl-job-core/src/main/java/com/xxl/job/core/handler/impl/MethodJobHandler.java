@@ -5,19 +5,29 @@ import java.lang.reflect.Method;
 import com.xxl.job.core.handler.IJobHandler;
 
 /**
- * @author xuxueli 2019-12-11 21:12:18
+ * Method-based job handler that executes annotated methods via reflection.
+ *
+ * <p>Wraps a Spring bean method annotated with {@code @XxlJob} and invokes it when the job is
+ * triggered. Supports optional init/destroy lifecycle methods.
  */
 public class MethodJobHandler extends IJobHandler {
 
     private final Object target;
     private final Method method;
-    private Method initMethod;
-    private Method destroyMethod;
+    private final Method initMethod;
+    private final Method destroyMethod;
 
+    /**
+     * Constructs a method-based job handler.
+     *
+     * @param target the bean instance containing the job method
+     * @param method the job execution method
+     * @param initMethod optional initialization method (may be null)
+     * @param destroyMethod optional cleanup method (may be null)
+     */
     public MethodJobHandler(Object target, Method method, Method initMethod, Method destroyMethod) {
         this.target = target;
         this.method = method;
-
         this.initMethod = initMethod;
         this.destroyMethod = destroyMethod;
     }
@@ -25,13 +35,9 @@ public class MethodJobHandler extends IJobHandler {
     @Override
     public void execute() throws Exception {
         Class<?>[] paramTypes = method.getParameterTypes();
-        if (paramTypes.length > 0) {
-            method.invoke(
-                    target,
-                    new Object[paramTypes.length]); // method-param can not be primitive-types
-        } else {
-            method.invoke(target);
-        }
+        // Pass null array for methods with parameters (cannot be primitive types)
+        Object[] args = paramTypes.length > 0 ? new Object[paramTypes.length] : null;
+        method.invoke(target, args);
     }
 
     @Override
@@ -50,6 +56,7 @@ public class MethodJobHandler extends IJobHandler {
 
     @Override
     public String toString() {
-        return super.toString() + "[" + target.getClass() + "#" + method.getName() + "]";
+        return String.format(
+                "%s[%s#%s]", super.toString(), target.getClass().getName(), method.getName());
     }
 }

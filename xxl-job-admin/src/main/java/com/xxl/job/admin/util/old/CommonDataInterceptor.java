@@ -11,10 +11,16 @@
 // import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 //
 /// **
-// * push cookies to model as cookieMap
+// * Common data interceptor for Freemarker template integration.
 // *
 // * @author xuxueli 2015-12-12 18:09:04
+// * @deprecated This interceptor is deprecated. Use Spring Boot's built-in internationalization
+// *             support with {@link com.xxl.job.admin.util.I18nUtil} directly in controllers.
+// *             Migration: Remove Freemarker static model injection and use MessageSource or
+// *             I18nUtil.getString() in controller methods. Orth has moved away from server-side
+// *             template rendering to API-based architecture.
 // */
+// @Deprecated
 // @Configuration
 // public class CommonDataInterceptor implements WebMvcConfigurer {
 //

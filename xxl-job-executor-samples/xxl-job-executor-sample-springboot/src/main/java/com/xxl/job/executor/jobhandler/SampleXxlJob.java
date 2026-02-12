@@ -21,190 +21,435 @@ import com.xxl.tool.http.http.enums.ContentType;
 import com.xxl.tool.http.http.enums.Method;
 
 /**
- * XxlJob开发示例（Bean模式）
+ * Sample Orth Job Handlers (Bean Mode).
  *
- * <p>开发步骤： 1、任务开发：在Spring Bean实例中，开发Job方法； 2、注解配置：为Job方法添加注解 "@XxlJob(value="自定义jobhandler名称", init
- * = "JobHandler初始化方法", destroy = "JobHandler销毁方法")"，注解value值对应的是调度中心新建任务的JobHandler属性的值。
- * 3、执行日志：需要通过 "XxlJobHelper.log" 打印执行日志； 4、任务结果：默认任务结果为 "成功" 状态，不需要主动设置；如有诉求，比如设置任务结果为失败，可以通过
- * "XxlJobHelper.handleFail/handleSuccess" 自主设置任务结果；
+ * <p>This class demonstrates various types of job handlers using the Bean mode approach. Each
+ * handler is a method annotated with {@code @XxlJob}, which automatically registers it with the
+ * executor for discovery by the admin scheduler.
+ *
+ * <h2>Development Steps:</h2>
+ *
+ * <ol>
+ *   <li><strong>Job Development:</strong> Create a method in a Spring Bean component
+ *   <li><strong>Annotation Configuration:</strong> Add {@code @XxlJob(value="handlerName", init =
+ *       "initMethod", destroy = "destroyMethod")} where value matches the JobHandler name in admin
+ *   <li><strong>Execution Logging:</strong> Use {@code XxlJobHelper.log()} for all job output
+ *   <li><strong>Result Handling:</strong> Default result is SUCCESS. Use {@code
+ *       XxlJobHelper.handleFail()} or {@code XxlJobHelper.handleSuccess()} to explicitly set
+ *       results
+ * </ol>
+ *
+ * <h2>Job Handler Types:</h2>
+ *
+ * <ul>
+ *   <li><strong>Simple Job:</strong> Basic execution with logging
+ *   <li><strong>Sharding Job:</strong> Distributed parallel processing with shard indices
+ *   <li><strong>Command Job:</strong> Execute shell commands with output capture
+ *   <li><strong>HTTP Job:</strong> Cross-platform HTTP requests with configurable parameters
+ *   <li><strong>Lifecycle Job:</strong> Custom initialization and cleanup logic
+ * </ul>
+ *
+ * <h2>Parameter Passing:</h2>
+ *
+ * <p>Job parameters are retrieved using {@code XxlJobHelper.getJobParam()} and can be:
+ *
+ * <ul>
+ *   <li>Plain text strings
+ *   <li>JSON objects for structured data
+ *   <li>Command line arguments for shell execution
+ * </ul>
+ *
+ * <h2>Context Information:</h2>
+ *
+ * <p>Access execution context via {@code XxlJobHelper}:
+ *
+ * <ul>
+ *   <li>{@code getJobId()} - Job configuration ID
+ *   <li>{@code getJobLogId()} - Current execution log ID
+ *   <li>{@code getShardIndex()} / {@code getShardTotal()} - Sharding information
+ *   <li>{@code getBroadcastIndex()} / {@code getBroadcastTotal()} - Broadcast information
+ * </ul>
  *
  * @author xuxueli 2019-12-11 21:52:51
+ * @see XxlJobHelper
+ * @see com.xxl.job.core.handler.annotation.XxlJob
  */
 @Component
 public class SampleXxlJob {
-    private static Logger logger = LoggerFactory.getLogger(SampleXxlJob.class);
+    private static final Logger logger = LoggerFactory.getLogger(SampleXxlJob.class);
 
-    /** 1、简单任务示例（Bean模式） */
+    private static final int DEMO_LOOP_COUNT = 5;
+    private static final int DEMO_SLEEP_SECONDS = 2;
+    private static final int DEFAULT_HTTP_TIMEOUT_MS = 3000;
+    private static final int SUCCESS_EXIT_CODE = 0;
+
+    /**
+     * Simple job handler demonstration (Bean mode).
+     *
+     * <p>This is a basic job that logs messages and simulates work with periodic heartbeats. It
+     * demonstrates:
+     *
+     * <ul>
+     *   <li>Basic logging with {@code XxlJobHelper.log()}
+     *   <li>Long-running job with periodic status updates
+     *   <li>Default SUCCESS result (no explicit result setting needed)
+     * </ul>
+     *
+     * <p><strong>Usage:</strong> Create a job in admin with JobHandler="demoJobHandler"
+     *
+     * <p><strong>Parameters:</strong> None required
+     *
+     * @throws Exception if job execution fails
+     */
     @XxlJob("demoJobHandler")
     public void demoJobHandler() throws Exception {
-        XxlJobHelper.log("XXL-JOB, Hello World.");
+        XxlJobHelper.log("Orth-Job, Hello World.");
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < DEMO_LOOP_COUNT; i++) {
             XxlJobHelper.log("beat at:" + i);
-            TimeUnit.SECONDS.sleep(2);
+            TimeUnit.SECONDS.sleep(DEMO_SLEEP_SECONDS);
         }
         // default success
     }
 
-    /** 2、分片广播任务 */
+    /**
+     * Sharding broadcast job handler demonstration.
+     *
+     * <p>This job demonstrates distributed parallel processing using sharding. When routing
+     * strategy is set to SHARDING_BROADCAST in admin, each executor receives a unique shard index
+     * (0 to N-1) and can process its assigned data partition independently.
+     *
+     * <p><strong>Use Cases:</strong>
+     *
+     * <ul>
+     *   <li>Processing large datasets partitioned by ID range, date range, or hash
+     *   <li>Distributed batch data collection from multiple sources
+     *   <li>Parallel ETL pipelines where each executor handles different data segments
+     * </ul>
+     *
+     * <p><strong>Sharding Example:</strong>
+     *
+     * <pre>
+     * Total executors: 3
+     * Executor A receives: shardIndex=0, shardTotal=3 (processes IDs % 3 == 0)
+     * Executor B receives: shardIndex=1, shardTotal=3 (processes IDs % 3 == 1)
+     * Executor C receives: shardIndex=2, shardTotal=3 (processes IDs % 3 == 2)
+     * </pre>
+     *
+     * <p><strong>Usage:</strong> Create a job in admin with:
+     *
+     * <ul>
+     *   <li>JobHandler="shardingJobHandler"
+     *   <li>Route Strategy="SHARDING_BROADCAST"
+     * </ul>
+     *
+     * <p><strong>Parameters:</strong> None required (shard info from context)
+     *
+     * @throws Exception if job execution fails
+     */
     @XxlJob("shardingJobHandler")
     public void shardingJobHandler() throws Exception {
-
-        // 分片参数
         int shardIndex = XxlJobHelper.getShardIndex();
         int shardTotal = XxlJobHelper.getShardTotal();
 
-        XxlJobHelper.log("分片参数：当前分片序号 = {}, 总分片数 = {}", shardIndex, shardTotal);
+        XxlJobHelper.log(
+                "Shard parameters: current shard index = {}, total shards = {}",
+                shardIndex,
+                shardTotal);
 
-        // 业务逻辑
         for (int i = 0; i < shardTotal; i++) {
             if (i == shardIndex) {
-                XxlJobHelper.log("第 {} 片, 命中分片开始处理", i);
+                XxlJobHelper.log("Shard {}, matched - processing", i);
             } else {
-                XxlJobHelper.log("第 {} 片, 忽略", i);
+                XxlJobHelper.log("Shard {}, skipped", i);
             }
         }
     }
 
     /**
-     * 3、命令行任务
+     * Command line job handler demonstration.
      *
-     * <p>参数示例："ls -a" 或者 "pwd"
+     * <p>This job executes shell commands and captures their output. It supports any command
+     * available in the executor's environment and logs stdout/stderr in real-time.
+     *
+     * <p><strong>Security Note:</strong> This handler executes arbitrary commands. Ensure proper
+     * access controls and input validation in production environments.
+     *
+     * <p><strong>Usage:</strong> Create a job in admin with JobHandler="commandJobHandler"
+     *
+     * <p><strong>Parameters (required):</strong> Command string with arguments
+     *
+     * <pre>
+     * Examples:
+     * - "ls -la /data/logs"
+     * - "pwd"
+     * - "python /opt/scripts/collect_data.py --date 2026-02-08"
+     * </pre>
+     *
+     * <p><strong>Exit Code Handling:</strong>
+     *
+     * <ul>
+     *   <li>Exit code 0: Job SUCCESS
+     *   <li>Non-zero exit code: Job FAIL with error message
+     * </ul>
+     *
+     * @throws Exception if command execution fails
      */
     @XxlJob("commandJobHandler")
     public void commandJobHandler() throws Exception {
         String command = XxlJobHelper.getJobParam();
-        int exitValue = -1;
 
-        BufferedReader bufferedReader = null;
-        try {
-            // valid
-            if (command == null || command.trim().length() == 0) {
-                XxlJobHelper.handleFail("command empty.");
-                return;
-            }
-
-            // command split
-            String[] commandArray = command.split(" ");
-
-            // command process
-            ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.command(commandArray);
-            processBuilder.redirectErrorStream(true);
-
-            Process process = processBuilder.start();
-            // Process process = Runtime.getRuntime().exec(command);
-
-            BufferedInputStream bufferedInputStream =
-                    new BufferedInputStream(process.getInputStream());
-            bufferedReader = new BufferedReader(new InputStreamReader(bufferedInputStream));
-
-            // command log
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                XxlJobHelper.log(line);
-            }
-
-            // command exit
-            process.waitFor();
-            exitValue = process.exitValue();
-        } catch (Exception e) {
-            XxlJobHelper.log(e);
-        } finally {
-            if (bufferedReader != null) {
-                bufferedReader.close();
-            }
+        if (isCommandEmpty(command)) {
+            XxlJobHelper.handleFail("command empty.");
+            return;
         }
 
-        if (exitValue == 0) {
-            // default success
-        } else {
+        int exitValue = executeCommand(command);
+
+        if (exitValue != SUCCESS_EXIT_CODE) {
             XxlJobHelper.handleFail("command exit value(" + exitValue + ") is failed");
         }
     }
 
     /**
-     * 4、跨平台Http任务
+     * Checks if command parameter is empty.
      *
-     * <p>参数示例：
+     * @param command command string to validate
+     * @return true if command is null or empty
+     */
+    private boolean isCommandEmpty(String command) {
+        return command == null || command.trim().isEmpty();
+    }
+
+    /**
+     * Executes a shell command and logs its output.
+     *
+     * @param command command string to execute
+     * @return process exit code (0 for success)
+     * @throws Exception if command execution fails
+     */
+    private int executeCommand(String command) throws Exception {
+        String[] commandArray = command.split(" ");
+
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        processBuilder.command(commandArray);
+        processBuilder.redirectErrorStream(true);
+
+        Process process = processBuilder.start();
+
+        logProcessOutput(process);
+
+        process.waitFor();
+        return process.exitValue();
+    }
+
+    /**
+     * Logs process output line by line.
+     *
+     * @param process running process to read output from
+     * @throws Exception if reading output fails
+     */
+    private void logProcessOutput(Process process) throws Exception {
+        try (BufferedInputStream bufferedInputStream =
+                        new BufferedInputStream(process.getInputStream());
+                BufferedReader bufferedReader =
+                        new BufferedReader(new InputStreamReader(bufferedInputStream))) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                XxlJobHelper.log(line);
+            }
+        }
+    }
+
+    /**
+     * Cross-platform HTTP job handler demonstration.
+     *
+     * <p>This job executes HTTP requests with full control over method, headers, body, and timeout.
+     * It's useful for:
+     *
+     * <ul>
+     *   <li>Triggering webhooks or external APIs
+     *   <li>Data collection from REST endpoints
+     *   <li>Integration with third-party services
+     *   <li>Service health checks
+     * </ul>
+     *
+     * <p><strong>Security:</strong> Domain whitelist enforced via {@link #DOMAIN_WHITE_LIST}.
+     * Modify this set to allow additional domains.
+     *
+     * <p><strong>Usage:</strong> Create a job in admin with JobHandler="httpJobHandler"
+     *
+     * <p><strong>Parameters (required):</strong> JSON object with HTTP configuration
+     *
+     * <p><strong>Simple Example:</strong>
      *
      * <pre>
-     *      // 1、简单示例：
-     *      {
-     *          "url": "http://www.baidu.com",
-     *          "method": "get",
-     *          "data": "hello world"
-     *      }
+     * {
+     *   "url": "http://www.baidu.com",
+     *   "method": "GET",
+     *   "data": "hello world"
+     * }
+     * </pre>
      *
-     *      // 2、完整参数示例：
-     *      {
-     *          "url": "http://www.baidu.com",
-     *          "method": "POST",
-     *          "contentType": "application/json",
-     *          "headers": {
-     *              "header01": "value01"
-     *          },
-     *          "cookies": {
-     *              "cookie01": "value01"
-     *          },
-     *          "timeout": 3000,
-     *          "data": "request body data",
-     *          "form": {
-     *              "key01": "value01"
-     *          },
-     *          "auth": "auth data"
-     *      }
-     *  </pre>
+     * <p><strong>Complete Example:</strong>
+     *
+     * <pre>
+     * {
+     *   "url": "http://api.example.com/data",
+     *   "method": "POST",
+     *   "contentType": "application/json",
+     *   "headers": {
+     *     "Authorization": "Bearer token123",
+     *     "X-Request-ID": "job-12345"
+     *   },
+     *   "cookies": {
+     *     "session": "abc123"
+     *   },
+     *   "timeout": 5000,
+     *   "data": "{\"key\": \"value\"}",
+     *   "form": {
+     *     "field1": "value1"
+     *   },
+     *   "auth": "Basic dXNlcjpwYXNz"
+     * }
+     * </pre>
+     *
+     * <p><strong>Parameter Fields:</strong>
+     *
+     * <ul>
+     *   <li>{@code url} (required): Target URL
+     *   <li>{@code method} (optional): HTTP method (GET, POST, PUT, DELETE, etc.). Default: POST
+     *   <li>{@code contentType} (optional): Content-Type header. Default: application/json
+     *   <li>{@code headers} (optional): Custom headers map
+     *   <li>{@code cookies} (optional): Cookies map
+     *   <li>{@code timeout} (optional): Request timeout in ms. Default: 3000
+     *   <li>{@code data} (optional): Request body as string
+     *   <li>{@code form} (optional): Form data map (auto sets content-type to
+     *       application/x-www-form-urlencoded)
+     *   <li>{@code auth} (optional): Authorization header value
+     * </ul>
+     *
+     * @throws Exception if HTTP request fails
      */
     @XxlJob("httpJobHandler")
     public void httpJobHandler() throws Exception {
-
-        // param data
         String param = XxlJobHelper.getJobParam();
-        if (param == null || param.trim().isEmpty()) {
-            XxlJobHelper.log("param[" + param + "] invalid.");
 
+        if (isParameterEmpty(param)) {
+            XxlJobHelper.log("param[" + param + "] invalid.");
             XxlJobHelper.handleFail();
             return;
         }
 
-        // param parse
-        HttpJobParam httpJobParam = null;
+        HttpJobParam httpJobParam = parseHttpJobParam(param);
+        if (httpJobParam == null) {
+            return;
+        }
+
+        if (!validateHttpJobParam(httpJobParam)) {
+            return;
+        }
+
+        Method method = resolveHttpMethod(httpJobParam);
+        if (method == null) {
+            return;
+        }
+
+        ContentType contentType = resolveContentType(httpJobParam);
+
+        applyDefaultTimeout(httpJobParam);
+
+        executeHttpRequest(httpJobParam, method, contentType);
+    }
+
+    /**
+     * Checks if parameter is empty.
+     *
+     * @param param parameter string to validate
+     * @return true if parameter is null or empty
+     */
+    private boolean isParameterEmpty(String param) {
+        return param == null || param.trim().isEmpty();
+    }
+
+    /**
+     * Parses JSON parameter into HttpJobParam object.
+     *
+     * @param param JSON string to parse
+     * @return parsed HttpJobParam or null if parsing fails
+     */
+    private HttpJobParam parseHttpJobParam(String param) {
         try {
-            httpJobParam = GsonTool.fromJson(param, HttpJobParam.class);
+            return GsonTool.fromJson(param, HttpJobParam.class);
         } catch (Exception e) {
             XxlJobHelper.log(new RuntimeException("HttpJobParam parse error", e));
             XxlJobHelper.handleFail();
-            return;
+            return null;
         }
+    }
 
-        // param valid
+    /**
+     * Validates HTTP job parameters.
+     *
+     * @param httpJobParam parameters to validate
+     * @return true if parameters are valid
+     */
+    private boolean validateHttpJobParam(HttpJobParam httpJobParam) {
         if (httpJobParam == null) {
             XxlJobHelper.log("param parse fail.");
             XxlJobHelper.handleFail();
-            return;
+            return false;
         }
+
         if (StringTool.isBlank(httpJobParam.getUrl())) {
             XxlJobHelper.log("url[" + httpJobParam.getUrl() + "] invalid.");
             XxlJobHelper.handleFail();
-            return;
+            return false;
         }
+
         if (!isValidDomain(httpJobParam.getUrl())) {
             XxlJobHelper.log("url[" + httpJobParam.getUrl() + "] not allowed.");
             XxlJobHelper.handleFail();
-            return;
+            return false;
         }
+
+        return true;
+    }
+
+    /**
+     * Resolves HTTP method from parameter.
+     *
+     * @param httpJobParam parameters containing method
+     * @return resolved Method enum or null if invalid
+     */
+    private Method resolveHttpMethod(HttpJobParam httpJobParam) {
         Method method = Method.POST;
+
         if (StringTool.isNotBlank(httpJobParam.getMethod())) {
-            Method methodParam = Method.valueOf(httpJobParam.getMethod().toUpperCase());
-            if (methodParam == null) {
+            try {
+                Method methodParam = Method.valueOf(httpJobParam.getMethod().toUpperCase());
+                if (methodParam != null) {
+                    method = methodParam;
+                }
+            } catch (IllegalArgumentException e) {
                 XxlJobHelper.log("method[" + httpJobParam.getMethod() + "] invalid.");
                 XxlJobHelper.handleFail();
-                return;
+                return null;
             }
-            method = methodParam;
         }
+
+        return method;
+    }
+
+    /**
+     * Resolves content type from parameter.
+     *
+     * @param httpJobParam parameters containing content type
+     * @return resolved ContentType enum
+     */
+    private ContentType resolveContentType(HttpJobParam httpJobParam) {
         ContentType contentType = ContentType.JSON;
+
         if (StringTool.isNotBlank(httpJobParam.getContentType())) {
             for (ContentType contentTypeParam : ContentType.values()) {
                 if (contentTypeParam.getValue().equals(httpJobParam.getContentType())) {
@@ -213,11 +458,30 @@ public class SampleXxlJob {
                 }
             }
         }
-        if (httpJobParam.getTimeout() <= 0) {
-            httpJobParam.setTimeout(3000);
-        }
 
-        // do request
+        return contentType;
+    }
+
+    /**
+     * Applies default timeout if not specified.
+     *
+     * @param httpJobParam parameters to modify
+     */
+    private void applyDefaultTimeout(HttpJobParam httpJobParam) {
+        if (httpJobParam.getTimeout() <= 0) {
+            httpJobParam.setTimeout(DEFAULT_HTTP_TIMEOUT_MS);
+        }
+    }
+
+    /**
+     * Executes HTTP request and logs response.
+     *
+     * @param httpJobParam request parameters
+     * @param method HTTP method
+     * @param contentType content type
+     */
+    private void executeHttpRequest(
+            HttpJobParam httpJobParam, Method method, ContentType contentType) {
         try {
             HttpResponse httpResponse =
                     HttpTool.createRequest()
@@ -239,49 +503,44 @@ public class SampleXxlJob {
         }
     }
 
-    /** domain white-list, for httpJobHandler */
-    private static Set<String> DOMAIN_WHITE_LIST =
+    /**
+     * Domain whitelist for HTTP job handler.
+     *
+     * <p>Only URLs starting with these prefixes are allowed. Modify this set to add additional
+     * trusted domains in production.
+     */
+    private static final Set<String> DOMAIN_WHITE_LIST =
             Set.of("http://www.baidu.com", "http://cn.bing.com");
 
-    /** valid if domain is in white-list */
+    /**
+     * Validates if URL domain is in whitelist.
+     *
+     * @param url URL to validate
+     * @return true if URL starts with whitelisted domain
+     */
     private boolean isValidDomain(String url) {
         if (url == null || DOMAIN_WHITE_LIST.isEmpty()) {
             return false;
         }
-        for (String prefix : DOMAIN_WHITE_LIST) {
-            if (url.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
+
+        return DOMAIN_WHITE_LIST.stream().anyMatch(url::startsWith);
     }
 
-    /*public static void main(String[] args) {
-        HttpJobParam httpJobParam = new HttpJobParam();
-        httpJobParam.setUrl("http://www.baidu.com");
-        httpJobParam.setMethod(Method.POST.name());
-        httpJobParam.setContentType(ContentType.JSON.getValue());
-        httpJobParam.setHeaders(Map.of("header01", "value01"));
-        httpJobParam.setCookies(Map.of("cookie01", "value01"));
-        httpJobParam.setTimeout(3000);
-        httpJobParam.setData("request body data");
-        httpJobParam.setForm(Map.of("form01", "value01"));
-        httpJobParam.setAuth("auth data");
-
-        logger.info(GsonTool.toJson(httpJobParam));
-    }*/
-
-    /** http job param */
+    /**
+     * HTTP Job Parameter Model.
+     *
+     * <p>Encapsulates all HTTP request configuration for the HTTP job handler.
+     */
     private static class HttpJobParam {
-        private String url; // 请求 Url
-        private String method; // Method
-        private String contentType; // Content-Type
-        private Map<String, String> headers; // 存储请求头
-        private Map<String, String> cookies; // Cookie（需要格式转换）
-        private int timeout; // 请求超时时间
-        private String data; // 存储请求体
-        private Map<String, String> form; // 存储表单数据
-        private String auth; // 鉴权信息
+        private String url;
+        private String method;
+        private String contentType;
+        private Map<String, String> headers;
+        private Map<String, String> cookies;
+        private int timeout;
+        private String data;
+        private Map<String, String> form;
+        private String auth;
 
         public String getUrl() {
             return url;
@@ -356,16 +615,47 @@ public class SampleXxlJob {
         }
     }
 
-    /** 5、生命周期任务示例：任务初始化与销毁时，支持自定义相关逻辑； */
+    /**
+     * Lifecycle job handler demonstration with custom initialization and cleanup.
+     *
+     * <p>This job demonstrates the use of init and destroy lifecycle methods. These methods are
+     * called once when the job handler is first registered and when the executor shuts down,
+     * respectively.
+     *
+     * <p><strong>Use Cases:</strong>
+     *
+     * <ul>
+     *   <li>Initialize database connections or resource pools
+     *   <li>Load configuration or cache data on startup
+     *   <li>Clean up resources on shutdown
+     *   <li>Close file handles or network connections
+     * </ul>
+     *
+     * <p><strong>Usage:</strong> Create a job in admin with JobHandler="demoJobHandler2"
+     *
+     * <p><strong>Parameters:</strong> None required
+     *
+     * @throws Exception if job execution fails
+     */
     @XxlJob(value = "demoJobHandler2", init = "init", destroy = "destroy")
     public void demoJobHandler2() throws Exception {
-        XxlJobHelper.log("XXL-JOB, Hello World.");
+        XxlJobHelper.log("Orth-Job, Hello World.");
     }
 
+    /**
+     * Initialization method called once when job handler is registered.
+     *
+     * <p>Use this method to initialize resources needed by the job handler.
+     */
     public void init() {
         logger.info("init");
     }
 
+    /**
+     * Cleanup method called once when executor shuts down.
+     *
+     * <p>Use this method to release resources and perform cleanup.
+     */
     public void destroy() {
         logger.info("destroy");
     }

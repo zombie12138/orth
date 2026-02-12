@@ -63,7 +63,7 @@ public class JobLogReportHelper {
                                             XxlJobLogReport xxlJobLogReport = new XxlJobLogReport();
                                             xxlJobLogReport.setTriggerDay(todayFrom);
                                             xxlJobLogReport.setRunningCount(0);
-                                            xxlJobLogReport.setSucCount(0);
+                                            xxlJobLogReport.setSuccessCount(0);
                                             xxlJobLogReport.setFailCount(0);
 
                                             Map<String, Object> triggerCountMap =
@@ -103,7 +103,7 @@ public class JobLogReportHelper {
 
                                                 xxlJobLogReport.setRunningCount(
                                                         triggerDayCountRunning);
-                                                xxlJobLogReport.setSucCount(triggerDayCountSuc);
+                                                xxlJobLogReport.setSuccessCount(triggerDayCountSuc);
                                                 xxlJobLogReport.setFailCount(triggerDayCountFail);
                                             }
 

@@ -27,26 +27,54 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
+ * Job user controller for managing user accounts.
+ *
+ * <p>Handles operations including:
+ *
+ * <ul>
+ *   <li>Listing and paginating users
+ *   <li>Creating new user accounts
+ *   <li>Updating user information and passwords
+ *   <li>Deleting user accounts with validation
+ * </ul>
+ *
  * @author xuxueli 2019-05-04 16:39:50
  */
 @Controller
 @RequestMapping("/user")
 public class JobUserController {
 
+    private static final int MIN_USERNAME_LENGTH = 4;
+    private static final int MAX_USERNAME_LENGTH = 20;
+    private static final int MIN_PASSWORD_LENGTH = 4;
+    private static final int MAX_PASSWORD_LENGTH = 20;
+
     @Resource private XxlJobUserMapper xxlJobUserMapper;
     @Resource private XxlJobGroupMapper xxlJobGroupMapper;
 
+    /**
+     * Displays the user list page.
+     *
+     * @param model the model for view rendering
+     * @return the view name for user list page
+     */
     @RequestMapping
     @XxlSso(role = Consts.ADMIN_ROLE)
     public String index(Model model) {
-
-        // 执行器列表
         List<XxlJobGroup> groupList = xxlJobGroupMapper.findAll();
         model.addAttribute("groupList", groupList);
-
         return "biz/user.list";
     }
 
+    /**
+     * Retrieves a paginated list of users.
+     *
+     * @param offset the starting offset for pagination
+     * @param pagesize the page size
+     * @param username optional filter by username
+     * @param role the role filter
+     * @return paginated response containing users
+     */
     @RequestMapping("/pageList")
     @ResponseBody
     @XxlSso(role = Consts.ADMIN_ROLE)
@@ -56,102 +84,90 @@ public class JobUserController {
             @RequestParam String username,
             @RequestParam int role) {
 
-        // page list
         List<XxlJobUser> list = xxlJobUserMapper.pageList(offset, pagesize, username, role);
-        int list_count = xxlJobUserMapper.pageListCount(offset, pagesize, username, role);
+        int totalCount = xxlJobUserMapper.pageListCount(offset, pagesize, username, role);
 
-        // filter
-        if (list != null && !list.isEmpty()) {
-            for (XxlJobUser item : list) {
-                item.setPassword(null);
-            }
-        }
+        sanitizePasswords(list);
 
-        // package result
         PageModel<XxlJobUser> pageModel = new PageModel<>();
         pageModel.setData(list);
-        pageModel.setTotal(list_count);
+        pageModel.setTotal(totalCount);
 
         return Response.ofSuccess(pageModel);
     }
 
+    /**
+     * Creates a new user account.
+     *
+     * @param xxlJobUser the user to create
+     * @return success or failure response
+     */
     @RequestMapping("/insert")
     @ResponseBody
     @XxlSso(role = Consts.ADMIN_ROLE)
     public Response<String> insert(XxlJobUser xxlJobUser) {
+        Response<String> validationResult = validateNewUser(xxlJobUser);
+        if (!validationResult.isSuccess()) {
+            return validationResult;
+        }
 
-        // valid username
-        if (StringTool.isBlank(xxlJobUser.getUsername())) {
-            return Response.ofFail(
-                    I18nUtil.getString("system_please_input")
-                            + I18nUtil.getString("user_username"));
-        }
-        xxlJobUser.setUsername(xxlJobUser.getUsername().trim());
-        if (!(xxlJobUser.getUsername().length() >= 4 && xxlJobUser.getUsername().length() <= 20)) {
-            return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
-        }
-        // valid password
-        if (StringTool.isBlank(xxlJobUser.getPassword())) {
-            return Response.ofFail(
-                    I18nUtil.getString("system_please_input")
-                            + I18nUtil.getString("user_password"));
-        }
-        xxlJobUser.setPassword(xxlJobUser.getPassword().trim());
-        if (!(xxlJobUser.getPassword().length() >= 4 && xxlJobUser.getPassword().length() <= 20)) {
-            return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
-        }
-        // md5 password
-        String passwordHash = SHA256Tool.sha256(xxlJobUser.getPassword());
-        xxlJobUser.setPassword(passwordHash);
-
-        // check repeat
-        XxlJobUser existUser = xxlJobUserMapper.loadByUserName(xxlJobUser.getUsername());
-        if (existUser != null) {
+        XxlJobUser existingUser = xxlJobUserMapper.loadByUserName(xxlJobUser.getUsername());
+        if (existingUser != null) {
             return Response.ofFail(I18nUtil.getString("user_username_repeat"));
         }
 
-        // write
+        String passwordHash = SHA256Tool.sha256(xxlJobUser.getPassword());
+        xxlJobUser.setPassword(passwordHash);
         xxlJobUserMapper.save(xxlJobUser);
+
         return Response.ofSuccess();
     }
 
+    /**
+     * Updates an existing user account.
+     *
+     * @param request the HTTP request for login info
+     * @param xxlJobUser the user to update
+     * @return success or failure response
+     */
     @RequestMapping("/update")
     @ResponseBody
     @XxlSso(role = Consts.ADMIN_ROLE)
     public Response<String> update(HttpServletRequest request, XxlJobUser xxlJobUser) {
-
-        // avoid opt login seft
         Response<LoginInfo> loginInfoResponse = XxlSsoHelper.loginCheckWithAttr(request);
         if (loginInfoResponse.getData().getUserName().equals(xxlJobUser.getUsername())) {
             return Response.ofFail(I18nUtil.getString("user_update_loginuser_limit"));
         }
 
-        // valid password
         if (StringTool.isNotBlank(xxlJobUser.getPassword())) {
-            xxlJobUser.setPassword(xxlJobUser.getPassword().trim());
-            if (!(xxlJobUser.getPassword().length() >= 4
-                    && xxlJobUser.getPassword().length() <= 20)) {
-                return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
+            Response<String> passwordValidation = validatePassword(xxlJobUser.getPassword());
+            if (!passwordValidation.isSuccess()) {
+                return passwordValidation;
             }
-            // md5 password
-            String passwordHash = SHA256Tool.sha256(xxlJobUser.getPassword());
+
+            String passwordHash = SHA256Tool.sha256(xxlJobUser.getPassword().trim());
             xxlJobUser.setPassword(passwordHash);
         } else {
             xxlJobUser.setPassword(null);
         }
 
-        // write
         xxlJobUserMapper.update(xxlJobUser);
         return Response.ofSuccess();
     }
 
+    /**
+     * Deletes a user account by ID.
+     *
+     * @param request the HTTP request for login info
+     * @param ids the list of user IDs (only one allowed)
+     * @return success or failure response
+     */
     @RequestMapping("/delete")
     @ResponseBody
     @XxlSso(role = Consts.ADMIN_ROLE)
     public Response<String> delete(
             HttpServletRequest request, @RequestParam("ids[]") List<Integer> ids) {
 
-        // valid
         if (CollectionTool.isEmpty(ids) || ids.size() != 1) {
             return Response.ofFail(
                     I18nUtil.getString("system_please_choose")
@@ -159,7 +175,6 @@ public class JobUserController {
                             + I18nUtil.getString("system_data"));
         }
 
-        // avoid opt login seft
         Response<LoginInfo> loginInfoResponse = XxlSsoHelper.loginCheckWithAttr(request);
         if (ids.contains(Integer.parseInt(loginInfoResponse.getData().getUserId()))) {
             return Response.ofFail(I18nUtil.getString("user_update_loginuser_limit"));
@@ -169,40 +184,61 @@ public class JobUserController {
         return Response.ofSuccess();
     }
 
-    /*@RequestMapping("/updatePwd")
-    @ResponseBody
-    public Response<String> updatePwd(HttpServletRequest request,
-                                     @RequestParam("password") String password,
-                                     @RequestParam("oldPassword") String oldPassword){
+    // ==================== Private Helper Methods ====================
 
-        // valid
-        if (oldPassword==null || oldPassword.trim().isEmpty()){
-            return Response.ofFail(I18nUtil.getString("system_please_input") + I18nUtil.getString("change_pwd_field_oldpwd"));
-        }
-        if (password==null || password.trim().isEmpty()){
-            return Response.ofFail(I18nUtil.getString("system_please_input") + I18nUtil.getString("change_pwd_field_oldpwd"));
-        }
-        password = password.trim();
-        if (!(password.length()>=4 && password.length()<=20)) {
-            return Response.ofFail(I18nUtil.getString("system_lengh_limit")+"[4-20]" );
+    /**
+     * Validates a new user's username and password.
+     *
+     * @param xxlJobUser the user to validate
+     * @return success if valid, failure with error message otherwise
+     */
+    private Response<String> validateNewUser(XxlJobUser xxlJobUser) {
+        if (StringTool.isBlank(xxlJobUser.getUsername())) {
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_input")
+                            + I18nUtil.getString("user_username"));
         }
 
-        // md5 password
-        String oldPasswordHash = SHA256Tool.sha256(oldPassword);
-        String passwordHash = SHA256Tool.sha256(password);
-
-        // valid old pwd
-        Response<LoginInfo> loginInfoResponse = XxlSsoHelper.loginCheckWithAttr(request);
-        XxlJobUser existUser = xxlJobUserMapper.loadByUserName(loginInfoResponse.getData().getUserName());
-        if (!oldPasswordHash.equals(existUser.getPassword())) {
-            return Response.ofFail(I18nUtil.getString("change_pwd_field_oldpwd") + I18nUtil.getString("system_unvalid"));
+        xxlJobUser.setUsername(xxlJobUser.getUsername().trim());
+        int usernameLength = xxlJobUser.getUsername().length();
+        if (usernameLength < MIN_USERNAME_LENGTH || usernameLength > MAX_USERNAME_LENGTH) {
+            return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
         }
 
-        // write new
-        existUser.setPassword(passwordHash);
-        xxlJobUserMapper.update(existUser);
+        if (StringTool.isBlank(xxlJobUser.getPassword())) {
+            return Response.ofFail(
+                    I18nUtil.getString("system_please_input")
+                            + I18nUtil.getString("user_password"));
+        }
+
+        return validatePassword(xxlJobUser.getPassword());
+    }
+
+    /**
+     * Validates a password meets length requirements.
+     *
+     * @param password the password to validate
+     * @return success if valid, failure with error message otherwise
+     */
+    private Response<String> validatePassword(String password) {
+        String trimmedPassword = password.trim();
+        int passwordLength = trimmedPassword.length();
+
+        if (passwordLength < MIN_PASSWORD_LENGTH || passwordLength > MAX_PASSWORD_LENGTH) {
+            return Response.ofFail(I18nUtil.getString("system_lengh_limit") + "[4-20]");
+        }
 
         return Response.ofSuccess();
-    }*/
+    }
 
+    /**
+     * Removes passwords from user list for security.
+     *
+     * @param users the list of users to sanitize
+     */
+    private void sanitizePasswords(List<XxlJobUser> users) {
+        if (CollectionTool.isNotEmpty(users)) {
+            users.forEach(user -> user.setPassword(null));
+        }
+    }
 }

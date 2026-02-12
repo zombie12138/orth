@@ -4,14 +4,24 @@
 // import java.util.concurrent.ConcurrentMap;
 //
 /// **
-// * local cache tool
+// * Local in-memory cache utility with TTL support.
 // *
 // * @author xuxueli 2018-01-22 21:37:34
+// * @deprecated This utility is deprecated. Use Spring Cache abstraction with Caffeine or Redis
+// *             instead.
+// *             Migration: Replace with {@code @Cacheable}, {@code @CacheEvict} annotations and
+// *             configure CacheManager bean (Caffeine for local cache, Redis for distributed
+// cache).
+// *             Example: Add spring-boot-starter-cache dependency and use
+// *             {@code @EnableCaching} with CaffeineCacheManager.
+// *             Orth prefers declarative caching for better maintainability and monitoring.
 // */
+// @Deprecated
 // public class LocalCacheUtil {
 //
 //    private static ConcurrentMap<String, LocalCacheData> cacheRepository = new
-// ConcurrentHashMap<String, LocalCacheData>();   // 类型建议用抽象父类，兼容性更好；
+// ConcurrentHashMap<String, LocalCacheData>();   // Prefer abstract parent types for better
+// compatibility
 //    private static class LocalCacheData{
 //        private String key;
 //        private Object val;

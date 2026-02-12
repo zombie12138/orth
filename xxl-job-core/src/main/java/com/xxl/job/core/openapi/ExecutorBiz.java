@@ -3,45 +3,68 @@ package com.xxl.job.core.openapi;
 import com.xxl.job.core.openapi.model.*;
 import com.xxl.tool.response.Response;
 
-/** Created by xuxueli on 17/3/1. */
+/**
+ * Executor RPC interface for admin-to-executor communication.
+ *
+ * <p>Admin scheduler uses this interface to: 1. Trigger job executions 2. Kill running jobs 3.
+ * Check executor health and availability 4. Retrieve job execution logs
+ *
+ * <p>Implementation: {@link com.xxl.job.core.openapi.impl.ExecutorBizImpl} exposed via embedded
+ * Netty server.
+ */
 public interface ExecutorBiz {
 
     /**
-     * beat
+     * Health check endpoint.
      *
-     * @return response
+     * <p>Simple heartbeat to verify executor is alive. Always returns success if executor is
+     * running.
+     *
+     * @return success response
      */
-    public Response<String> beat();
+    Response<String> beat();
 
     /**
-     * idle beat
+     * Idle check for specific job.
      *
-     * @param idleBeatRequest idleBeatRequest
-     * @return response
+     * <p>Used by routing strategies (e.g., BUSYOVER) to find idle executors. Returns success only
+     * if the job thread is not running and has no pending triggers.
+     *
+     * @param idleBeatRequest request with job ID to check
+     * @return success if idle, failure if job is running or has queued triggers
      */
-    public Response<String> idleBeat(IdleBeatRequest idleBeatRequest);
+    Response<String> idleBeat(IdleBeatRequest idleBeatRequest);
 
     /**
-     * run
+     * Triggers a job execution.
      *
-     * @param triggerRequest triggerRequest
-     * @return response
+     * <p>Main endpoint for job scheduling. Creates/reuses job thread, handles block strategies
+     * (SERIAL_EXECUTION, DISCARD_LATER, COVER_EARLY), and queues the trigger for execution.
+     *
+     * @param triggerRequest trigger parameters (job ID, parameters, glue source, etc.)
+     * @return success if queued, failure if handler not found or block strategy rejects
      */
-    public Response<String> run(TriggerRequest triggerRequest);
+    Response<String> run(TriggerRequest triggerRequest);
 
     /**
-     * kill
+     * Kills a running job.
      *
-     * @param killRequest killRequest
-     * @return response
+     * <p>Stops the job thread immediately and removes it from the thread pool. The job will not
+     * complete normally and callback will indicate it was killed.
+     *
+     * @param killRequest request with job ID to kill
+     * @return success response (always succeeds, even if job not running)
      */
-    public Response<String> kill(KillRequest killRequest);
+    Response<String> kill(KillRequest killRequest);
 
     /**
-     * log
+     * Retrieves job execution logs.
      *
-     * @param logRequest logRequest
-     * @return response
+     * <p>Returns log file content starting from specified line number. Used by admin console to
+     * display real-time logs.
+     *
+     * @param logRequest request with log ID, date, and starting line number
+     * @return log result with content and metadata
      */
-    public Response<LogResult> log(LogRequest logRequest);
+    Response<LogResult> log(LogRequest logRequest);
 }

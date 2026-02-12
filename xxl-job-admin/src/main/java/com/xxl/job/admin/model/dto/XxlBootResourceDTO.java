@@ -5,47 +5,62 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * XxlBootResource DTO
+ * Resource tree node DTO for RBAC (Role-Based Access Control).
  *
- * <p>Created by xuxueli on 2024-08-04
+ * <p>Represents hierarchical system resources including directories, menus, and actions.
  */
 public class XxlBootResourceDTO implements Serializable {
     private static final long serialVersionUID = 42L;
 
-    /** 资源ID */
+    /** Resource type: Directory */
+    public static final int TYPE_DIRECTORY = 0;
+
+    /** Resource type: Menu */
+    public static final int TYPE_MENU = 1;
+
+    /** Resource type: Button/Action */
+    public static final int TYPE_BUTTON = 2;
+
+    /** Resource status: Active */
+    public static final int STATUS_ACTIVE = 0;
+
+    /** Resource status: Disabled */
+    public static final int STATUS_DISABLED = 1;
+
+    /** Resource ID */
     private int id;
 
-    /** 父节点ID */
+    /** Parent node ID (0 for root nodes) */
     private int parentId;
 
-    /** 名称 */
+    /** Display name */
     private String name;
 
-    /** 类型：0-目录, 1-菜单, 2-按钮 */
+    /** Resource type (TYPE_DIRECTORY, TYPE_MENU, or TYPE_BUTTON) */
     private int type;
 
-    /** 权限标识 */
+    /** Permission identifier (e.g., "job:create") */
     private String permission;
 
-    /** 菜单地址 */
+    /** Menu URL path */
     private String url;
 
-    /** ICON */
+    /** Icon class name */
     private String icon;
 
-    /** 顺序 */
+    /** Display order for sorting */
     private int order;
 
-    /** 状态：0-正常、1-禁用 */
+    /** Resource status (STATUS_ACTIVE or STATUS_DISABLED) */
     private int status;
 
-    /** 新增时间 */
+    /** Creation timestamp */
     private Date addTime;
 
-    /** 更新时间 */
+    /** Last update timestamp */
     private Date updateTime;
 
-    /** child data */
+    /** Child resources (hierarchical tree structure) */
     private List<XxlBootResourceDTO> children;
 
     public XxlBootResourceDTO() {}

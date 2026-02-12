@@ -13,7 +13,7 @@ class ConstTest {
 
     @Test
     void testAccessTokenConstant() {
-        assertThat(Const.XXL_JOB_ACCESS_TOKEN).isEqualTo("XXL-JOB-ACCESS-TOKEN");
+        assertThat(Const.ORTH_ACCESS_TOKEN).isEqualTo("ORTH-ACCESS-TOKEN");
     }
 
     @Test

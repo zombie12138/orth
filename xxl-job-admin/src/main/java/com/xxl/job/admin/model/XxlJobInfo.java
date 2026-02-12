@@ -3,49 +3,58 @@ package com.xxl.job.admin.model;
 import java.util.Date;
 
 /**
- * xxl-job info
+ * Job configuration entity representing a scheduled task.
  *
- * @author xuxueli 2016-1-12 18:25:49
+ * <p>Defines complete job metadata including scheduling rules, execution strategy, and SuperTask
+ * relationships for template-instance pattern.
  */
 public class XxlJobInfo {
 
-    private int id; // 主键ID
+    private int id; // Primary key
 
-    private int jobGroup; // 执行器主键ID
-    private String jobDesc;
+    private int jobGroup; // Executor group ID
+    private String jobDesc; // Job description
 
-    private Date addTime;
-    private Date updateTime;
+    private Date addTime; // Creation timestamp
+    private Date updateTime; // Last update timestamp
 
-    private String author; // 负责人
-    private String alarmEmail; // 报警邮件
+    private String author; // Owner/responsible person
+    private String alarmEmail; // Alert email addresses (comma-separated)
 
-    private String scheduleType; // 调度类型：ScheduleTypeEnum
-    private String scheduleConf; // 调度配置，值含义取决于调度类型
-    private String misfireStrategy; // 调度过期策略：MisfireStrategyEnum
+    // Scheduling configuration
+    private String scheduleType; // Schedule type (see ScheduleTypeEnum)
+    private String scheduleConf; // Schedule config (format depends on scheduleType)
+    private String misfireStrategy; // Misfire handling strategy (see MisfireStrategyEnum)
 
-    private String executorRouteStrategy; // 执行器路由策略：ExecutorRouteStrategyEnum
-    private String executorHandler; // 执行器，任务Handler名称
-    private String executorParam; // 执行器，任务参数
-    private String executorBlockStrategy; // 阻塞处理策略：ExecutorBlockStrategyEnum
-    private int executorTimeout; // 任务执行超时时间，单位秒
-    private int executorFailRetryCount; // 失败重试次数
+    // Execution configuration
+    private String executorRouteStrategy; // Routing strategy (see ExecutorRouteStrategyEnum)
+    private String executorHandler; // Job handler name
+    private String executorParam; // Job parameters
+    private String executorBlockStrategy; // Block handling strategy (see ExecutorBlockStrategyEnum)
+    private int executorTimeout; // Execution timeout in seconds
+    private int executorFailRetryCount; // Retry count on failure
 
-    private String glueType; // GLUE类型：GlueTypeEnum
-    private String glueSource; // GLUE源代码
-    private String glueRemark; // GLUE备注
-    private Date glueUpdatetime; // GLUE更新时间
+    // GLUE (dynamic code) configuration
+    private String glueType; // GLUE type (see GlueTypeEnum)
+    private String glueSource; // GLUE source code
+    private String glueRemark; // GLUE version remark
+    private Date glueUpdatetime; // GLUE last update time
 
-    private String childJobId; // 子任务ID，多个逗号分隔
+    // Job dependencies
+    private String childJobId; // Child job IDs (comma-separated)
 
-    private Integer superTaskId; // SuperTask ID (NULL = standalone or template task)
+    // SuperTask pattern (template-instance relationship)
+    private Integer superTaskId; // SuperTask template ID (NULL = standalone or template)
+    private String
+            superTaskParam; // Instance-specific parameter (injected as $ORTH_SUPER_TASK_PARAM)
 
     // Transient field: SuperTask name for display (not persisted to database)
     private String superTaskName;
 
-    private int triggerStatus; // 调度状态：TriggerStatus
-    private long triggerLastTime; // 上次调度时间
-    private long triggerNextTime; // 下次调度时间
+    // Scheduling state
+    private int triggerStatus; // Current status (see TriggerStatus)
+    private long triggerLastTime; // Last trigger timestamp (milliseconds)
+    private long triggerNextTime; // Next trigger timestamp (milliseconds)
 
     public int getId() {
         return id;
@@ -245,6 +254,14 @@ public class XxlJobInfo {
 
     public void setSuperTaskId(Integer superTaskId) {
         this.superTaskId = superTaskId;
+    }
+
+    public String getSuperTaskParam() {
+        return superTaskParam;
+    }
+
+    public void setSuperTaskParam(String superTaskParam) {
+        this.superTaskParam = superTaskParam;
     }
 
     public String getSuperTaskName() {

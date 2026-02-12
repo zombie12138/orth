@@ -10,11 +10,21 @@
 // import org.springframework.scheduling.quartz.QuartzJobBean;
 //
 /// **
-// * http job bean
-// * “@DisallowConcurrentExecution” disable concurrent, thread size can not be only one, better
-// given more
+// * Quartz job bean for triggering remote HTTP executors.
+// * Note: "@DisallowConcurrentExecution" disabled - thread pool size should be configured
+// * appropriately for concurrent execution.
+// *
 // * @author xuxueli 2015-12-17 18:20:34
+// * @deprecated This Quartz-based job bean is deprecated. Use the time-ring scheduler in
+// *             {@link com.xxl.job.admin.scheduler.thread.JobScheduleHelper} instead.
+// *             Migration: Remove Quartz dependency. Job scheduling is now handled by
+// *             JobScheduleHelper with a 60-slot time ring and pre-read window.
+// *             Triggering is managed by {@link
+// com.xxl.job.admin.scheduler.thread.JobTriggerPoolHelper}.
+// *             Orth replaced Quartz with a custom time-ring algorithm for better performance
+// *             and control in high-throughput scenarios.
 // */
+// @Deprecated
 //// @DisallowConcurrentExecution
 // public class RemoteHttpJobBean extends QuartzJobBean {
 //	private static Logger logger = LoggerFactory.getLogger(RemoteHttpJobBean.class);

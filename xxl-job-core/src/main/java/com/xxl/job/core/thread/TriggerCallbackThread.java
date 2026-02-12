@@ -27,280 +27,271 @@ import com.xxl.tool.io.FileTool;
 import com.xxl.tool.response.Response;
 
 /**
- * Trigger Callback Thread
+ * Background thread for sending job execution callbacks to admin.
  *
- * <p>Created by xuxueli on 16/7/22.
+ * <p>Two threads run concurrently: 1. **Main callback thread**: Processes callback queue, batches
+ * callbacks, and sends to admin 2. **Retry thread**: Retries failed callbacks from persisted files
+ * every 30 seconds
+ *
+ * <p>Failed callbacks are written to disk and retried until successful.
  */
 public class TriggerCallbackThread {
     private static final Logger logger = LoggerFactory.getLogger(TriggerCallbackThread.class);
-
     private static final TriggerCallbackThread instance = new TriggerCallbackThread();
+
+    /** Fail callback file name pattern (MD5 hash used for uniqueness) */
+    private static final String FAIL_CALLBACK_FILE_NAME =
+            XxlJobFileAppender.getCallbackLogPath()
+                    .concat(File.separator)
+                    .concat("orth-callback-{x}")
+                    .concat(".log");
 
     public static TriggerCallbackThread getInstance() {
         return instance;
     }
 
-    /** job results callback queue */
+    /** Callback queue for job execution results */
     private final LinkedBlockingQueue<CallbackRequest> callBackQueue = new LinkedBlockingQueue<>();
 
+    /**
+     * Pushes a callback request to the queue.
+     *
+     * @param callback the callback request
+     */
     public static void pushCallBack(CallbackRequest callback) {
         getInstance().callBackQueue.add(callback);
-        logger.debug(">>>>>>>>>>> xxl-job, push callback request, logId:{}", callback.getLogId());
+        logger.debug("Pushed callback request to queue, logId: {}", callback.getLogId());
     }
 
-    /** callback thread */
+    // Thread instances
     private Thread triggerCallbackThread;
-
     private Thread triggerRetryCallbackThread;
     private volatile boolean toStop = false;
 
+    /** Starts the callback and retry threads. */
     public void start() {
-
-        // valid
+        // Validate admin addresses configured
         if (XxlJobExecutor.getAdminBizList() == null) {
-            logger.warn(
-                    ">>>>>>>>>>> xxl-job, executor callback config fail, adminAddresses is null.");
+            logger.warn("Callback thread not started: admin addresses not configured");
             return;
         }
 
-        /** trigger callback thread */
-        triggerCallbackThread =
-                new Thread(
-                        new Runnable() {
-
-                            @Override
-                            public void run() {
-
-                                // normal callback
-                                while (!toStop) {
-                                    try {
-                                        CallbackRequest callback =
-                                                getInstance().callBackQueue.take();
-                                        if (callback != null) {
-
-                                            // collect callback data
-                                            List<CallbackRequest> callbackParamList =
-                                                    new ArrayList<>();
-                                            callbackParamList.add(callback); // add one element
-                                            int drainToNum =
-                                                    getInstance()
-                                                            .callBackQueue
-                                                            .drainTo(callbackParamList); // drainTo
-                                            // other all
-                                            // elements
-
-                                            // do callback, will retry if error
-                                            if (CollectionTool.isNotEmpty(callbackParamList)) {
-                                                doCallback(callbackParamList);
-                                            }
-                                        }
-                                    } catch (Throwable e) {
-                                        if (!toStop) {
-                                            logger.error(e.getMessage(), e);
-                                        }
-                                    }
-                                }
-
-                                // thead stop, callback lasttime
-                                try {
-                                    // collect callback data
-                                    List<CallbackRequest> callbackParamList = new ArrayList<>();
-                                    int drainToNum =
-                                            getInstance().callBackQueue.drainTo(callbackParamList);
-
-                                    // do callback
-                                    if (CollectionTool.isNotEmpty(callbackParamList)) {
-                                        doCallback(callbackParamList);
-                                    }
-                                } catch (Throwable e) {
-                                    if (!toStop) {
-                                        logger.error(e.getMessage(), e);
-                                    }
-                                }
-                                logger.info(
-                                        ">>>>>>>>>>> xxl-job, executor callback thread destroy.");
-                            }
-                        });
+        // Start main callback thread
+        triggerCallbackThread = new Thread(this::runCallbackLoop);
         triggerCallbackThread.setDaemon(true);
-        triggerCallbackThread.setName("xxl-job, executor TriggerCallbackThread");
+        triggerCallbackThread.setName("orth-callback-thread");
         triggerCallbackThread.start();
 
-        /** callback fail retry thread */
-        triggerRetryCallbackThread =
-                new Thread(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                while (!toStop) {
-                                    try {
-                                        retryFailCallbackFile();
-                                    } catch (Throwable e) {
-                                        if (!toStop) {
-                                            logger.error(e.getMessage(), e);
-                                        }
-                                    }
-                                    try {
-                                        TimeUnit.SECONDS.sleep(Const.BEAT_TIMEOUT);
-                                    } catch (Throwable e) {
-                                        if (!toStop) {
-                                            logger.error(e.getMessage(), e);
-                                        }
-                                    }
-                                }
-                                logger.info(
-                                        ">>>>>>>>>>> xxl-job, executor retry callback thread destroy.");
-                            }
-                        });
+        // Start retry thread
+        triggerRetryCallbackThread = new Thread(this::runRetryLoop);
         triggerRetryCallbackThread.setDaemon(true);
-        triggerRetryCallbackThread.setName("xxl-job, executor TriggerRetryCallbackThread");
+        triggerRetryCallbackThread.setName("orth-callback-retry-thread");
         triggerRetryCallbackThread.start();
     }
 
-    public void toStop() {
-        toStop = true;
-        // stop callback, interrupt and wait
-        if (triggerCallbackThread != null) { // support empty admin address
-            triggerCallbackThread.interrupt();
+    /** Main callback loop: processes callback queue and sends to admin. */
+    private void runCallbackLoop() {
+        while (!toStop) {
             try {
-                triggerCallbackThread.join();
+                // Wait for callback (blocking)
+                CallbackRequest callback = callBackQueue.take();
+
+                // Batch all available callbacks
+                List<CallbackRequest> callbackBatch = new ArrayList<>();
+                callbackBatch.add(callback);
+                callBackQueue.drainTo(callbackBatch);
+
+                // Send batch to admin (will retry on failure)
+                doCallback(callbackBatch);
             } catch (Throwable e) {
-                logger.error(e.getMessage(), e);
+                if (!toStop) {
+                    logger.error("Callback loop error", e);
+                }
             }
         }
 
-        // stop retry, interrupt and wait
+        // Final callback on shutdown
+        try {
+            List<CallbackRequest> remainingCallbacks = new ArrayList<>();
+            callBackQueue.drainTo(remainingCallbacks);
+            if (!remainingCallbacks.isEmpty()) {
+                doCallback(remainingCallbacks);
+            }
+        } catch (Throwable e) {
+            if (!toStop) {
+                logger.error("Final callback error", e);
+            }
+        }
+
+        logger.info("Orth callback thread stopped");
+    }
+
+    /** Retry loop: retries failed callbacks from persisted files. */
+    private void runRetryLoop() {
+        while (!toStop) {
+            try {
+                retryFailCallbackFile();
+            } catch (Throwable e) {
+                if (!toStop) {
+                    logger.error("Callback retry error", e);
+                }
+            }
+
+            try {
+                TimeUnit.SECONDS.sleep(Const.BEAT_TIMEOUT);
+            } catch (InterruptedException e) {
+                if (!toStop) {
+                    logger.error("Retry sleep interrupted", e);
+                }
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        logger.info("Orth callback retry thread stopped");
+    }
+
+    /** Stops the callback and retry threads gracefully. */
+    public void toStop() {
+        toStop = true;
+
+        // Stop callback thread
+        if (triggerCallbackThread != null) {
+            triggerCallbackThread.interrupt();
+            try {
+                triggerCallbackThread.join();
+            } catch (InterruptedException e) {
+                logger.error("Callback thread join interrupted", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Stop retry thread
         if (triggerRetryCallbackThread != null) {
             triggerRetryCallbackThread.interrupt();
             try {
                 triggerRetryCallbackThread.join();
-            } catch (Throwable e) {
-                logger.error(e.getMessage(), e);
+            } catch (InterruptedException e) {
+                logger.error("Retry thread join interrupted", e);
+                Thread.currentThread().interrupt();
             }
         }
     }
 
     /**
-     * do callback, will retry if error
+     * Sends callbacks to admin, retries on failure, persists if all admins fail.
      *
-     * @param callbackParamList callback param list
+     * @param callbackList callbacks to send
      */
-    private void doCallback(List<CallbackRequest> callbackParamList) {
-        boolean callbackRet = false;
-        // callback, will retry if error
+    private void doCallback(List<CallbackRequest> callbackList) {
+        boolean success = false;
+
+        // Try all admin endpoints until one succeeds
         for (AdminBiz adminBiz : XxlJobExecutor.getAdminBizList()) {
             try {
-                Response<String> callbackResult = adminBiz.callback(callbackParamList);
-                if (callbackResult != null && callbackResult.isSuccess()) {
-                    callbackLog(callbackParamList, "<br>----------- xxl-job job callback finish.");
-                    callbackRet = true;
+                Response<String> response = adminBiz.callback(callbackList);
+                if (response != null && response.isSuccess()) {
+                    callbackLog(callbackList, "<br>----------- Orth callback success");
+                    success = true;
                     break;
                 } else {
                     callbackLog(
-                            callbackParamList,
-                            "<br>----------- xxl-job job callback fail, callbackResult:"
-                                    + callbackResult);
+                            callbackList,
+                            "<br>----------- Orth callback failed, response: " + response);
                 }
             } catch (Throwable e) {
-                callbackLog(
-                        callbackParamList,
-                        "<br>----------- xxl-job job callback error, errorMsg:" + e.getMessage());
+                callbackLog(callbackList, "<br>----------- Orth callback error: " + e.getMessage());
             }
         }
-        if (!callbackRet) {
-            appendFailCallbackFile(callbackParamList);
+
+        // Persist failed callbacks to disk for retry
+        if (!success) {
+            appendFailCallbackFile(callbackList);
         }
     }
 
-    /** callback log */
-    private void callbackLog(List<CallbackRequest> callbackParamList, String logContent) {
-        for (CallbackRequest callbackParam : callbackParamList) {
+    /**
+     * Writes callback log messages to job log files.
+     *
+     * @param callbackList callbacks to log
+     * @param logContent log message
+     */
+    private void callbackLog(List<CallbackRequest> callbackList, String logContent) {
+        for (CallbackRequest callback : callbackList) {
             String logFileName =
                     XxlJobFileAppender.makeLogFileName(
-                            new Date(callbackParam.getLogDateTim()), callbackParam.getLogId());
+                            new Date(callback.getLogDateTim()), callback.getLogId());
             XxlJobContext.setXxlJobContext(
                     new XxlJobContext(-1, null, -1, -1, logFileName, -1, -1, null));
             XxlJobHelper.log(logContent);
         }
     }
 
-    // ---------------------- fail-callback file ----------------------
-
-    /** fail-callback file name */
-    private static final String failCallbackFileName =
-            XxlJobFileAppender.getCallbackLogPath()
-                    .concat(File.separator)
-                    .concat("xxl-job-callback-{x}")
-                    .concat(".log");
+    // ---------------------- Failed Callback Persistence ----------------------
 
     /**
-     * append fail-callback file
+     * Persists failed callbacks to disk for retry.
      *
-     * @param callbackParamList callback param list
+     * @param callbackList callbacks that failed
      */
-    private void appendFailCallbackFile(List<CallbackRequest> callbackParamList) {
-        // valid
-        if (CollectionTool.isEmpty(callbackParamList)) {
+    private void appendFailCallbackFile(List<CallbackRequest> callbackList) {
+        if (CollectionTool.isEmpty(callbackList)) {
             return;
         }
 
-        // generate callback data
-        String callbackData = GsonTool.toJson(callbackParamList);
+        // Serialize callbacks to JSON
+        String callbackData = GsonTool.toJson(callbackList);
         String callbackDataMd5 = Md5Tool.md5(callbackData);
 
-        // create file
-        String finalLogFileName = failCallbackFileName.replace("{x}", callbackDataMd5);
+        // Generate unique file name using MD5 hash
+        String fileName = FAIL_CALLBACK_FILE_NAME.replace("{x}", callbackDataMd5);
 
-        // write callback log
+        // Write to disk
         try {
-            FileTool.writeString(finalLogFileName, callbackData);
+            FileTool.writeString(fileName, callbackData);
         } catch (IOException e) {
-            logger.error(
-                    ">>>>>>>>>>> TriggerCallbackThread appendFailCallbackFile error, finalLogFileName:{}",
-                    finalLogFileName,
-                    e);
+            logger.error("Failed to persist callback to file: {}", fileName, e);
         }
     }
 
-    /** retry fail-callback file */
+    /** Retries failed callbacks from persisted files. */
     private void retryFailCallbackFile() {
-
-        // valid
         File callbackLogPath = new File(XxlJobFileAppender.getCallbackLogPath());
+
+        // Validate callback log directory
         if (!callbackLogPath.exists()) {
             return;
         }
-        // valid file type: must be directory
         if (!FileTool.isDirectory(callbackLogPath)) {
             FileTool.delete(callbackLogPath);
             return;
         }
-        // valid file in path: pass if empty
-        if (ArrayTool.isEmpty(callbackLogPath.listFiles())) {
+
+        File[] files = callbackLogPath.listFiles();
+        if (ArrayTool.isEmpty(files)) {
             return;
         }
 
-        // load and clear file, do retry
-        for (File callbackLogFile : callbackLogPath.listFiles()) {
+        // Retry each failed callback file
+        for (File file : files) {
             try {
-                // load data
-                String callbackData = FileTool.readString(callbackLogFile.getPath());
+                // Load callback data
+                String callbackData = FileTool.readString(file.getPath());
                 if (StringTool.isBlank(callbackData)) {
-                    FileTool.delete(callbackLogFile);
+                    FileTool.delete(file);
                     continue;
                 }
 
-                // parse callback param
-                List<CallbackRequest> callbackParamList =
+                // Parse callbacks
+                List<CallbackRequest> callbackList =
                         GsonTool.fromJsonList(callbackData, CallbackRequest.class);
-                FileTool.delete(callbackLogFile);
 
-                // retry callback
-                doCallback(callbackParamList);
+                // Delete file before retry (avoids duplicate retry if successful)
+                FileTool.delete(file);
+
+                // Retry callback (will re-persist if still fails)
+                doCallback(callbackList);
             } catch (IOException e) {
-                logger.error(
-                        ">>>>>>>>>>> TriggerCallbackThread retryFailCallbackFile error, callbackLogFile:{}",
-                        callbackLogFile.getPath(),
-                        e);
+                logger.error("Failed to retry callback from file: {}", file.getPath(), e);
             }
         }
     }

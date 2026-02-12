@@ -26,16 +26,58 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 
 /**
- * Copy from : https://github.com/xuxueli/xxl-rpc
+ * Embedded Netty HTTP server for executor RPC communication.
+ *
+ * <p>This server provides HTTP endpoints for admin-to-executor communication:
+ *
+ * <ul>
+ *   <li>/beat - Heartbeat check
+ *   <li>/idleBeat - Check if job is idle (not running)
+ *   <li>/run - Trigger job execution
+ *   <li>/kill - Kill running job
+ *   <li>/log - Retrieve job execution log
+ * </ul>
+ *
+ * <p>Architecture:
+ *
+ * <ul>
+ *   <li>Boss group: Accepts incoming connections (NIO event loop)
+ *   <li>Worker group: Handles I/O operations (NIO event loop)
+ *   <li>Business thread pool: Executes RPC method calls (200 core threads, 2000 queue capacity)
+ *   <li>Idle connection detection: Closes connections idle for 90 seconds (3x heartbeat interval)
+ * </ul>
+ *
+ * <p>Copied from: https://github.com/xuxueli/xxl-rpc
  *
  * @author xuxueli 2020-04-11 21:25
  */
 public class EmbedServer {
     private static final Logger logger = LoggerFactory.getLogger(EmbedServer.class);
 
+    /** Maximum HTTP request body size (5MB) */
+    private static final int MAX_CONTENT_LENGTH = 5 * 1024 * 1024;
+
+    /** Idle timeout in seconds (3x heartbeat interval of 30s) */
+    private static final int IDLE_TIMEOUT_SECONDS = 30 * 3;
+
+    /** Business thread pool configuration */
+    private static final int BIZ_CORE_POOL_SIZE = 0;
+
+    private static final int BIZ_MAX_POOL_SIZE = 200;
+    private static final int BIZ_QUEUE_CAPACITY = 2000;
+    private static final long BIZ_THREAD_KEEP_ALIVE_SECONDS = 60L;
+
     private ExecutorBiz executorBiz;
     private Thread thread;
 
+    /**
+     * Starts the embedded Netty server and executor registry.
+     *
+     * @param address executor address (IP:PORT format)
+     * @param port listening port
+     * @param appname executor application name
+     * @param accessToken access token for authentication (optional)
+     */
     public void start(
             final String address, final int port, final String appname, final String accessToken) {
         executorBiz = new ExecutorBizImpl();
@@ -44,36 +86,11 @@ public class EmbedServer {
                         new Runnable() {
                             @Override
                             public void run() {
-                                // param
                                 EventLoopGroup bossGroup = new NioEventLoopGroup();
                                 EventLoopGroup workerGroup = new NioEventLoopGroup();
-                                ThreadPoolExecutor bizThreadPool =
-                                        new ThreadPoolExecutor(
-                                                0,
-                                                200,
-                                                60L,
-                                                TimeUnit.SECONDS,
-                                                new LinkedBlockingQueue<Runnable>(2000),
-                                                new ThreadFactory() {
-                                                    @Override
-                                                    public Thread newThread(Runnable r) {
-                                                        return new Thread(
-                                                                r,
-                                                                "xxl-job, EmbedServer bizThreadPool-"
-                                                                        + r.hashCode());
-                                                    }
-                                                },
-                                                new RejectedExecutionHandler() {
-                                                    @Override
-                                                    public void rejectedExecution(
-                                                            Runnable r,
-                                                            ThreadPoolExecutor executor) {
-                                                        throw new RuntimeException(
-                                                                "xxl-job, EmbedServer bizThreadPool is EXHAUSTED!");
-                                                    }
-                                                });
+                                ThreadPoolExecutor bizThreadPool = createBusinessThreadPool();
                                 try {
-                                    // start server
+                                    // Configure and start Netty server
                                     ServerBootstrap bootstrap = new ServerBootstrap();
                                     bootstrap
                                             .group(bossGroup, workerGroup)
@@ -82,21 +99,19 @@ public class EmbedServer {
                                                     new ChannelInitializer<SocketChannel>() {
                                                         @Override
                                                         public void initChannel(
-                                                                SocketChannel channel)
-                                                                throws Exception {
+                                                                SocketChannel channel) {
                                                             channel.pipeline()
                                                                     .addLast(
                                                                             new IdleStateHandler(
                                                                                     0,
                                                                                     0,
-                                                                                    30 * 3,
+                                                                                    IDLE_TIMEOUT_SECONDS,
                                                                                     TimeUnit
-                                                                                            .SECONDS)) // beat 3N, close if idle
+                                                                                            .SECONDS))
                                                                     .addLast(new HttpServerCodec())
                                                                     .addLast(
                                                                             new HttpObjectAggregator(
-                                                                                    5 * 1024
-                                                                                            * 1024)) // merge request & reponse to FULL
+                                                                                    MAX_CONTENT_LENGTH))
                                                                     .addLast(
                                                                             new EmbedHttpServerHandler(
                                                                                     executorBiz,
@@ -106,26 +121,27 @@ public class EmbedServer {
                                                     })
                                             .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-                                    // bind
+                                    // Bind port
                                     ChannelFuture future = bootstrap.bind(port).sync();
 
                                     logger.info(
-                                            ">>>>>>>>>>> xxl-job remoting server start success, nettype = {}, port = {}",
-                                            EmbedServer.class,
+                                            ">>>>>>>>>>> orth remoting server start success,"
+                                                    + " nettype = {}, port = {}",
+                                            EmbedServer.class.getName(),
                                             port);
 
-                                    // start registry
+                                    // Start executor registry (heartbeat thread)
                                     startRegistry(appname, address);
 
-                                    // wait util stop
+                                    // Wait until server socket is closed
                                     future.channel().closeFuture().sync();
 
                                 } catch (InterruptedException e) {
-                                    logger.info(">>>>>>>>>>> xxl-job remoting server stop.");
+                                    logger.info(">>>>>>>>>>> orth remoting server stop.");
                                 } catch (Throwable e) {
-                                    logger.error(">>>>>>>>>>> xxl-job remoting server error.", e);
+                                    logger.error(">>>>>>>>>>> orth remoting server error.", e);
                                 } finally {
-                                    // stop
+                                    // Shutdown event loops
                                     try {
                                         workerGroup.shutdownGracefully();
                                         bossGroup.shutdownGracefully();
@@ -135,28 +151,81 @@ public class EmbedServer {
                                 }
                             }
                         });
-        thread.setDaemon(
-                true); // daemon, service jvm, user thread leave >>> daemon leave >>> jvm leave
+        thread.setDaemon(true);
         thread.start();
     }
 
+    /**
+     * Stops the embedded server and registry.
+     *
+     * @throws Exception if stop fails
+     */
     public void stop() throws Exception {
-        // destroy server thread
+        // Destroy server thread
         if (thread != null && thread.isAlive()) {
             thread.interrupt();
         }
 
-        // stop registry
+        // Stop executor registry
         stopRegistry();
-        logger.info(">>>>>>>>>>> xxl-job remoting server destroy success.");
+        logger.info(">>>>>>>>>>> orth remoting server destroy success.");
     }
 
-    // ---------------------- registry ----------------------
+    /**
+     * Creates the business thread pool for handling RPC requests.
+     *
+     * @return configured thread pool executor
+     */
+    private ThreadPoolExecutor createBusinessThreadPool() {
+        return new ThreadPoolExecutor(
+                BIZ_CORE_POOL_SIZE,
+                BIZ_MAX_POOL_SIZE,
+                BIZ_THREAD_KEEP_ALIVE_SECONDS,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(BIZ_QUEUE_CAPACITY),
+                new ThreadFactory() {
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        return new Thread(r, "orth, EmbedServer bizThreadPool-" + r.hashCode());
+                    }
+                },
+                new RejectedExecutionHandler() {
+                    @Override
+                    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                        throw new RejectedExecutionException(
+                                "orth, EmbedServer bizThreadPool is EXHAUSTED!");
+                    }
+                });
+    }
 
     /**
-     * netty_http
+     * Starts the executor registry thread (heartbeat).
      *
-     * <p>Copy from : https://github.com/xuxueli/xxl-rpc
+     * @param appname executor application name
+     * @param address executor address
+     */
+    public void startRegistry(final String appname, final String address) {
+        ExecutorRegistryThread.getInstance().start(appname, address);
+    }
+
+    /** Stops the executor registry thread. */
+    public void stopRegistry() {
+        ExecutorRegistryThread.getInstance().toStop();
+    }
+
+    /**
+     * Netty HTTP server handler for processing RPC requests.
+     *
+     * <p>This handler:
+     *
+     * <ol>
+     *   <li>Validates HTTP method (POST only)
+     *   <li>Validates access token
+     *   <li>Routes requests to appropriate {@link ExecutorBiz} methods
+     *   <li>Returns JSON-encoded {@link Response} objects
+     * </ol>
+     *
+     * <p>Copied from: https://github.com/xuxueli/xxl-rpc
      *
      * @author xuxueli 2015-11-24 22:25:15
      */
@@ -164,9 +233,9 @@ public class EmbedServer {
             extends SimpleChannelInboundHandler<FullHttpRequest> {
         private static final Logger logger = LoggerFactory.getLogger(EmbedHttpServerHandler.class);
 
-        private ExecutorBiz executorBiz;
-        private String accessToken;
-        private ThreadPoolExecutor bizThreadPool;
+        private final ExecutorBiz executorBiz;
+        private final String accessToken;
+        private final ThreadPoolExecutor bizThreadPool;
 
         public EmbedHttpServerHandler(
                 ExecutorBiz executorBiz, String accessToken, ThreadPoolExecutor bizThreadPool) {
@@ -176,51 +245,61 @@ public class EmbedServer {
         }
 
         @Override
-        protected void channelRead0(final ChannelHandlerContext ctx, FullHttpRequest msg)
-                throws Exception {
-            // request parse
-            // final byte[] requestBytes = ByteBufUtil.getBytes(msg.content());    //
-            // byteBuf.toString(io.netty.util.CharsetUtil.UTF_8);
+        protected void channelRead0(final ChannelHandlerContext ctx, FullHttpRequest msg) {
+            // Parse HTTP request
             String requestData = msg.content().toString(CharsetUtil.UTF_8);
             String uri = msg.uri();
             HttpMethod httpMethod = msg.method();
             boolean keepAlive = HttpUtil.isKeepAlive(msg);
-            String accessTokenReq = msg.headers().get(Const.XXL_JOB_ACCESS_TOKEN);
+            String accessTokenReq = msg.headers().get(Const.ORTH_ACCESS_TOKEN);
 
-            // invoke
+            // Execute in business thread pool
             bizThreadPool.execute(
                     new Runnable() {
                         @Override
                         public void run() {
-                            // do invoke
+                            // Dispatch request to ExecutorBiz
                             Object responseObj =
                                     dispatchRequest(httpMethod, uri, requestData, accessTokenReq);
 
-                            // to json
+                            // Serialize response to JSON
                             String responseJson = GsonTool.toJson(responseObj);
 
-                            // write response
+                            // Write HTTP response
                             writeResponse(ctx, keepAlive, responseJson);
                         }
                     });
         }
 
+        /**
+         * Dispatches HTTP request to appropriate {@link ExecutorBiz} method.
+         *
+         * @param httpMethod HTTP method
+         * @param uri request URI
+         * @param requestData request body (JSON)
+         * @param accessTokenReq access token from request header
+         * @return response object (typically {@link Response})
+         */
         private Object dispatchRequest(
                 HttpMethod httpMethod, String uri, String requestData, String accessTokenReq) {
-            // valid
+            // Validate HTTP method
             if (HttpMethod.POST != httpMethod) {
-                return Response.ofFail("invalid request, HttpMethod not support.");
+                return Response.ofFail("Invalid request, HttpMethod not supported.");
             }
+
+            // Validate URI
             if (uri == null || uri.trim().isEmpty()) {
-                return Response.ofFail("invalid request, uri-mapping empty.");
+                return Response.ofFail("Invalid request, URI-mapping empty.");
             }
+
+            // Validate access token
             if (accessToken != null
                     && !accessToken.trim().isEmpty()
                     && !accessToken.equals(accessTokenReq)) {
                 return Response.ofFail("The access token is wrong.");
             }
 
-            // services mapping
+            // Route to ExecutorBiz methods
             try {
                 switch (uri) {
                     case "/beat":
@@ -241,29 +320,29 @@ public class EmbedServer {
                         return executorBiz.log(logParam);
                     default:
                         return Response.ofFail(
-                                "invalid request, uri-mapping(" + uri + ") not found.");
+                                "Invalid request, URI-mapping(" + uri + ") not found.");
                 }
             } catch (Throwable e) {
                 logger.error(e.getMessage(), e);
-                return Response.ofFail("request error:" + ThrowableTool.toString(e));
+                return Response.ofFail("Request error: " + ThrowableTool.toString(e));
             }
         }
 
-        /** write response */
+        /**
+         * Writes HTTP response to client.
+         *
+         * @param ctx channel handler context
+         * @param keepAlive whether to keep connection alive
+         * @param responseJson JSON response body
+         */
         private void writeResponse(
                 ChannelHandlerContext ctx, boolean keepAlive, String responseJson) {
-            // write response
             FullHttpResponse response =
                     new DefaultFullHttpResponse(
                             HttpVersion.HTTP_1_1,
                             HttpResponseStatus.OK,
-                            Unpooled.copiedBuffer(
-                                    responseJson,
-                                    CharsetUtil.UTF_8)); //  Unpooled.wrappedBuffer(responseJson)
-            response.headers()
-                    .set(
-                            HttpHeaderNames.CONTENT_TYPE,
-                            "text/html;charset=UTF-8"); // HttpHeaderValues.TEXT_PLAIN.toString()
+                            Unpooled.copiedBuffer(responseJson, CharsetUtil.UTF_8));
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html;charset=UTF-8");
             response.headers()
                     .set(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
             if (keepAlive) {
@@ -273,37 +352,25 @@ public class EmbedServer {
         }
 
         @Override
-        public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        public void channelReadComplete(ChannelHandlerContext ctx) {
             ctx.flush();
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            logger.error(">>>>>>>>>>> xxl-job provider netty_http server caught exception", cause);
+            logger.error(">>>>>>>>>>> orth provider netty_http server caught exception", cause);
             ctx.close();
         }
 
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
             if (evt instanceof IdleStateEvent) {
-                ctx.channel().close(); // beat 3N, close if idle
-                logger.debug(
-                        ">>>>>>>>>>> xxl-job provider netty_http server close an idle channel.");
+                // Close idle connections
+                ctx.channel().close();
+                logger.debug(">>>>>>>>>>> orth provider netty_http server close an idle channel.");
             } else {
                 super.userEventTriggered(ctx, evt);
             }
         }
-    }
-
-    // ---------------------- registry ----------------------
-
-    public void startRegistry(final String appname, final String address) {
-        // start registry
-        ExecutorRegistryThread.getInstance().start(appname, address);
-    }
-
-    public void stopRegistry() {
-        // stop registry
-        ExecutorRegistryThread.getInstance().toStop();
     }
 }

@@ -155,7 +155,7 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
                         .url(address)
                         .timeout(XxlJobAdminBootstrap.getInstance().getTimeout() * 1000)
                         .header(
-                                Const.XXL_JOB_ACCESS_TOKEN,
+                                Const.ORTH_ACCESS_TOKEN,
                                 XxlJobAdminBootstrap.getInstance().getAccessToken())
                         .proxy(ExecutorBiz.class);
         executorBizRepository.put(address, executorBiz);

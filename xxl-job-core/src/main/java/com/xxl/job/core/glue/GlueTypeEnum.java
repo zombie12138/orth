@@ -1,22 +1,44 @@
 package com.xxl.job.core.glue;
 
-/** Created by xuxueli on 17/4/26. */
+import java.util.Arrays;
+
+/**
+ * Glue type enumeration for different job execution modes.
+ *
+ * <p>Supports Bean-based handlers, Groovy scripts, and various scripting languages including Shell,
+ * Python, NodeJS, PowerShell, and PHP.
+ */
 public enum GlueTypeEnum {
+    /** Bean mode: executes registered Java handler methods annotated with @XxlJob */
     BEAN("BEAN", false, null, null),
+
+    /** Groovy mode: executes Java/Groovy code dynamically compiled at runtime */
     GLUE_GROOVY("GLUE(Java)", false, null, null),
+
+    /** Shell script mode */
     GLUE_SHELL("GLUE(Shell)", true, "bash", ".sh"),
+
+    /** Python 3 script mode */
     GLUE_PYTHON("GLUE(Python3)", true, "python3", ".py"),
+
+    /** Python 2 script mode (legacy, deprecated) */
     GLUE_PYTHON2("GLUE(Python2)", true, "python", ".py"),
+
+    /** Node.js script mode */
     GLUE_NODEJS("GLUE(Nodejs)", true, "node", ".js"),
+
+    /** PowerShell script mode */
     GLUE_POWERSHELL("GLUE(PowerShell)", true, "powershell", ".ps1"),
+
+    /** PHP script mode */
     GLUE_PHP("GLUE(PHP)", true, "php", ".php");
 
-    private String desc;
-    private boolean isScript;
-    private String cmd;
-    private String suffix;
+    private final String desc;
+    private final boolean isScript;
+    private final String cmd;
+    private final String suffix;
 
-    private GlueTypeEnum(String desc, boolean isScript, String cmd, String suffix) {
+    GlueTypeEnum(String desc, boolean isScript, String cmd, String suffix) {
         this.desc = desc;
         this.isScript = isScript;
         this.cmd = cmd;
@@ -39,12 +61,19 @@ public enum GlueTypeEnum {
         return suffix;
     }
 
+    /**
+     * Matches an enum constant by name.
+     *
+     * @param name the enum constant name to match
+     * @return the matched enum constant, or null if not found
+     */
     public static GlueTypeEnum match(String name) {
-        for (GlueTypeEnum item : GlueTypeEnum.values()) {
-            if (item.name().equals(name)) {
-                return item;
-            }
+        if (name == null) {
+            return null;
         }
-        return null;
+        return Arrays.stream(values())
+                .filter(item -> item.name().equals(name))
+                .findFirst()
+                .orElse(null);
     }
 }

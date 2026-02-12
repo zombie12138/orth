@@ -4,10 +4,19 @@
 // import org.quartz.spi.ThreadPool;
 //
 /// **
-// * single thread pool, for async trigger
+// * Single-thread pool implementation for Quartz async trigger execution.
 // *
 // * @author xuxueli 2019-03-06
+// * @deprecated This Quartz thread pool is deprecated. Use the dual-pool architecture in
+// *             {@link com.xxl.job.admin.scheduler.thread.JobTriggerPoolHelper} instead.
+// *             Migration: Replace with JobTriggerPoolHelper which provides:
+// *             - Fast pool: 200 threads + 2000 queue for quick jobs
+// *             - Slow pool: 100 threads + 5000 queue for long-running jobs
+// *             - Adaptive routing: Jobs with 10+ timeouts (>500ms) in 1 minute move to slow pool
+// *             Orth uses a sophisticated dual-pool design to prevent head-of-line blocking
+// *             and ensure high-priority jobs aren't delayed by slow executions.
 // */
+// @Deprecated
 // public class XxlJobThreadPool implements ThreadPool {
 //
 //    @Override

@@ -1,29 +1,46 @@
 package com.xxl.job.core.handler;
 
 /**
- * job handler
+ * Abstract base class for job handlers.
  *
- * @author xuxueli 2015-12-19 19:06:38
+ * <p>Defines the lifecycle contract for job execution: {@code init()} → {@code execute()} → {@code
+ * destroy()}. Implementations should use {@link com.xxl.job.core.context.XxlJobHelper} to access
+ * job context and log execution details.
  */
 public abstract class IJobHandler {
 
     /**
-     * execute handler, invoked when executor receives a scheduling request
+     * Executes the job logic.
      *
-     * @throws Exception
+     * <p>Invoked by the executor when a scheduling request is received. Use {@link
+     * com.xxl.job.core.context.XxlJobHelper} to access job parameters, log messages, and set result
+     * status.
+     *
+     * @throws Exception if job execution fails
      */
     public abstract void execute() throws Exception;
 
-    /*@Deprecated
-    public abstract ReturnT<String> execute(String param) throws Exception;*/
-
-    /** init handler, invoked when JobThread init */
+    /**
+     * Initializes the handler.
+     *
+     * <p>Invoked once when the JobThread starts, before the first execution. Override to perform
+     * setup tasks like resource allocation or connection initialization.
+     *
+     * @throws Exception if initialization fails
+     */
     public void init() throws Exception {
-        // do something
+        // Default: no initialization needed
     }
 
-    /** destroy handler, invoked when JobThread destroy */
+    /**
+     * Destroys the handler.
+     *
+     * <p>Invoked once when the JobThread stops, after the last execution. Override to perform
+     * cleanup tasks like resource release or connection closure.
+     *
+     * @throws Exception if cleanup fails
+     */
     public void destroy() throws Exception {
-        // do something
+        // Default: no cleanup needed
     }
 }

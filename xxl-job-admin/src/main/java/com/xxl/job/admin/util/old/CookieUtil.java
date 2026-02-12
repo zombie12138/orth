@@ -5,19 +5,26 @@
 // import jakarta.servlet.http.HttpServletResponse;
 //
 /// **
-// * Cookie.Util
+// * Cookie utility for session management.
 // *
 // * @author xuxueli 2015-12-12 18:01:06
+// * @deprecated This utility is deprecated. Use Spring Security's session management or
+// *             JWT-based authentication instead.
+// *             Migration: Replace cookie-based session storage with stateless JWT tokens.
+// *             For SSO integration, see {@link com.xxl.job.admin.web.xxlsso.XxlSsoConfig}.
+// *             Orth prefers token-based authentication for better scalability in distributed
+// *             deployments.
 // */
+// @Deprecated
 // public class CookieUtil {
 //
-//	// 默认缓存时间,单位/秒, 2H
+//	// Default cache time, unit: seconds, 2H
 //	private static final int COOKIE_MAX_AGE = Integer.MAX_VALUE;
-//	// 保存路径,根路径
+//	// Save path, root path
 //	private static final String COOKIE_PATH = "/";
 //
 //	/**
-//	 * 保存
+//	 * Save cookie
 //	 *
 //	 * @param response
 //	 * @param key
@@ -31,7 +38,7 @@
 //	}
 //
 //	/**
-//	 * 保存
+//	 * Save cookie with options
 //	 *
 //	 * @param response
 //	 * @param key
@@ -51,7 +58,7 @@
 //	}
 //
 //	/**
-//	 * 查询value
+//	 * Get cookie value
 //	 *
 //	 * @param request
 //	 * @param key
@@ -66,7 +73,7 @@
 //	}
 //
 //	/**
-//	 * 查询Cookie
+//	 * Get cookie object
 //	 *
 //	 * @param request
 //	 * @param key
@@ -84,7 +91,7 @@
 //	}
 //
 //	/**
-//	 * 删除Cookie
+//	 * Remove cookie
 //	 *
 //	 * @param request
 //	 * @param response

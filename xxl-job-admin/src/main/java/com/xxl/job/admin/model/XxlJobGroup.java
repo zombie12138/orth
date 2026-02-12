@@ -7,21 +7,37 @@ import java.util.List;
 
 import com.xxl.tool.core.StringTool;
 
-/** Created by xuxueli on 16/9/30. */
+/**
+ * Executor group entity for managing executor clusters.
+ *
+ * <p>Represents a logical group of executors that can run jobs, supporting both automatic
+ * registration and manual configuration.
+ */
 public class XxlJobGroup {
+
+    /** Address type: Automatic registration via heartbeat */
+    public static final int ADDRESS_TYPE_AUTO = 0;
+
+    /** Address type: Manual configuration */
+    public static final int ADDRESS_TYPE_MANUAL = 1;
 
     private int id;
     private String appname;
     private String title;
-    private int addressType; // 执行器地址类型：0=自动注册、1=手动录入
-    private String addressList; // 执行器地址列表，多地址逗号分隔(手动录入)
+    private int addressType; // Executor address type (AUTO or MANUAL)
+    private String addressList; // Executor addresses (comma-separated, for manual type)
     private Date updateTime;
 
-    // registry list
-    private List<String> registryList; // 执行器地址列表(系统注册)
+    // Cached registry list for automatic registration
+    private List<String> registryList;
 
+    /**
+     * Gets the list of registered executor addresses.
+     *
+     * @return list of executor addresses, parsed from addressList
+     */
     public List<String> getRegistryList() {
-        if (StringTool.isNotBlank(addressList)) {
+        if (registryList == null && StringTool.isNotBlank(addressList)) {
             registryList = new ArrayList<>(Arrays.asList(addressList.split(",")));
         }
         return registryList;

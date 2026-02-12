@@ -1,9 +1,14 @@
 package com.xxl.job.core.context;
 
 /**
- * xxl-job context
+ * Orth job execution context.
  *
- * @author xuxueli 2020-05-21 [Dear hj]
+ * <p>Provides thread-local access to job execution metadata including job ID, parameters, logging
+ * info, shard info, and schedule time. This context is automatically set by the executor framework
+ * before job execution and cleared after completion.
+ *
+ * <p>Context is inherited by child threads using {@link InheritableThreadLocal} to support
+ * concurrent execution within a job.
  */
 public class XxlJobContext {
 
@@ -43,6 +48,11 @@ public class XxlJobContext {
     /** Theoretical schedule time (milliseconds), null for manual/API triggers */
     private final Long scheduleTime;
 
+    // ---------------------- for SuperTask ----------------------
+
+    /** Super parameter for SubTask instances, null for standalone/SuperTask jobs */
+    private final String superTaskParam;
+
     // ---------------------- for handle ----------------------
 
     /**
@@ -64,6 +74,28 @@ public class XxlJobContext {
             int shardIndex,
             int shardTotal,
             Long scheduleTime) {
+        this(
+                jobId,
+                jobParam,
+                logId,
+                logDateTime,
+                logFileName,
+                shardIndex,
+                shardTotal,
+                scheduleTime,
+                null);
+    }
+
+    public XxlJobContext(
+            long jobId,
+            String jobParam,
+            long logId,
+            long logDateTime,
+            String logFileName,
+            int shardIndex,
+            int shardTotal,
+            Long scheduleTime,
+            String superTaskParam) {
         this.jobId = jobId;
         this.jobParam = jobParam;
         this.logId = logId;
@@ -72,6 +104,7 @@ public class XxlJobContext {
         this.shardIndex = shardIndex;
         this.shardTotal = shardTotal;
         this.scheduleTime = scheduleTime;
+        this.superTaskParam = superTaskParam;
 
         this.handleCode = HANDLE_CODE_SUCCESS; // default success
     }
@@ -113,6 +146,15 @@ public class XxlJobContext {
         return scheduleTime;
     }
 
+    /**
+     * Get super parameter for SubTask instances, null for standalone/SuperTask jobs.
+     *
+     * @return super parameter, or null
+     */
+    public String getSuperTaskParam() {
+        return superTaskParam;
+    }
+
     public void setHandleCode(int handleCode) {
         this.handleCode = handleCode;
     }
@@ -129,18 +171,26 @@ public class XxlJobContext {
         return handleMsg;
     }
 
-    // ---------------------- tool ----------------------
+    // ---------------------- Thread-local Context ----------------------
 
-    /** xxl-job context store */
+    /** Thread-local context store, inherited by child threads for concurrent job execution */
     private static final InheritableThreadLocal<XxlJobContext> contextHolder =
-            new InheritableThreadLocal<XxlJobContext>(); // support for child thread of job handler)
+            new InheritableThreadLocal<>();
 
-    /** set xxl-job context */
+    /**
+     * Sets the job context for the current thread.
+     *
+     * @param xxlJobContext the context to set
+     */
     public static void setXxlJobContext(XxlJobContext xxlJobContext) {
         contextHolder.set(xxlJobContext);
     }
 
-    /** get xxl-job context */
+    /**
+     * Gets the job context for the current thread.
+     *
+     * @return the current job context, or null if not in a job execution
+     */
     public static XxlJobContext getXxlJobContext() {
         return contextHolder.get();
     }
