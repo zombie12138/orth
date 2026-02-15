@@ -196,7 +196,10 @@
 							<div class="form-group">
 								<label for="firstname" class="col-sm-2 control-label">SuperTask<font color="black">*</font></label>
 								<div class="col-sm-4">
-									<input type="text" class="form-control superTaskInput" placeholder="Type job ID or description..." autocomplete="off" />
+									<div class="input-group">
+										<input type="text" class="form-control superTaskInput" placeholder="Type job ID or description..." autocomplete="off" />
+										<span class="input-group-btn"><button type="button" class="btn btn-default clearSuperTask"><i class="fa fa-times"></i></button></span>
+									</div>
 									<input type="hidden" name="superTaskId" />
 									<small class="help-block">Leave empty for standalone job</small>
 								</div>
@@ -466,7 +469,10 @@ exit 0
 							<div class="form-group">
 								<label for="firstname" class="col-sm-2 control-label">SuperTask<font color="black">*</font></label>
 								<div class="col-sm-4">
-									<input type="text" class="form-control superTaskInput" placeholder="Type job ID or description..." autocomplete="off" />
+									<div class="input-group">
+										<input type="text" class="form-control superTaskInput" placeholder="Type job ID or description..." autocomplete="off" />
+										<span class="input-group-btn"><button type="button" class="btn btn-default clearSuperTask"><i class="fa fa-times"></i></button></span>
+									</div>
 									<input type="hidden" name="superTaskId" />
 									<span class="help-block" style="margin: 0;">
 										<small>Leave empty for standalone job</small><br>
@@ -779,9 +785,11 @@ exit 0
 					widthUnit: '%',
 					align: 'left',
 					formatter: function(value, row, index) {
-						var displayName = value || row.jobDesc;
-						var badgeClass = value ? 'label-primary' : 'label-default';
-						var title = value ? ('SubTask of: ' + value) : 'Standalone Job';
+						// Treat self-referencing superTaskId as standalone
+						var isSuperTask = value && row.superTaskId != row.id;
+						var displayName = isSuperTask ? value : row.jobDesc;
+						var badgeClass = isSuperTask ? 'label-primary' : 'label-default';
+						var title = isSuperTask ? ('SubTask of: ' + value) : 'Standalone Job';
 
 						if (displayName.length > 12) {
 							return '<small class="label ' + badgeClass + '" title="' + title + '">' +
@@ -1403,7 +1411,14 @@ exit 0
 				}
 				$("#addModal .form input[name='scheduleConf']").val( scheduleConf );
 
-				return $("#addModal .form").serialize();
+				// Exclude superTaskId from form if empty (Spring can't bind '' to Integer)
+				var $addSuperTaskId = $("#addModal input[name='superTaskId']");
+				if (!$("#addModal .superTaskInput").val().trim()) {
+					$addSuperTaskId.prop('disabled', true);
+				}
+				var formData = $("#addModal .form").serialize();
+				$addSuperTaskId.prop('disabled', false);
+				return formData;
 			}
 		});
 
@@ -1584,6 +1599,15 @@ exit 0
 		initSuperTaskAutocomplete('#addModal');
 		initSuperTaskAutocomplete('#updateModal');
 
+		// Clear SuperTask association
+		$('.clearSuperTask').on('click', function() {
+			var $modal = $(this).closest('.modal');
+			$modal.find('.superTaskInput').val('');
+			$modal.find('input[name="superTaskId"]').val('');
+			$modal.find('.editSuperTaskLink').hide();
+			$('.superTaskDropdown').remove();
+		});
+
 		// Handle "Edit SuperTask Code" link click
 		$(".editSuperTaskLink").on('click', function(e) {
 			e.preventDefault();
@@ -1662,8 +1686,8 @@ exit 0
 				$("#updateModal .form input[name='executorTimeout']").val( row.executorTimeout );
 				$("#updateModal .form input[name='executorFailRetryCount']").val( row.executorFailRetryCount );
 
-				// Fill SuperTask field
-				if (row.superTaskId && row.superTaskName) {
+				// Fill SuperTask field (skip self-reference)
+				if (row.superTaskId && row.superTaskName && row.superTaskId != row.id) {
 					$('#updateModal .superTaskInput').val(row.superTaskId + ' - ' + row.superTaskName);
 					$('#updateModal input[name="superTaskId"]').val(row.superTaskId);
 					$("#updateModal .editSuperTaskLink").show().data('superTaskId', row.superTaskId);
@@ -1701,7 +1725,14 @@ exit 0
 				}
 				$("#updateModal .form input[name='scheduleConf']").val( scheduleConf );
 
-				return $("#updateModal .form").serialize();
+				// Exclude superTaskId from form if empty (Spring can't bind '' to Integer)
+				var $updateSuperTaskId = $("#updateModal input[name='superTaskId']");
+				if (!$("#updateModal .superTaskInput").val().trim()) {
+					$updateSuperTaskId.prop('disabled', true);
+				}
+				var formData = $("#updateModal .form").serialize();
+				$updateSuperTaskId.prop('disabled', false);
+				return formData;
 			}
 		});
 
@@ -1764,8 +1795,8 @@ exit 0
 			$("#addModal .form input[name='executorTimeout']").val( row.executorTimeout );
 			$("#addModal .form input[name='executorFailRetryCount']").val( row.executorFailRetryCount );
 
-			// Fill SuperTask field (when copying)
-			if (row.superTaskId && row.superTaskName) {
+			// Fill SuperTask field (when copying, skip self-reference)
+			if (row.superTaskId && row.superTaskName && row.superTaskId != row.id) {
 				$('#addModal .superTaskInput').val(row.superTaskId + ' - ' + row.superTaskName);
 				$('#addModal input[name="superTaskId"]').val(row.superTaskId);
 			} else {

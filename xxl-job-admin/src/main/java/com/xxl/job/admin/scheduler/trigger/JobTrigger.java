@@ -169,8 +169,13 @@ public class JobTrigger {
      *     invalid
      */
     private boolean applySuperTaskInheritance(XxlJobInfo jobInfo) {
-        if (jobInfo.getSuperTaskId() == null) {
+        if (jobInfo.getSuperTaskId() == null || jobInfo.getSuperTaskId() <= 0) {
             return true; // Not a SubTask, no inheritance needed
+        }
+
+        // Self-reference guard: treat as standalone
+        if (jobInfo.getSuperTaskId().equals(jobInfo.getId())) {
+            return true;
         }
 
         XxlJobInfo superTask = xxlJobInfoMapper.loadById(jobInfo.getSuperTaskId());

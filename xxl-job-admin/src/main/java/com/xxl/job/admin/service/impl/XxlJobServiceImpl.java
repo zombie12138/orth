@@ -140,6 +140,7 @@ public class XxlJobServiceImpl implements XxlJobService {
         jobInfo.setGlueUpdatetime(now);
         jobInfo.setExecutorHandler(jobInfo.getExecutorHandler().trim());
 
+        jobInfo.setSuperTaskId(sanitizeSuperTaskId(jobInfo.getSuperTaskId(), 0));
         xxlJobInfoMapper.save(jobInfo);
         if (jobInfo.getId() < 1) {
             return Response.ofFail(
@@ -807,9 +808,18 @@ public class XxlJobServiceImpl implements XxlJobService {
         existingJob.setExecutorTimeout(newJobInfo.getExecutorTimeout());
         existingJob.setExecutorFailRetryCount(newJobInfo.getExecutorFailRetryCount());
         existingJob.setChildJobId(newJobInfo.getChildJobId());
-        existingJob.setSuperTaskId(newJobInfo.getSuperTaskId());
+        existingJob.setSuperTaskId(
+                sanitizeSuperTaskId(newJobInfo.getSuperTaskId(), existingJob.getId()));
         existingJob.setTriggerNextTime(nextTriggerTime);
         existingJob.setUpdateTime(new Date());
+    }
+
+    /** Sanitizes superTaskId: clears invalid values (null, non-positive, self-reference). */
+    private int sanitizeSuperTaskId(Integer superTaskId, int jobId) {
+        if (superTaskId == null || superTaskId <= 0 || superTaskId == jobId) {
+            return 0;
+        }
+        return superTaskId;
     }
 
     /** Generates schedule times for batch trigger. */

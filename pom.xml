@@ -94,6 +94,12 @@
 					<parameters>true</parameters>
 				</configuration>
 			</plugin>
+			<!-- Surefire: JUnit 5 support -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.2</version>
+			</plugin>
 			<!-- Spotless: Google Java Style Formatter -->
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
