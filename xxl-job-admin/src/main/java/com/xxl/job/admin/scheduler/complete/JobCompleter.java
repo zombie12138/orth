@@ -112,7 +112,7 @@ public class JobCompleter {
      *
      * <ul>
      *   <li>Trigger type: PARENT
-     *   <li>Schedule time: null (parent-triggered, not scheduled)
+     *   <li>Schedule time: inherited from parent (preserves logical data slot)
      *   <li>Executor params: inherited from parent job definition
      * </ul>
      *
@@ -138,8 +138,13 @@ public class JobCompleter {
             return;
         }
 
+        // Propagate parent's schedule time to child jobs
+        Long scheduleTime =
+                xxlJobLog.getScheduleTime() != null ? xxlJobLog.getScheduleTime().getTime() : null;
+
         // Trigger all child jobs and collect results
-        String triggerResultMessage = triggerChildJobs(xxlJobInfo, xxlJobLog.getJobId());
+        String triggerResultMessage =
+                triggerChildJobs(xxlJobInfo, xxlJobLog.getJobId(), scheduleTime);
 
         // Append trigger results to parent job message
         xxlJobLog.setHandleMsg(xxlJobLog.getHandleMsg() + triggerResultMessage);
@@ -150,9 +155,10 @@ public class JobCompleter {
      *
      * @param parentJobInfo parent job definition with child job IDs
      * @param parentJobId parent job ID (used to prevent self-triggering)
+     * @param scheduleTime parent's logical schedule time in millis (may be null)
      * @return formatted HTML message with trigger results
      */
-    private String triggerChildJobs(XxlJobInfo parentJobInfo, int parentJobId) {
+    private String triggerChildJobs(XxlJobInfo parentJobInfo, int parentJobId, Long scheduleTime) {
         StringBuilder messageBuilder = new StringBuilder();
 
         // Add header
@@ -189,7 +195,13 @@ public class JobCompleter {
             }
 
             // Trigger child job
-            triggerChild(childJobId, messageBuilder, childIndex, childJobIds.length, childIdStr);
+            triggerChild(
+                    childJobId,
+                    messageBuilder,
+                    childIndex,
+                    childJobIds.length,
+                    childIdStr,
+                    scheduleTime);
         }
 
         return messageBuilder.toString();
@@ -222,25 +234,27 @@ public class JobCompleter {
      * @param childIndex current child index (1-based)
      * @param totalChildren total number of children
      * @param childIdStr child job ID as string (for display)
+     * @param scheduleTime parent's logical schedule time in millis (may be null)
      */
     private void triggerChild(
             int childJobId,
             StringBuilder messageBuilder,
             int childIndex,
             int totalChildren,
-            String childIdStr) {
+            String childIdStr,
+            Long scheduleTime) {
 
-        // Trigger child job (scheduleTime=null for parent-triggered jobs)
+        // Trigger child job, preserving parent's schedule time
         XxlJobAdminBootstrap.getInstance()
                 .getJobTriggerPoolHelper()
                 .trigger(
                         childJobId,
                         TriggerTypeEnum.PARENT,
                         SHARD_INDEX_NOT_SPECIFIED,
+                        null, // executorShardingParam
                         null, // executorParam (inherited from job definition)
-                        null, // executorBlockStrategy (inherited)
-                        null, // scheduleTime (null = parent-triggered)
-                        null); // logId (new log created)
+                        null, // addressList
+                        scheduleTime);
 
         // Build result message (currently always success, async trigger)
         Response<String> triggerResult = Response.ofSuccess();

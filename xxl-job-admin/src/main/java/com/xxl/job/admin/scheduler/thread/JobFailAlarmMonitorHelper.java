@@ -273,12 +273,13 @@ public class JobFailAlarmMonitorHelper {
     }
 
     /**
-     * Triggers retry execution.
+     * Triggers retry execution, preserving the original schedule time.
      *
      * @param log the failed job log
      * @param remainingRetries decremented retry count to pass to executor
      */
     private void triggerRetry(XxlJobLog log, int remainingRetries) {
+        Long scheduleTime = log.getScheduleTime() != null ? log.getScheduleTime().getTime() : null;
         XxlJobAdminBootstrap.getInstance()
                 .getJobTriggerPoolHelper()
                 .trigger(
@@ -288,7 +289,7 @@ public class JobFailAlarmMonitorHelper {
                         log.getExecutorShardingParam(),
                         log.getExecutorParam(),
                         null,
-                        null);
+                        scheduleTime);
     }
 
     /**

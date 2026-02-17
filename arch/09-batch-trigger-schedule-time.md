@@ -134,7 +134,7 @@ The preview endpoint returns a list of calculated schedule times for the given r
 
 ## Context Propagation
 
-Schedule time flows from admin to executor through the full stack:
+Schedule time flows from admin to executor through the full stack. It is preserved across **retry** and **child trigger** paths — a retry re-uses the original log's `scheduleTime`, and child jobs inherit the parent's `scheduleTime`. This ensures executor scripts always know which data slot they belong to, regardless of trigger type.
 
 | Layer | Mechanism | Access |
 |-------|-----------|--------|
