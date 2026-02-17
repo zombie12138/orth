@@ -115,7 +115,14 @@ public class JobInfoController {
 
         // page
         return xxlJobService.pageList(
-                offset, pagesize, jobGroup, triggerStatus, jobDesc, executorHandler, author, superTaskName);
+                offset,
+                pagesize,
+                jobGroup,
+                triggerStatus,
+                jobDesc,
+                executorHandler,
+                author,
+                superTaskName);
     }
 
     @RequestMapping("/insert")
@@ -530,9 +537,7 @@ public class JobInfoController {
     @RequestMapping("/searchSuperTask")
     @ResponseBody
     public Response<List<XxlJobInfo>> searchSuperTask(
-            HttpServletRequest request,
-            @RequestParam int jobGroup,
-            @RequestParam String query) {
+            HttpServletRequest request, @RequestParam int jobGroup, @RequestParam String query) {
         // valid permission
         JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
 
