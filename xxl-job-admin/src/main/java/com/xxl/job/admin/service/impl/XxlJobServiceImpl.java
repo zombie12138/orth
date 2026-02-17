@@ -25,9 +25,9 @@ import com.xxl.job.admin.scheduler.type.ScheduleTypeEnum;
 import com.xxl.job.admin.service.XxlJobService;
 import com.xxl.job.admin.util.I18nUtil;
 import com.xxl.job.admin.util.JobGroupPermissionUtil;
+import com.xxl.job.admin.web.security.JwtUserInfo;
 import com.xxl.job.core.constant.ExecutorBlockStrategyEnum;
 import com.xxl.job.core.glue.GlueTypeEnum;
-import com.xxl.sso.core.model.LoginInfo;
 import com.xxl.tool.core.DateTool;
 import com.xxl.tool.core.StringTool;
 import com.xxl.tool.gson.GsonTool;
@@ -101,7 +101,7 @@ public class XxlJobServiceImpl implements XxlJobService {
     }
 
     @Override
-    public Response<String> add(XxlJobInfo jobInfo, LoginInfo loginInfo) {
+    public Response<String> add(XxlJobInfo jobInfo, JwtUserInfo userInfo) {
         // Validate basic fields
         Response<String> basicValidation = validateBasicFields(jobInfo);
         if (!basicValidation.isSuccess()) {
@@ -128,7 +128,7 @@ public class XxlJobServiceImpl implements XxlJobService {
         }
 
         // Validate child job IDs
-        Response<String> childJobValidation = validateAndNormalizeChildJobIds(jobInfo, loginInfo);
+        Response<String> childJobValidation = validateAndNormalizeChildJobIds(jobInfo, userInfo);
         if (!childJobValidation.isSuccess()) {
             return childJobValidation;
         }
@@ -147,12 +147,12 @@ public class XxlJobServiceImpl implements XxlJobService {
                     I18nUtil.getString("jobinfo_field_add") + I18nUtil.getString("system_fail"));
         }
 
-        logOperation(loginInfo.getUserName(), "jobinfo-save", GsonTool.toJson(jobInfo));
+        logOperation(userInfo.getUsername(), "jobinfo-save", GsonTool.toJson(jobInfo));
         return Response.ofSuccess(String.valueOf(jobInfo.getId()));
     }
 
     @Override
-    public Response<String> update(XxlJobInfo jobInfo, LoginInfo loginInfo) {
+    public Response<String> update(XxlJobInfo jobInfo, JwtUserInfo userInfo) {
         // Validate basic fields (except job group)
         if (StringTool.isBlank(jobInfo.getJobDesc())) {
             return Response.ofFail(
@@ -180,7 +180,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 
         // Validate child job IDs (excluding self-reference)
         Response<String> childJobValidation =
-                validateAndNormalizeChildJobIds(jobInfo, loginInfo, true);
+                validateAndNormalizeChildJobIds(jobInfo, userInfo, true);
         if (!childJobValidation.isSuccess()) {
             return childJobValidation;
         }
@@ -212,19 +212,19 @@ public class XxlJobServiceImpl implements XxlJobService {
         updateJobFields(existingJob, jobInfo, nextTriggerTime);
         xxlJobInfoMapper.update(existingJob);
 
-        logOperation(loginInfo.getUserName(), "jobinfo-update", GsonTool.toJson(existingJob));
+        logOperation(userInfo.getUsername(), "jobinfo-update", GsonTool.toJson(existingJob));
         return Response.ofSuccess();
     }
 
     @Override
-    public Response<String> remove(int id, LoginInfo loginInfo) {
+    public Response<String> remove(int id, JwtUserInfo userInfo) {
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(id);
         if (jobInfo == null) {
             return Response.ofSuccess();
         }
 
         // Validate job group permission
-        if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, jobInfo.getJobGroup())) {
+        if (!JobGroupPermissionUtil.hasJobGroupPermission(userInfo, jobInfo.getJobGroup())) {
             return Response.ofFail(I18nUtil.getString("system_permission_limit"));
         }
 
@@ -242,19 +242,19 @@ public class XxlJobServiceImpl implements XxlJobService {
         xxlJobLogMapper.delete(id);
         xxlJobLogGlueMapper.deleteByJobId(id);
 
-        logOperation(loginInfo.getUserName(), "jobinfo-remove", String.valueOf(id));
+        logOperation(userInfo.getUsername(), "jobinfo-remove", String.valueOf(id));
         return Response.ofSuccess();
     }
 
     @Override
-    public Response<String> start(int id, LoginInfo loginInfo) {
+    public Response<String> start(int id, JwtUserInfo userInfo) {
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(id);
         if (jobInfo == null) {
             return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
         }
 
         // Validate job group permission
-        if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, jobInfo.getJobGroup())) {
+        if (!JobGroupPermissionUtil.hasJobGroupPermission(userInfo, jobInfo.getJobGroup())) {
             return Response.ofFail(I18nUtil.getString("system_permission_limit"));
         }
 
@@ -295,19 +295,19 @@ public class XxlJobServiceImpl implements XxlJobService {
         jobInfo.setUpdateTime(new Date());
         xxlJobInfoMapper.update(jobInfo);
 
-        logOperation(loginInfo.getUserName(), "jobinfo-start", String.valueOf(id));
+        logOperation(userInfo.getUsername(), "jobinfo-start", String.valueOf(id));
         return Response.ofSuccess();
     }
 
     @Override
-    public Response<String> stop(int id, LoginInfo loginInfo) {
+    public Response<String> stop(int id, JwtUserInfo userInfo) {
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(id);
         if (jobInfo == null) {
             return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
         }
 
         // Validate job group permission
-        if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, jobInfo.getJobGroup())) {
+        if (!JobGroupPermissionUtil.hasJobGroupPermission(userInfo, jobInfo.getJobGroup())) {
             return Response.ofFail(I18nUtil.getString("system_permission_limit"));
         }
 
@@ -318,20 +318,20 @@ public class XxlJobServiceImpl implements XxlJobService {
         jobInfo.setUpdateTime(new Date());
         xxlJobInfoMapper.update(jobInfo);
 
-        logOperation(loginInfo.getUserName(), "jobinfo-stop", String.valueOf(id));
+        logOperation(userInfo.getUsername(), "jobinfo-stop", String.valueOf(id));
         return Response.ofSuccess();
     }
 
     @Override
     public Response<String> trigger(
-            LoginInfo loginInfo, int jobId, String executorParam, String addressList) {
+            JwtUserInfo userInfo, int jobId, String executorParam, String addressList) {
         // Validate job and permission
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(jobId);
         if (jobInfo == null) {
             return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
         }
 
-        if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, jobInfo.getJobGroup())) {
+        if (!JobGroupPermissionUtil.hasJobGroupPermission(userInfo, jobInfo.getJobGroup())) {
             return Response.ofFail(I18nUtil.getString("system_permission_limit"));
         }
 
@@ -341,13 +341,13 @@ public class XxlJobServiceImpl implements XxlJobService {
                 .getJobTriggerPoolHelper()
                 .trigger(jobId, TriggerTypeEnum.MANUAL, -1, null, params, addressList, null);
 
-        logOperation(loginInfo.getUserName(), "jobinfo-trigger", String.valueOf(jobId));
+        logOperation(userInfo.getUsername(), "jobinfo-trigger", String.valueOf(jobId));
         return Response.ofSuccess();
     }
 
     @Override
     public Response<String> triggerBatch(
-            LoginInfo loginInfo,
+            JwtUserInfo userInfo,
             int jobId,
             String executorParam,
             String addressList,
@@ -360,7 +360,7 @@ public class XxlJobServiceImpl implements XxlJobService {
             return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
         }
 
-        if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, jobInfo.getJobGroup())) {
+        if (!JobGroupPermissionUtil.hasJobGroupPermission(userInfo, jobInfo.getJobGroup())) {
             return Response.ofFail(I18nUtil.getString("system_permission_limit"));
         }
 
@@ -372,7 +372,7 @@ public class XxlJobServiceImpl implements XxlJobService {
                     .getJobTriggerPoolHelper()
                     .trigger(jobId, TriggerTypeEnum.MANUAL, -1, null, params, addressList, null);
             logOperation(
-                    loginInfo.getUserName(), "jobinfo-trigger-immediate", String.valueOf(jobId));
+                    userInfo.getUsername(), "jobinfo-trigger-immediate", String.valueOf(jobId));
             return Response.ofSuccess();
         }
 
@@ -413,7 +413,7 @@ public class XxlJobServiceImpl implements XxlJobService {
             }
 
             logOperation(
-                    loginInfo.getUserName(),
+                    userInfo.getUsername(),
                     "jobinfo-trigger-batch",
                     jobId + " instances=" + scheduleTimes.size());
 
@@ -428,7 +428,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 
     @Override
     public Response<List<String>> previewTriggerBatch(
-            LoginInfo loginInfo, int jobId, Date startTime, Date endTime) {
+            JwtUserInfo userInfo, int jobId, Date startTime, Date endTime) {
 
         // Validate job and permission
         XxlJobInfo jobInfo = xxlJobInfoMapper.loadById(jobId);
@@ -436,7 +436,7 @@ public class XxlJobServiceImpl implements XxlJobService {
             return Response.ofFail(I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
         }
 
-        if (!JobGroupPermissionUtil.hasJobGroupPermission(loginInfo, jobInfo.getJobGroup())) {
+        if (!JobGroupPermissionUtil.hasJobGroupPermission(userInfo, jobInfo.getJobGroup())) {
             return Response.ofFail(I18nUtil.getString("system_permission_limit"));
         }
 
@@ -690,13 +690,13 @@ public class XxlJobServiceImpl implements XxlJobService {
 
     /** Validates and normalizes child job IDs. */
     private Response<String> validateAndNormalizeChildJobIds(
-            XxlJobInfo jobInfo, LoginInfo loginInfo) {
-        return validateAndNormalizeChildJobIds(jobInfo, loginInfo, false);
+            XxlJobInfo jobInfo, JwtUserInfo userInfo) {
+        return validateAndNormalizeChildJobIds(jobInfo, userInfo, false);
     }
 
     /** Validates and normalizes child job IDs with optional self-reference check. */
     private Response<String> validateAndNormalizeChildJobIds(
-            XxlJobInfo jobInfo, LoginInfo loginInfo, boolean checkSelfReference) {
+            XxlJobInfo jobInfo, JwtUserInfo userInfo, boolean checkSelfReference) {
         if (StringTool.isBlank(jobInfo.getChildJobId())) {
             return Response.ofSuccess();
         }
@@ -739,7 +739,7 @@ public class XxlJobServiceImpl implements XxlJobService {
 
             // Validate permission
             if (!JobGroupPermissionUtil.hasJobGroupPermission(
-                    loginInfo, childJobInfo.getJobGroup())) {
+                    userInfo, childJobInfo.getJobGroup())) {
                 return Response.ofFail(
                         MessageFormat.format(
                                 I18nUtil.getString("jobinfo_field_childJobId")

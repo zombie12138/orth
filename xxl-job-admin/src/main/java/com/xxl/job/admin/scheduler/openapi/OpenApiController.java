@@ -2,7 +2,6 @@ package com.xxl.job.admin.scheduler.openapi;
 
 import java.util.List;
 
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import com.xxl.job.admin.scheduler.config.XxlJobAdminBootstrap;
@@ -10,7 +9,6 @@ import com.xxl.job.core.constant.Const;
 import com.xxl.job.core.openapi.AdminBiz;
 import com.xxl.job.core.openapi.model.CallbackRequest;
 import com.xxl.job.core.openapi.model.RegistryRequest;
-import com.xxl.sso.core.annotation.XxlSso;
 import com.xxl.tool.core.StringTool;
 import com.xxl.tool.gson.GsonTool;
 import com.xxl.tool.response.Response;
@@ -19,15 +17,13 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 
 /** Created by xuxueli on 17/5/10. */
-@Controller
+@RestController
 public class OpenApiController {
 
     @Resource private AdminBiz adminBiz;
 
     /** api */
     @RequestMapping("/api/{uri}")
-    @ResponseBody
-    @XxlSso(login = false)
     public Object api(
             HttpServletRequest request,
             @PathVariable("uri") String uri,

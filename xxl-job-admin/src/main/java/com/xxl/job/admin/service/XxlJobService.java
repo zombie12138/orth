@@ -7,7 +7,7 @@ import java.util.Map;
 import com.xxl.job.admin.model.XxlJobInfo;
 import com.xxl.job.admin.model.dto.BatchCopyRequest;
 import com.xxl.job.admin.model.dto.BatchCopyResult;
-import com.xxl.sso.core.model.LoginInfo;
+import com.xxl.job.admin.web.security.JwtUserInfo;
 import com.xxl.tool.response.PageModel;
 import com.xxl.tool.response.Response;
 
@@ -57,85 +57,64 @@ public interface XxlJobService {
     /**
      * Creates a new job configuration.
      *
-     * <p>Validates all job parameters including schedule config, glue type, routing strategy, and
-     * child job dependencies. Permissions are checked based on user's job group access.
-     *
      * @param jobInfo job configuration to create
-     * @param loginInfo current user's login information
+     * @param userInfo current user's information
      * @return job ID if successful, error message otherwise
      */
-    Response<String> add(XxlJobInfo jobInfo, LoginInfo loginInfo);
+    Response<String> add(XxlJobInfo jobInfo, JwtUserInfo userInfo);
 
     /**
      * Updates existing job configuration.
      *
-     * <p>Validates changes and recalculates next trigger time if schedule configuration changed.
-     * Permissions are checked based on user's job group access.
-     *
      * @param jobInfo job configuration with updates
-     * @param loginInfo current user's login information
+     * @param userInfo current user's information
      * @return success or error message
      */
-    Response<String> update(XxlJobInfo jobInfo, LoginInfo loginInfo);
+    Response<String> update(XxlJobInfo jobInfo, JwtUserInfo userInfo);
 
     /**
      * Removes job and all associated data.
      *
-     * <p>Deletes job configuration, execution logs, and glue logs. SuperTasks with existing
-     * SubTasks cannot be deleted until associations are removed.
-     *
      * @param id job ID to remove
-     * @param loginInfo current user's login information
+     * @param userInfo current user's information
      * @return success or error message
      */
-    Response<String> remove(int id, LoginInfo loginInfo);
+    Response<String> remove(int id, JwtUserInfo userInfo);
 
     /**
      * Starts job scheduling.
      *
-     * <p>Activates job for scheduling and calculates next trigger time. Jobs with NONE schedule
-     * type cannot be started.
-     *
      * @param id job ID to start
-     * @param loginInfo current user's login information
+     * @param userInfo current user's information
      * @return success or error message
      */
-    Response<String> start(int id, LoginInfo loginInfo);
+    Response<String> start(int id, JwtUserInfo userInfo);
 
     /**
      * Stops job scheduling.
      *
-     * <p>Deactivates job and clears trigger times. Running job instances will complete normally.
-     *
      * @param id job ID to stop
-     * @param loginInfo current user's login information
+     * @param userInfo current user's information
      * @return success or error message
      */
-    Response<String> stop(int id, LoginInfo loginInfo);
+    Response<String> stop(int id, JwtUserInfo userInfo);
 
     /**
      * Manually triggers immediate job execution.
      *
-     * <p>Executes job once immediately without schedule time. Can optionally override executor
-     * parameters and target specific executor address.
-     *
-     * @param loginInfo current user's login information
+     * @param userInfo current user's information
      * @param jobId job ID to trigger
      * @param executorParam custom executor parameters (overrides job config)
      * @param addressList target executor address (null for routing strategy)
      * @return success or error message
      */
     Response<String> trigger(
-            LoginInfo loginInfo, int jobId, String executorParam, String addressList);
+            JwtUserInfo userInfo, int jobId, String executorParam, String addressList);
 
     /**
      * Triggers batch job executions with logical schedule times.
      *
-     * <p>Generates and triggers multiple job instances based on schedule configuration within the
-     * specified time range. Each instance has a logical schedule time for backfilling scenarios.
-     * Maximum 100 instances per batch.
-     *
-     * @param loginInfo current user's login information
+     * @param userInfo current user's information
      * @param jobId job ID to trigger
      * @param executorParam custom executor parameters
      * @param addressList target executor address
@@ -144,7 +123,7 @@ public interface XxlJobService {
      * @return number of instances triggered or error message
      */
     Response<String> triggerBatch(
-            LoginInfo loginInfo,
+            JwtUserInfo userInfo,
             int jobId,
             String executorParam,
             String addressList,
@@ -154,23 +133,17 @@ public interface XxlJobService {
     /**
      * Previews schedule times for batch trigger without executing.
      *
-     * <p>Calculates and returns the list of schedule times that would be used for batch trigger,
-     * allowing users to verify before execution.
-     *
-     * @param loginInfo current user's login information
+     * @param userInfo current user's information
      * @param jobId job ID to preview
      * @param startTime batch start time
      * @param endTime batch end time
      * @return list of formatted schedule times
      */
     Response<List<String>> previewTriggerBatch(
-            LoginInfo loginInfo, int jobId, Date startTime, Date endTime);
+            JwtUserInfo userInfo, int jobId, Date startTime, Date endTime);
 
     /**
      * Retrieves dashboard summary statistics.
-     *
-     * <p>Returns counts for total jobs, execution logs, successful executions, and active
-     * executors.
      *
      * @return map with dashboard statistics
      */
@@ -178,8 +151,6 @@ public interface XxlJobService {
 
     /**
      * Retrieves execution statistics for chart display.
-     *
-     * <p>Returns daily execution counts (running, success, failure) for the specified date range.
      *
      * @param startDate chart start date
      * @param endDate chart end date
@@ -189,9 +160,6 @@ public interface XxlJobService {
 
     /**
      * Batch creates jobs from template (SuperTask pattern).
-     *
-     * <p>Creates multiple SubTask instances from a template job with varying configurations. Useful
-     * for creating parallel data collection jobs with different parameters.
      *
      * @param request batch copy configuration
      * @return result with created job IDs and any errors

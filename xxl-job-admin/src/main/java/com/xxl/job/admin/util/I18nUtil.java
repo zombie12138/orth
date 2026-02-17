@@ -9,15 +9,11 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.xxl.tool.core.PropTool;
-import com.xxl.tool.freemarker.FtlTool;
 import com.xxl.tool.gson.GsonTool;
-
-import freemarker.template.Configuration;
 
 /**
  * Internationalization (i18n) utility for Orth admin.
@@ -27,7 +23,7 @@ import freemarker.template.Configuration;
  * Traditional) and English.
  *
  * <p>This utility is Spring-managed and initializes on application startup, loading the appropriate
- * message properties file and configuring Freemarker integration.
+ * message properties file.
  *
  * @author xuxueli 2018-01-17 20:39:06
  */
@@ -40,17 +36,11 @@ public class I18nUtil implements InitializingBean {
     @Value("${xxl.job.i18n}")
     private String i18n;
 
-    @Autowired private Configuration configuration;
-
     private static I18nUtil single = null;
     private static Properties prop = null;
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        // Initialize Freemarker shared variable
-        configuration.setSharedVariable(
-                "I18nUtil", FtlTool.generateStaticModel(I18nUtil.class.getName()));
-
         // Set singleton instance
         single = this;
 
@@ -98,6 +88,20 @@ public class I18nUtil implements InitializingBean {
      */
     public static String getString(String key) {
         return loadI18nProp().getProperty(key);
+    }
+
+    /**
+     * Gets all localized messages as a map.
+     *
+     * @return map of all key-value pairs
+     */
+    public static Map<String, String> getAllStrings() {
+        Map<String, String> map = new HashMap<>();
+        Properties properties = loadI18nProp();
+        for (String key : properties.stringPropertyNames()) {
+            map.put(key, properties.getProperty(key));
+        }
+        return map;
     }
 
     /**
