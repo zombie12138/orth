@@ -23,13 +23,16 @@
 		<maven.compiler.encoding>UTF-8</maven.compiler.encoding>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
-		<maven.test.skip>true</maven.test.skip>
+		<maven.test.skip>false</maven.test.skip>
 		<!-- plugin -->
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 		<central-publishing-maven-plugin.version>0.9.0</central-publishing-maven-plugin.version>
+		<!-- test & coverage -->
+		<jacoco.version>0.8.12</jacoco.version>
+		<jacoco.coverage.minimum>0.70</jacoco.coverage.minimum>
 		<!-- base -->
 		<slf4j-api.version>2.0.17</slf4j-api.version>
 		<junit-jupiter.version>6.0.1</junit-jupiter.version>
@@ -117,10 +120,91 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- JaCoCo: Code Coverage -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<!-- Prepare agent for coverage during test execution -->
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<!-- Generate coverage report -->
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<!-- Aggregate reports from all modules -->
+					<execution>
+						<id>report-aggregate</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report-aggregate</goal>
+						</goals>
+					</execution>
+					<!-- Check coverage thresholds -->
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>${jacoco.coverage.minimum}</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.65</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+							<excludes>
+								<!-- Exclude model/entity classes -->
+								<exclude>**/model/**/*</exclude>
+								<exclude>**/entity/**/*</exclude>
+								<!-- Exclude constants -->
+								<exclude>**/constant/**/*</exclude>
+								<exclude>**/*Constant.class</exclude>
+								<exclude>**/*Constants.class</exclude>
+								<!-- Exclude configuration classes -->
+								<exclude>**/config/**/*Configuration.class</exclude>
+								<!-- Exclude main application classes -->
+								<exclude>**/*Application.class</exclude>
+								<!-- Exclude deprecated code -->
+								<exclude>**/deprecated/**/*</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
 	<profiles>
+		<!-- Dev profile: skip tests during development -->
+		<profile>
+			<id>dev</id>
+			<properties>
+				<maven.test.skip>true</maven.test.skip>
+				<jacoco.skip>true</jacoco.skip>
+			</properties>
+		</profile>
 
 		<profile>
 			<id>release</id>

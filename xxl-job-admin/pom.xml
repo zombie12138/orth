@@ -82,6 +82,51 @@
 			<version>${xxl-sso.version}</version>
 		</dependency>
 
+		<!-- ********************** additional test dependencies ********************** -->
+		<!-- TestContainers for integration tests -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
+			<version>1.20.4</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mysql</artifactId>
+			<version>1.20.4</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>1.20.4</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- H2 Database for fast unit tests -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>2.3.232</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- AssertJ -->
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<version>3.27.3</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Awaitility (async/threading tests) -->
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<version>4.2.2</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -97,6 +142,33 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+
+			<!-- JaCoCo: Strict coverage rules for scheduler classes -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<configuration>
+					<rules>
+						<rule>
+							<element>CLASS</element>
+							<limits>
+								<limit>
+									<counter>LINE</counter>
+									<value>COVEREDRATIO</value>
+									<minimum>1.00</minimum>
+								</limit>
+							</limits>
+							<includes>
+								<!-- Scheduler classes requiring 100% coverage -->
+								<include>com/xxl/job/admin/scheduler/thread/JobScheduleHelper</include>
+								<include>com/xxl/job/admin/scheduler/thread/JobTriggerPoolHelper</include>
+								<include>com/xxl/job/admin/scheduler/thread/JobRegistryHelper</include>
+								<include>com/xxl/job/admin/scheduler/trigger/JobTrigger</include>
+							</includes>
+						</rule>
+					</rules>
+				</configuration>
 			</plugin>
 
 		</plugins>

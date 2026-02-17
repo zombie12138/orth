@@ -22,8 +22,8 @@ public class XxlJobInfoMapperTest {
 
     @Test
     public void pageList() {
-        List<XxlJobInfo> list = xxlJobInfoMapper.pageList(0, 20, 0, -1, null, null, null);
-        int list_count = xxlJobInfoMapper.pageListCount(0, 20, 0, -1, null, null, null);
+        List<XxlJobInfo> list = xxlJobInfoMapper.pageList(0, 20, 0, -1, null, null, null, null);
+        int list_count = xxlJobInfoMapper.pageListCount(0, 20, 0, -1, null, null, null, null);
 
         logger.info("", list);
         logger.info("", list_count);
