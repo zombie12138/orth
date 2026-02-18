@@ -12,6 +12,7 @@ import {
   Popconfirm,
   Row,
   Form,
+  Tooltip,
 } from 'antd';
 import {
   PlusOutlined,
@@ -118,15 +119,22 @@ export default function JobsPage() {
     [],
   );
 
-  const groupMap = new Map(groups.map((g: XxlJobGroup) => [g.id, g.title]));
-
   const columns: ColumnsType<XxlJobInfo> = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     {
       title: 'Group',
       dataIndex: 'jobGroup',
       width: 120,
-      render: (v: number) => groupMap.get(v) ?? v,
+      render: (v: number) => {
+        const group = groups.find((g) => g.id === v);
+        if (!group) return v;
+        const addrs = group.addressList?.split(',').filter(Boolean) || [];
+        return (
+          <Tooltip title={addrs.length > 0 ? addrs.join('\n') : 'No online executors'}>
+            <span>{group.title} ({addrs.length})</span>
+          </Tooltip>
+        );
+      },
     },
     { title: 'Description', dataIndex: 'jobDesc', ellipsis: true },
     {
@@ -138,6 +146,13 @@ export default function JobsPage() {
     { title: 'GLUE Type', dataIndex: 'glueType', width: 110 },
     { title: 'Handler', dataIndex: 'executorHandler', width: 140, ellipsis: true },
     { title: 'Author', dataIndex: 'author', width: 100 },
+    {
+      title: 'Next Trigger',
+      dataIndex: 'triggerNextTime',
+      width: 160,
+      render: (v: number) =>
+        v > 0 ? new Date(v).toLocaleString() : '-',
+    },
     {
       title: 'Status',
       dataIndex: 'triggerStatus',
@@ -160,6 +175,22 @@ export default function JobsPage() {
             onClick: () => {
               setTriggerJobId(record.id);
               setTriggerModalOpen(true);
+            },
+          },
+          {
+            key: 'copy',
+            icon: <CopyOutlined />,
+            label: 'Copy',
+            onClick: () => {
+              setEditingJob({
+                ...record,
+                id: 0,
+                jobDesc: record.jobDesc + ' (Copy)',
+                triggerStatus: 0,
+                triggerLastTime: 0,
+                triggerNextTime: 0,
+              } as XxlJobInfo);
+              setFormModalOpen(true);
             },
           },
           {

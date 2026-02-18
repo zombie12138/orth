@@ -33,7 +33,7 @@ export default function JobFormModal({
   onSuccess,
 }: Props) {
   const [form] = Form.useForm();
-  const isEdit = !!job;
+  const isEdit = job != null && job.id > 0;
 
   const glueTypeOptions = useEnumOptions('GlueTypeEnum');
   const routeStrategyOptions = useEnumOptions('ExecutorRouteStrategyEnum');
@@ -72,6 +72,10 @@ export default function JobFormModal({
 
   const handleOk = async () => {
     const values = await form.validateFields();
+    // InputNumber returns number; backend expects string for scheduleConf
+    if (values.scheduleConf != null) {
+      values.scheduleConf = String(values.scheduleConf);
+    }
     saveMutation.mutate(values);
   };
 
@@ -131,6 +135,7 @@ export default function JobFormModal({
             {
               key: 'basic',
               label: 'Basic',
+              forceRender: true,
               children: (
                 <>
                   <Form.Item
@@ -168,6 +173,7 @@ export default function JobFormModal({
             {
               key: 'schedule',
               label: 'Schedule',
+              forceRender: true,
               children: (
                 <>
                   <Form.Item
@@ -220,12 +226,20 @@ export default function JobFormModal({
                   >
                     <Select options={misfireOptions} />
                   </Form.Item>
+                  <Form.Item
+                    name="executorBlockStrategy"
+                    label="Block Strategy"
+                    rules={[{ required: true }]}
+                  >
+                    <Select options={blockStrategyOptions} />
+                  </Form.Item>
                 </>
               ),
             },
             {
               key: 'execution',
               label: 'Execution',
+              forceRender: true,
               children: (
                 <>
                   <Form.Item
@@ -248,13 +262,6 @@ export default function JobFormModal({
                   >
                     <Select options={routeStrategyOptions} />
                   </Form.Item>
-                  <Form.Item
-                    name="executorBlockStrategy"
-                    label="Block Strategy"
-                    rules={[{ required: true }]}
-                  >
-                    <Select options={blockStrategyOptions} />
-                  </Form.Item>
                   <Form.Item name="executorTimeout" label="Timeout (s)">
                     <InputNumber min={0} style={{ width: '100%' }} />
                   </Form.Item>
@@ -267,6 +274,7 @@ export default function JobFormModal({
             {
               key: 'advanced',
               label: 'Advanced',
+              forceRender: true,
               children: (
                 <>
                   <Form.Item name="childJobId" label="Child Job IDs">
@@ -281,9 +289,6 @@ export default function JobFormModal({
                       options={superTaskOptions}
                       placeholder="Search by ID or description"
                     />
-                  </Form.Item>
-                  <Form.Item name="superTaskParam" label="SuperTask Param">
-                    <Input />
                   </Form.Item>
                 </>
               ),

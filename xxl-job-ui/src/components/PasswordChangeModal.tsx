@@ -23,7 +23,8 @@ export default function PasswordChangeModal({ open, onClose }: Props) {
       form.resetFields();
       onClose();
     } catch (e: unknown) {
-      message.error(e instanceof Error ? e.message : 'Failed to update password');
+      const msg = e instanceof Error ? e.message : 'Failed to update password';
+      form.setFields([{ name: 'oldPassword', errors: [msg] }]);
     } finally {
       setLoading(false);
     }
