@@ -23,6 +23,7 @@ import com.xxl.job.admin.mapper.XxlJobRegistryMapper;
 import com.xxl.job.admin.model.XxlJobGroup;
 import com.xxl.job.admin.model.XxlJobRegistry;
 import com.xxl.job.admin.util.I18nUtil;
+import com.xxl.job.admin.util.JobGroupPermissionUtil;
 import com.xxl.job.admin.web.security.JwtUserInfo;
 import com.xxl.job.admin.web.security.SecurityContext;
 import com.xxl.job.core.constant.Const;
@@ -163,6 +164,14 @@ public class ExecutorGroupController {
 
         XxlJobGroup jobGroup = xxlJobGroupMapper.load(id);
         return jobGroup != null ? Response.ofSuccess(jobGroup) : Response.ofFail();
+    }
+
+    @GetMapping("/permitted")
+    public Response<List<XxlJobGroup>> permittedGroups(HttpServletRequest request) {
+        List<XxlJobGroup> allGroups = xxlJobGroupMapper.findAll();
+        List<XxlJobGroup> filtered =
+                JobGroupPermissionUtil.filterJobGroupByPermission(request, allGroups);
+        return Response.ofSuccess(filtered);
     }
 
     // ==================== Private Helper Methods ====================
