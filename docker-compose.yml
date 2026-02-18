@@ -57,6 +57,28 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  xxl-job-ui:
+    image: nginx:1.27-alpine
+    container_name: xxl-job-ui
+    restart: unless-stopped
+    networks: [xxl-net]
+    ports:
+      - "${UI_HTTP_PORT}:80"
+    volumes:
+      - ./xxl-job-ui/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./xxl-job-ui/dist:/usr/share/nginx/html/xxl-job-admin:ro
+    depends_on:
+      xxl-job-admin:
+        condition: service_healthy
+    logging: *rolling-logs
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "1.0"
+    security_opt:
+      - no-new-privileges:true
+
   xxl-job-worker-1:
     pull_policy: build   # 只构建，不从 registry 拉取
     build:
