@@ -8,3 +8,5 @@ target/
 mysql/data
 vscode/
 xxl_data/
+xxl-job-ui/node_modules/
+xxl-job-ui/dist/
