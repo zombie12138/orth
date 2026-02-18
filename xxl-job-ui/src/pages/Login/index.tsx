@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Card, Form, Input, Button, message } from 'antd';
+import { App, Card, Form, Input, Button } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { login as apiLogin } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
@@ -8,6 +8,7 @@ import { useConfigStore } from '../../store/configStore';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { message } = App.useApp();
   const storeLogin = useAuthStore((s) => s.login);
   const loadConfig = useConfigStore((s) => s.loadConfig);
   const [loading, setLoading] = useState(false);
@@ -39,7 +40,7 @@ export default function LoginPage() {
       <Card
         title="Orth Job Admin"
         style={{ width: 400 }}
-        headStyle={{ textAlign: 'center', fontSize: 20, fontWeight: 700 }}
+        styles={{ header: { textAlign: 'center', fontSize: 20, fontWeight: 700 } }}
       >
         <Form onFinish={onFinish} size="large">
           <Form.Item

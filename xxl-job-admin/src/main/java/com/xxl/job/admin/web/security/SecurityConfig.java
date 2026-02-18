@@ -18,7 +18,7 @@ import jakarta.annotation.Resource;
 @Configuration
 public class SecurityConfig implements WebMvcConfigurer {
 
-    @Value("${cors.allowed-origins:http://localhost:5173}")
+    @Value("${cors.allowed-origins:*}")
     private String allowedOrigins;
 
     @Resource private JwtAuthFilter jwtAuthFilter;
@@ -35,7 +35,7 @@ public class SecurityConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins.split(","))
+                .allowedOriginPatterns(allowedOrigins.split(","))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
