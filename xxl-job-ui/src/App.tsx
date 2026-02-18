@@ -6,6 +6,7 @@ import AppLayout from './components/Layout/AppLayout';
 
 const LoginPage = lazy(() => import('./pages/Login'));
 const DashboardPage = lazy(() => import('./pages/Dashboard'));
+const JobsPage = lazy(() => import('./pages/Jobs'));
 
 function Loading() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/jobs" element={<JobsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
