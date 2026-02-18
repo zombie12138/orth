@@ -11,6 +11,7 @@ const JobsPage = lazy(() => import('./pages/Jobs'));
 const LogsPage = lazy(() => import('./pages/Logs'));
 const ExecutorGroupsPage = lazy(() => import('./pages/ExecutorGroups'));
 const UsersPage = lazy(() => import('./pages/Users'));
+const GlueCodePage = lazy(() => import('./pages/GlueCode'));
 
 function Loading() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:jobId/code" element={<GlueCodePage />} />
             <Route path="/logs" element={<LogsPage />} />
             <Route element={<AdminGuard />}>
               <Route path="/executor-groups" element={<ExecutorGroupsPage />} />
