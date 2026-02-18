@@ -37,7 +37,7 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping("/api/v1")
 public class DashboardController {
 
-    private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
 
     @Resource private XxlJobService xxlJobService;
 

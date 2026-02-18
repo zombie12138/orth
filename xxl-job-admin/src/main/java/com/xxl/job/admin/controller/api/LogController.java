@@ -69,8 +69,8 @@ public class LogController {
             @RequestParam(required = false, defaultValue = "0") int offset,
             @RequestParam(required = false, defaultValue = "10") int pagesize,
             @RequestParam int jobGroup,
-            @RequestParam int jobId,
-            @RequestParam int logStatus,
+            @RequestParam(required = false, defaultValue = "0") int jobId,
+            @RequestParam(required = false, defaultValue = "0") int logStatus,
             @RequestParam(required = false, defaultValue = "") String filterTime) {
 
         JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);

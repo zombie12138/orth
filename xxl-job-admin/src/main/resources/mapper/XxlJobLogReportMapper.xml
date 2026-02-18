@@ -7,7 +7,7 @@
 		<result column="id" property="id" />
 	    <result column="trigger_day" property="triggerDay" />
 		<result column="running_count" property="runningCount" />
-	    <result column="suc_count" property="sucCount" />
+	    <result column="suc_count" property="successCount" />
 	    <result column="fail_count" property="failCount" />
 	</resultMap>
 
@@ -28,7 +28,7 @@
 		) VALUES (
 			#{triggerDay},
 			#{runningCount},
-			#{sucCount},
+			#{successCount},
 			#{failCount}
 		);
 		&lt;!&ndash;<selectKey resultType="java.lang.Integer" order="AFTER" keyProperty="id">
@@ -39,7 +39,7 @@
 	<update id="update" >
         UPDATE xxl_job_log_report
         SET `running_count` = #{runningCount},
-        	`suc_count` = #{sucCount},
+        	`suc_count` = #{successCount},
         	`fail_count` = #{failCount}
         WHERE `trigger_day` = #{triggerDay}
     </update>-->
@@ -53,12 +53,12 @@
 		) VALUES (
 			 #{triggerDay},
 			 #{runningCount},
-			 #{sucCount},
+			 #{successCount},
 			 #{failCount}
 		 )
 		ON DUPLICATE KEY UPDATE
 			`running_count` = #{runningCount},
-			`suc_count` = #{sucCount},
+			`suc_count` = #{successCount},
 			`fail_count` = #{failCount}
 	</insert>
 
