@@ -171,31 +171,57 @@ export default function JobsPage() {
         );
       },
     },
-    { title: 'Description', dataIndex: 'jobDesc', ellipsis: true },
+    {
+      title: 'Description',
+      dataIndex: 'jobDesc',
+      ellipsis: { showTitle: false },
+      render: (v: string) => <Tooltip title={v}><span>{v}</span></Tooltip>,
+    },
     {
       title: 'Schedule',
-      width: 160,
+      width: 200,
+      ellipsis: { showTitle: false },
       render: (_: unknown, r: XxlJobInfo) => {
         if (r.scheduleType === 'NONE') return '-';
+        const text = `${r.scheduleType}: ${r.scheduleConf}`;
         return (
-          <Space size={4}>
-            <span>{r.scheduleType}: {r.scheduleConf}</span>
-            <SchedulePreview scheduleType={r.scheduleType} scheduleConf={r.scheduleConf} />
-          </Space>
+          <Tooltip title={text}>
+            <Space size={4}>
+              <span>{text}</span>
+              <SchedulePreview scheduleType={r.scheduleType} scheduleConf={r.scheduleConf} />
+            </Space>
+          </Tooltip>
         );
       },
     },
     { title: 'GLUE Type', dataIndex: 'glueType', width: 110 },
-    { title: 'Handler', dataIndex: 'executorHandler', width: 140, ellipsis: true },
-    { title: 'Author', dataIndex: 'author', width: 100 },
+    {
+      title: 'Handler',
+      dataIndex: 'executorHandler',
+      width: 140,
+      ellipsis: { showTitle: false },
+      render: (v: string) => <Tooltip title={v}><span>{v}</span></Tooltip>,
+    },
+    {
+      title: 'Author',
+      dataIndex: 'author',
+      width: 100,
+      ellipsis: { showTitle: false },
+      render: (v: string) => <Tooltip title={v}><span>{v}</span></Tooltip>,
+    },
     {
       title: 'SuperTask',
       width: 140,
-      ellipsis: true,
-      render: (_: unknown, r: XxlJobInfo) =>
-        r.superTaskId && r.superTaskId > 0
-          ? <Tag>Sub: #{r.superTaskId} {r.superTaskName}</Tag>
-          : '-',
+      ellipsis: { showTitle: false },
+      render: (_: unknown, r: XxlJobInfo) => {
+        if (!r.superTaskId || r.superTaskId <= 0) return '-';
+        const text = `Sub: #${r.superTaskId} ${r.superTaskName}`;
+        return (
+          <Tooltip title={text}>
+            <Tag>{text}</Tag>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Status',
