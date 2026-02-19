@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Space, Modal, Input, message, Upload } from 'antd';
+import { App, Button, Space, Modal, Input, Upload } from 'antd';
 import { ExportOutlined, ImportOutlined } from '@ant-design/icons';
 import { exportJobs, importJobs } from '../../../api/jobs';
 
@@ -12,6 +12,7 @@ export default function ImportExportButtons({
   selectedIds,
   onImportSuccess,
 }: Props) {
+  const { message } = App.useApp();
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importJson, setImportJson] = useState('');
   const [importing, setImporting] = useState(false);
@@ -26,6 +27,18 @@ export default function ImportExportButtons({
     URL.revokeObjectURL(url);
   };
 
+  const copyToClipboard = (text: string): boolean => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return ok;
+  };
+
   const handleExport = async () => {
     if (selectedIds.length === 0) {
       message.warning('Select jobs to export');
@@ -33,15 +46,15 @@ export default function ImportExportButtons({
     }
     try {
       const json = await exportJobs(selectedIds);
-      try {
-        await navigator.clipboard.writeText(json);
+      if (copyToClipboard(json)) {
         message.success(
           <span>
             Copied to clipboard{' '}
             <a onClick={() => downloadJson(json)}>Download</a>
           </span>,
+          5,
         );
-      } catch {
+      } else {
         downloadJson(json);
         message.success('Exported successfully');
       }

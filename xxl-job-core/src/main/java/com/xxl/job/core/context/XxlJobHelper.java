@@ -117,15 +117,6 @@ public class XxlJobHelper {
 
     // ---------------------- SuperTask Info ----------------------
 
-    /**
-     * Gets the super parameter for SubTasks.
-     *
-     * @return super parameter, or null for standalone/SuperTask jobs or if not in job context
-     */
-    public static String getSuperTaskParam() {
-        return getContext().map(XxlJobContext::getSuperTaskParam).orElse(null);
-    }
-
     // ---------------------- Logging ----------------------
 
     /**

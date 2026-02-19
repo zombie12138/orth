@@ -568,16 +568,6 @@ public class XxlJobServiceImpl implements XxlJobService {
             return result;
         }
 
-        // Validate all configs have superTaskParam
-        for (int i = 0; i < configs.size(); i++) {
-            if (StringTool.isBlank(configs.get(i).getSuperTaskParam())) {
-                result.addError("Config " + (i + 1) + ": superTaskParam is required");
-            }
-        }
-        if (!result.getErrors().isEmpty()) {
-            return result;
-        }
-
         // Create SubTasks
         for (int i = 0; i < configs.size(); i++) {
             createSubTask(templateJob, configs.get(i), request, i + 1, result);
@@ -933,7 +923,7 @@ public class XxlJobServiceImpl implements XxlJobService {
         List<SubTaskConfig> configs = new ArrayList<>();
         for (String param : request.getParams()) {
             SubTaskConfig config = new SubTaskConfig();
-            config.setSuperTaskParam(param);
+            config.setExecutorParam(param);
             applyCommonOverrides(config, request);
             configs.add(config);
         }
@@ -969,12 +959,15 @@ public class XxlJobServiceImpl implements XxlJobService {
         try {
             XxlJobInfo subTask = cloneTemplateJob(templateJob);
             subTask.setSuperTaskId(templateJob.getId());
-            subTask.setSuperTaskParam(config.getSuperTaskParam());
 
             applyConfigOverrides(subTask, config);
-            String jobName =
-                    generateSubTaskName(templateJob.getJobDesc(), request.getNameTemplate(), index);
-            subTask.setJobDesc(jobName);
+            // Only auto-generate name if config didn't provide one
+            if (config.getJobDesc() == null) {
+                String jobName =
+                        generateSubTaskName(
+                                templateJob.getJobDesc(), request.getNameTemplate(), index);
+                subTask.setJobDesc(jobName);
+            }
 
             Date now = new Date();
             subTask.setAddTime(now);
@@ -988,9 +981,9 @@ public class XxlJobServiceImpl implements XxlJobService {
             if (subTask.getId() > 0) {
                 result.addCreatedJobId(subTask.getId());
                 logger.info(
-                        "SubTask created successfully: id={}, superTaskParam={}",
+                        "SubTask created: id={}, executorParam={}",
                         subTask.getId(),
-                        config.getSuperTaskParam());
+                        subTask.getExecutorParam());
             } else {
                 result.addError("Failed to save SubTask " + index);
             }
@@ -1028,6 +1021,9 @@ public class XxlJobServiceImpl implements XxlJobService {
     private void applyConfigOverrides(XxlJobInfo subTask, SubTaskConfig config) {
         if (config.getJobDesc() != null) {
             subTask.setJobDesc(config.getJobDesc());
+        }
+        if (config.getExecutorParam() != null) {
+            subTask.setExecutorParam(config.getExecutorParam());
         }
         if (config.getAuthor() != null) {
             subTask.setAuthor(config.getAuthor());

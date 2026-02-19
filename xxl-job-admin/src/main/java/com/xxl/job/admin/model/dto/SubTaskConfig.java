@@ -7,9 +7,8 @@ package com.xxl.job.admin.model.dto;
  * template. It is used exclusively in {@link BatchCopyRequest#MODE_ADVANCED} mode, where each
  * SubTask can have individually customized properties.
  *
- * <p>All fields except {@code superTaskParam} are optional overrides. If not specified, the SubTask
- * inherits the corresponding value from the SuperTask template or the BatchCopyRequest's common
- * override fields.
+ * <p>All fields are optional overrides. If not specified, the SubTask inherits the corresponding
+ * value from the SuperTask template or the BatchCopyRequest's common override fields.
  *
  * <p>Inheritance hierarchy (highest to lowest priority):
  *
@@ -26,13 +25,10 @@ package com.xxl.job.admin.model.dto;
 public class SubTaskConfig {
 
     /**
-     * Super parameter that uniquely identifies this SubTask within the SuperTask family. This value
-     * becomes the {@code executorParam} of the created SubTask and is used by the executor to
-     * determine task-specific behavior (e.g., data shard ID, customer ID, region code).
-     *
-     * <p><b>Required field.</b> Must not be null or empty.
+     * Executor parameter for this SubTask. This is the primary use case for Fork SuperTask: same
+     * code, different parameters (e.g., different download paths, data shards, region codes).
      */
-    private String superTaskParam;
+    private String executorParam;
 
     /**
      * Job description override for this specific SubTask (optional).
@@ -77,33 +73,25 @@ public class SubTaskConfig {
     private String alarmEmail;
 
     /**
-     * Validates that this SubTaskConfig has the required fields populated.
+     * Checks if this config has any override values set.
      *
-     * @return true if superTaskParam is not null or empty, false otherwise
-     */
-    public boolean isValid() {
-        return superTaskParam != null && !superTaskParam.trim().isEmpty();
-    }
-
-    /**
-     * Checks if this config has any override values set (excluding the required superTaskParam).
-     *
-     * @return true if at least one optional override field is non-null
+     * @return true if at least one override field is non-null
      */
     public boolean hasOverrides() {
-        return jobDesc != null
+        return executorParam != null
+                || jobDesc != null
                 || author != null
                 || scheduleConf != null
                 || scheduleType != null
                 || alarmEmail != null;
     }
 
-    public String getSuperTaskParam() {
-        return superTaskParam;
+    public String getExecutorParam() {
+        return executorParam;
     }
 
-    public void setSuperTaskParam(String superTaskParam) {
-        this.superTaskParam = superTaskParam;
+    public void setExecutorParam(String executorParam) {
+        this.executorParam = executorParam;
     }
 
     public String getJobDesc() {
@@ -149,8 +137,8 @@ public class SubTaskConfig {
     @Override
     public String toString() {
         return "SubTaskConfig{"
-                + "superTaskParam='"
-                + superTaskParam
+                + "executorParam='"
+                + executorParam
                 + '\''
                 + ", jobDesc='"
                 + jobDesc
@@ -167,8 +155,6 @@ public class SubTaskConfig {
                 + ", alarmEmail='"
                 + alarmEmail
                 + '\''
-                + ", hasOverrides="
-                + hasOverrides()
                 + '}';
     }
 }

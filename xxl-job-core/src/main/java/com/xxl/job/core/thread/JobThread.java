@@ -206,8 +206,7 @@ public class JobThread extends Thread {
                 logFileName,
                 triggerParam.getBroadcastIndex(),
                 triggerParam.getBroadcastTotal(),
-                triggerParam.getScheduleTime(),
-                triggerParam.getSuperTaskParam());
+                triggerParam.getScheduleTime());
     }
 
     /** Executes the job with optional timeout handling. */

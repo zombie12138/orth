@@ -467,7 +467,6 @@ public class JobTrigger {
         request.setBroadcastIndex(shardIndex);
         request.setBroadcastTotal(shardTotal);
         request.setScheduleTime(scheduleTime);
-        request.setSuperTaskParam(jobInfo.getSuperTaskParam());
         return request;
     }
 

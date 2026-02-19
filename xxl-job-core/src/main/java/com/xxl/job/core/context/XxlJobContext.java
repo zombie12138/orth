@@ -48,11 +48,6 @@ public class XxlJobContext {
     /** Theoretical schedule time (milliseconds), null for manual/API triggers */
     private final Long scheduleTime;
 
-    // ---------------------- for SuperTask ----------------------
-
-    /** Super parameter for SubTask instances, null for standalone/SuperTask jobs */
-    private final String superTaskParam;
-
     // ---------------------- for handle ----------------------
 
     /**
@@ -74,28 +69,6 @@ public class XxlJobContext {
             int shardIndex,
             int shardTotal,
             Long scheduleTime) {
-        this(
-                jobId,
-                jobParam,
-                logId,
-                logDateTime,
-                logFileName,
-                shardIndex,
-                shardTotal,
-                scheduleTime,
-                null);
-    }
-
-    public XxlJobContext(
-            long jobId,
-            String jobParam,
-            long logId,
-            long logDateTime,
-            String logFileName,
-            int shardIndex,
-            int shardTotal,
-            Long scheduleTime,
-            String superTaskParam) {
         this.jobId = jobId;
         this.jobParam = jobParam;
         this.logId = logId;
@@ -104,7 +77,6 @@ public class XxlJobContext {
         this.shardIndex = shardIndex;
         this.shardTotal = shardTotal;
         this.scheduleTime = scheduleTime;
-        this.superTaskParam = superTaskParam;
 
         this.handleCode = HANDLE_CODE_SUCCESS; // default success
     }
@@ -144,15 +116,6 @@ public class XxlJobContext {
      */
     public Long getScheduleTime() {
         return scheduleTime;
-    }
-
-    /**
-     * Get super parameter for SubTask instances, null for standalone/SuperTask jobs.
-     *
-     * @return super parameter, or null
-     */
-    public String getSuperTaskParam() {
-        return superTaskParam;
     }
 
     public void setHandleCode(int handleCode) {

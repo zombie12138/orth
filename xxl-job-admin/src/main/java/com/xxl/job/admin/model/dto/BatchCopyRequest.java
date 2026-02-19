@@ -143,16 +143,7 @@ public class BatchCopyRequest {
                     && !nameTemplate.trim().isEmpty();
         } else if (MODE_ADVANCED.equals(mode)) {
             // Advanced mode requires non-empty tasks list
-            if (tasks == null || tasks.isEmpty()) {
-                return false;
-            }
-            // Each task config must have a super parameter
-            for (SubTaskConfig task : tasks) {
-                if (task.getSuperTaskParam() == null || task.getSuperTaskParam().trim().isEmpty()) {
-                    return false;
-                }
-            }
-            return true;
+            return tasks != null && !tasks.isEmpty();
         }
 
         return false;

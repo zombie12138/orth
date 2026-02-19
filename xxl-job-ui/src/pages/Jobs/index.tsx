@@ -265,7 +265,7 @@ export default function JobsPage() {
             ? {
                 key: 'batchCopy',
                 icon: <CopyOutlined />,
-                label: 'Fork SubTasks',
+                label: 'Fork SuperTask',
                 onClick: () => {
                   setBatchCopyJobId(record.id);
                   setBatchCopyOpen(true);

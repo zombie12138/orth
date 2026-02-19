@@ -1,5 +1,5 @@
 export interface SubTaskConfig {
-  superTaskParam: string;
+  executorParam?: string;
   jobDesc?: string;
   author?: string;
   scheduleConf?: string;

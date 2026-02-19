@@ -21,7 +21,6 @@ export interface XxlJobInfo {
   glueUpdatetime: string;
   childJobId: string;
   superTaskId: number | null;
-  superTaskParam: string;
   superTaskName: string;
   triggerStatus: number;
   triggerLastTime: number;

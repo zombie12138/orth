@@ -14,7 +14,6 @@ import java.io.Serializable;
  *   <li>GLUE script source (for dynamic script jobs)
  *   <li>Sharding/broadcast information
  *   <li>Scheduling metadata (theoretical schedule time)
- *   <li>SuperTask coordination (for template-instance pattern)
  * </ul>
  *
  * <p>Lifecycle: Created by admin scheduler → Serialized over Netty → Deserialized by executor →
@@ -114,19 +113,6 @@ public class TriggerRequest implements Serializable {
      * value is 10:00:00.
      */
     private Long scheduleTime;
-
-    // ---------------------- SuperTask Coordination ----------------------
-
-    /**
-     * Super parameter for SubTask instances (template-instance pattern).
-     *
-     * <p>Null for standalone jobs and SuperTask templates. Set by SubTaskTriggerService when
-     * triggering instances. Passed to scripts as $ORTH_SUPER_TASK_PARAM environment variable.
-     *
-     * <p>Example: JSON string with instance-specific config like {"date": "2024-01-15", "region":
-     * "us-west"}
-     */
-    private String superTaskParam;
 
     public int getJobId() {
         return jobId;
@@ -232,14 +218,6 @@ public class TriggerRequest implements Serializable {
         this.scheduleTime = scheduleTime;
     }
 
-    public String getSuperTaskParam() {
-        return superTaskParam;
-    }
-
-    public void setSuperTaskParam(String superTaskParam) {
-        this.superTaskParam = superTaskParam;
-    }
-
     /**
      * Returns string representation with all fields (excluding glueSource for brevity).
      *
@@ -289,9 +267,6 @@ public class TriggerRequest implements Serializable {
                 + broadcastTotal
                 + ", scheduleTime="
                 + scheduleTime
-                + ", superTaskParam='"
-                + superTaskParam
-                + '\''
                 + '}';
     }
 }

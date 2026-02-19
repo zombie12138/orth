@@ -1,17 +1,10 @@
-import { useState } from 'react';
-import {
-  Modal,
-  Form,
-  Input,
-  Tabs,
-  Table,
-  Button,
-  message,
-  Tag,
-} from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-import { batchCopy } from '../../../api/jobs';
+import { useState, useEffect } from 'react';
+import { App, Modal, Tag, Typography } from 'antd';
+import { useQuery } from '@tanstack/react-query';
+import { fetchJob, batchCopy } from '../../../api/jobs';
 import type { BatchCopyRequest, BatchCopyResult } from '../../../types/batch';
+
+const { Text } = Typography;
 
 interface Props {
   open: boolean;
@@ -26,56 +19,58 @@ export default function BatchCopyModal({
   onClose,
   onSuccess,
 }: Props) {
-  const [form] = Form.useForm();
-  const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
+  const { message } = App.useApp();
+  const [jsonText, setJsonText] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BatchCopyResult | null>(null);
 
-  // Simple mode: params as newline-separated text
-  const [paramsText, setParamsText] = useState('');
+  const { data: jobInfo } = useQuery({
+    queryKey: ['job', jobId],
+    queryFn: () => fetchJob(jobId),
+    enabled: open && jobId > 0,
+  });
 
-  // Advanced mode: task configs
-  const [tasks, setTasks] = useState<
-    { key: number; superTaskParam: string; jobDesc: string }[]
-  >([]);
-  const [nextKey, setNextKey] = useState(0);
-
-  const addTask = () => {
-    setTasks((prev) => [
-      ...prev,
-      { key: nextKey, superTaskParam: '', jobDesc: '' },
-    ]);
-    setNextKey((k) => k + 1);
-  };
-
-  const removeTask = (key: number) => {
-    setTasks((prev) => prev.filter((t) => t.key !== key));
-  };
+  // Generate template JSON when job info loads
+  useEffect(() => {
+    if (jobInfo && open) {
+      const template = {
+        templateJobId: jobId,
+        mode: 'advanced',
+        tasks: [
+          {
+            jobDesc: `${jobInfo.jobDesc} - SubTask 1`,
+            executorParam: 'param1',
+          },
+          {
+            jobDesc: `${jobInfo.jobDesc} - SubTask 2`,
+            executorParam: 'param2',
+          },
+          {
+            jobDesc: `${jobInfo.jobDesc} - SubTask 3`,
+            executorParam: 'param3',
+          },
+        ],
+      };
+      setJsonText(JSON.stringify(template, null, 2));
+    }
+  }, [jobInfo, jobId, open]);
 
   const handleOk = async () => {
-    const values = await form.validateFields();
+    if (result) {
+      handleClose();
+      return;
+    }
+
+    let request: BatchCopyRequest;
+    try {
+      request = JSON.parse(jsonText);
+    } catch {
+      message.error('Invalid JSON format');
+      return;
+    }
+
     setLoading(true);
     try {
-      const request: BatchCopyRequest = {
-        templateJobId: jobId,
-        mode,
-      };
-      if (mode === 'simple') {
-        request.params = paramsText
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean);
-        request.nameTemplate = values.nameTemplate as string | undefined;
-      } else {
-        request.tasks = tasks.map((t) => ({
-          superTaskParam: t.superTaskParam,
-          jobDesc: t.jobDesc || undefined,
-        }));
-      }
-      // Common overrides
-      if (values.jobDesc) request.jobDesc = values.jobDesc as string;
-      if (values.author) request.author = values.author as string;
-
       const res = await batchCopy(request);
       setResult(res);
       message.success(`Created ${res.successCount} tasks`);
@@ -89,19 +84,17 @@ export default function BatchCopyModal({
 
   const handleClose = () => {
     setResult(null);
-    setParamsText('');
-    setTasks([]);
-    form.resetFields();
+    setJsonText('');
     onClose();
   };
 
   return (
     <Modal
-      title="Batch Copy SubTasks"
+      title="Fork SuperTask - Batch Create SubTasks"
       open={open}
-      onOk={result ? handleClose : handleOk}
+      onOk={handleOk}
       onCancel={handleClose}
-      okText={result ? 'Done' : 'Create'}
+      okText={result ? 'Done' : 'Create SubTasks'}
       confirmLoading={loading}
       width={700}
       destroyOnClose
@@ -128,111 +121,32 @@ export default function BatchCopyModal({
           )}
         </div>
       ) : (
-        <Form form={form} layout="vertical">
-          <Tabs
-            activeKey={mode}
-            onChange={(k) => setMode(k as 'simple' | 'advanced')}
-            items={[
-              {
-                key: 'simple',
-                label: 'Simple',
-                children: (
-                  <>
-                    <Form.Item name="nameTemplate" label="Name Template">
-                      <Input placeholder="{origin}_{index}" />
-                    </Form.Item>
-                    <Form.Item label="Parameters (one per line)" required>
-                      <Input.TextArea
-                        rows={6}
-                        value={paramsText}
-                        onChange={(e) => setParamsText(e.target.value)}
-                        placeholder="param1&#10;param2&#10;param3"
-                      />
-                    </Form.Item>
-                  </>
-                ),
-              },
-              {
-                key: 'advanced',
-                label: 'Advanced',
-                children: (
-                  <>
-                    <Button
-                      icon={<PlusOutlined />}
-                      onClick={addTask}
-                      style={{ marginBottom: 8 }}
-                    >
-                      Add Task
-                    </Button>
-                    <Table
-                      size="small"
-                      dataSource={tasks}
-                      rowKey="key"
-                      pagination={false}
-                      columns={[
-                        {
-                          title: 'Parameter',
-                          dataIndex: 'superTaskParam',
-                          render: (_: string, record: (typeof tasks)[0]) => (
-                            <Input
-                              value={record.superTaskParam}
-                              onChange={(e) =>
-                                setTasks((prev) =>
-                                  prev.map((t) =>
-                                    t.key === record.key
-                                      ? { ...t, superTaskParam: e.target.value }
-                                      : t,
-                                  ),
-                                )
-                              }
-                            />
-                          ),
-                        },
-                        {
-                          title: 'Description',
-                          dataIndex: 'jobDesc',
-                          render: (_: string, record: (typeof tasks)[0]) => (
-                            <Input
-                              value={record.jobDesc}
-                              onChange={(e) =>
-                                setTasks((prev) =>
-                                  prev.map((t) =>
-                                    t.key === record.key
-                                      ? { ...t, jobDesc: e.target.value }
-                                      : t,
-                                  ),
-                                )
-                              }
-                            />
-                          ),
-                        },
-                        {
-                          title: '',
-                          width: 40,
-                          render: (_: unknown, record: (typeof tasks)[0]) => (
-                            <Button
-                              type="link"
-                              danger
-                              size="small"
-                              icon={<DeleteOutlined />}
-                              onClick={() => removeTask(record.key)}
-                            />
-                          ),
-                        },
-                      ]}
-                    />
-                  </>
-                ),
-              },
-            ]}
+        <div>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+            Edit the JSON below to configure SubTasks. Each task in the{' '}
+            <code>tasks</code> array can override:{' '}
+            <code>jobDesc</code>, <code>executorParam</code>,{' '}
+            <code>scheduleType</code>, <code>scheduleConf</code>,{' '}
+            <code>author</code>, <code>alarmEmail</code>.
+          </Text>
+          <textarea
+            value={jsonText}
+            onChange={(e) => setJsonText(e.target.value)}
+            spellCheck={false}
+            style={{
+              width: '100%',
+              height: 450,
+              fontFamily: 'monospace',
+              fontSize: 13,
+              lineHeight: 1.5,
+              padding: 12,
+              border: '1px solid #d9d9d9',
+              borderRadius: 6,
+              resize: 'vertical',
+              tabSize: 2,
+            }}
           />
-          <Form.Item name="jobDesc" label="Description Override">
-            <Input placeholder="Optional" />
-          </Form.Item>
-          <Form.Item name="author" label="Author Override">
-            <Input placeholder="Optional" />
-          </Form.Item>
-        </Form>
+        </div>
       )}
     </Modal>
   );

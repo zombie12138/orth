@@ -45,8 +45,6 @@ public class XxlJobInfo {
 
     // SuperTask pattern (template-instance relationship)
     private Integer superTaskId; // SuperTask template ID (NULL = standalone or template)
-    private String
-            superTaskParam; // Instance-specific parameter (injected as $ORTH_SUPER_TASK_PARAM)
 
     // Transient field: SuperTask name for display (not persisted to database)
     private String superTaskName;
@@ -254,14 +252,6 @@ public class XxlJobInfo {
 
     public void setSuperTaskId(Integer superTaskId) {
         this.superTaskId = superTaskId;
-    }
-
-    public String getSuperTaskParam() {
-        return superTaskParam;
-    }
-
-    public void setSuperTaskParam(String superTaskParam) {
-        this.superTaskParam = superTaskParam;
     }
 
     public String getSuperTaskName() {
