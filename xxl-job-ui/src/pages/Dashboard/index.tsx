@@ -16,8 +16,8 @@ export default function DashboardPage() {
     queryFn: fetchDashboard,
   });
 
-  const startDate = dayjs().subtract(7, 'day').format('YYYY-MM-DD');
-  const endDate = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+  const startDate = dayjs().subtract(6, 'day').format('YYYY-MM-DD');
+  const endDate = dayjs().format('YYYY-MM-DD');
 
   const { data: chart, isLoading: chartLoading } = useQuery({
     queryKey: ['dashboard-chart', startDate, endDate],

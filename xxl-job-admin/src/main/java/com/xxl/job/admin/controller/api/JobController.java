@@ -52,7 +52,7 @@ public class JobController {
 
     private static final Logger logger = LoggerFactory.getLogger(JobController.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final int NEXT_TRIGGER_PREVIEW_COUNT = 5;
+    private static final int NEXT_TRIGGER_PREVIEW_COUNT = 10;
 
     @Resource private XxlJobGroupMapper xxlJobGroupMapper;
     @Resource private XxlJobInfoMapper xxlJobInfoMapper;

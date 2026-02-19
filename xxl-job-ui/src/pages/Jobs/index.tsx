@@ -13,6 +13,9 @@ import {
   Row,
   Form,
   Tooltip,
+  Popover,
+  Spin,
+  List,
 } from 'antd';
 import {
   PlusOutlined,
@@ -26,11 +29,12 @@ import {
   FieldTimeOutlined,
   CopyOutlined,
   CodeOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import type { ColumnsType } from 'antd/es/table';
-import { fetchJobs, deleteJob, startJob, stopJob } from '../../api/jobs';
+import { fetchJobs, deleteJob, startJob, stopJob, nextTriggerTime } from '../../api/jobs';
 import { fetchPermittedGroups } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
 import { TRIGGER_STATUS } from '../../utils/constants';
@@ -41,6 +45,36 @@ import TriggerModal from './components/TriggerModal';
 import BatchTriggerModal from './components/BatchTriggerModal';
 import BatchCopyModal from './components/BatchCopyModal';
 import ImportExportButtons from './components/ImportExportButtons';
+
+function SchedulePreview({ scheduleType, scheduleConf }: { scheduleType: string; scheduleConf: string }) {
+  const { data, isLoading, refetch, isFetched } = useQuery({
+    queryKey: ['next-trigger-time', scheduleType, scheduleConf],
+    queryFn: () => nextTriggerTime(scheduleType, scheduleConf),
+    enabled: false,
+  });
+
+  const content = isLoading ? (
+    <Spin size="small" />
+  ) : (
+    <List
+      size="small"
+      dataSource={data ?? []}
+      renderItem={(item: string) => <List.Item style={{ padding: '4px 0' }}>{item}</List.Item>}
+      locale={{ emptyText: 'No upcoming triggers' }}
+    />
+  );
+
+  return (
+    <Popover
+      title="Next Trigger Times"
+      content={<div style={{ maxHeight: 300, overflow: 'auto' }}>{content}</div>}
+      trigger="click"
+      onOpenChange={(open) => { if (open && !isFetched) refetch(); }}
+    >
+      <CalendarOutlined style={{ cursor: 'pointer', color: '#1890ff' }} />
+    </Popover>
+  );
+}
 
 export default function JobsPage() {
   const navigate = useNavigate();
@@ -53,6 +87,7 @@ export default function JobsPage() {
     jobDesc: '',
     executorHandler: '',
     author: '',
+    superTaskName: '',
   });
 
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -139,19 +174,28 @@ export default function JobsPage() {
     { title: 'Description', dataIndex: 'jobDesc', ellipsis: true },
     {
       title: 'Schedule',
-      width: 140,
-      render: (_: unknown, r: XxlJobInfo) =>
-        r.scheduleType === 'NONE' ? '-' : `${r.scheduleType}: ${r.scheduleConf}`,
+      width: 160,
+      render: (_: unknown, r: XxlJobInfo) => {
+        if (r.scheduleType === 'NONE') return '-';
+        return (
+          <Space size={4}>
+            <span>{r.scheduleType}: {r.scheduleConf}</span>
+            <SchedulePreview scheduleType={r.scheduleType} scheduleConf={r.scheduleConf} />
+          </Space>
+        );
+      },
     },
     { title: 'GLUE Type', dataIndex: 'glueType', width: 110 },
     { title: 'Handler', dataIndex: 'executorHandler', width: 140, ellipsis: true },
     { title: 'Author', dataIndex: 'author', width: 100 },
     {
-      title: 'Next Trigger',
-      dataIndex: 'triggerNextTime',
-      width: 160,
-      render: (v: number) =>
-        v > 0 ? new Date(v).toLocaleString() : '-',
+      title: 'SuperTask',
+      width: 140,
+      ellipsis: true,
+      render: (_: unknown, r: XxlJobInfo) =>
+        r.superTaskId && r.superTaskId > 0
+          ? <Tag>Sub: #{r.superTaskId} {r.superTaskName}</Tag>
+          : '-',
     },
     {
       title: 'Status',
@@ -217,11 +261,11 @@ export default function JobsPage() {
                 onClick: () => navigate(`/jobs/${record.id}/code`),
               }
             : null,
-          record.superTaskId == null
+          !record.superTaskId
             ? {
                 key: 'batchCopy',
                 icon: <CopyOutlined />,
-                label: 'Batch Copy',
+                label: 'Fork SubTasks',
                 onClick: () => {
                   setBatchCopyJobId(record.id);
                   setBatchCopyOpen(true);
@@ -326,6 +370,15 @@ export default function JobsPage() {
               allowClear
               onChange={(e) =>
                 setFilters((p) => ({ ...p, author: e.target.value }))
+              }
+            />
+          </Form.Item>
+          <Form.Item name="superTaskName">
+            <Input
+              placeholder="SuperTask"
+              allowClear
+              onChange={(e) =>
+                setFilters((p) => ({ ...p, superTaskName: e.target.value }))
               }
             />
           </Form.Item>

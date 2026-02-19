@@ -21,6 +21,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { fetchLogs, killJob } from '../../api/logs';
 import { fetchPermittedGroups } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
+import dayjs from 'dayjs';
 import { formatDate, formatDateRange } from '../../utils/date';
 import { getResultTag } from '../../utils/constants';
 import type { XxlJobLog } from '../../types/log';
@@ -95,6 +96,21 @@ export default function LogsPage() {
       dataIndex: 'triggerTime',
       width: 160,
       render: (v: string) => formatDate(v),
+    },
+    {
+      title: 'Execution',
+      width: 200,
+      render: (_: unknown, r: XxlJobLog) => {
+        if (!r.handleTime) return '-';
+        const handleMs = dayjs(r.handleTime).valueOf();
+        const triggerMs = dayjs(r.triggerTime).valueOf();
+        const diffMs = handleMs - triggerMs;
+        let duration: string;
+        if (diffMs < 1000) duration = `${diffMs}ms`;
+        else if (diffMs < 60000) duration = `${(diffMs / 1000).toFixed(1)}s`;
+        else duration = `${(diffMs / 60000).toFixed(1)}m`;
+        return `${formatDate(r.handleTime)} (${duration})`;
+      },
     },
     {
       title: 'Trigger',

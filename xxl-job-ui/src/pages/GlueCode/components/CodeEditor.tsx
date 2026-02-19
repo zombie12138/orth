@@ -10,6 +10,7 @@ interface Props {
   value: string;
   onChange: (value: string) => void;
   glueType: string;
+  readOnly?: boolean;
 }
 
 function getLanguageExtension(glueType: string) {
@@ -30,7 +31,7 @@ function getLanguageExtension(glueType: string) {
   }
 }
 
-export default function CodeEditor({ value, onChange, glueType }: Props) {
+export default function CodeEditor({ value, onChange, glueType, readOnly }: Props) {
   const extensions = useMemo(() => getLanguageExtension(glueType), [glueType]);
 
   return (
@@ -41,6 +42,7 @@ export default function CodeEditor({ value, onChange, glueType }: Props) {
       theme="dark"
       height="calc(100vh - 200px)"
       style={{ fontSize: 13 }}
+      readOnly={readOnly}
     />
   );
 }

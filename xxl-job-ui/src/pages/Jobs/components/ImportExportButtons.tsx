@@ -16,6 +16,16 @@ export default function ImportExportButtons({
   const [importJson, setImportJson] = useState('');
   const [importing, setImporting] = useState(false);
 
+  const downloadJson = (json: string) => {
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `xxl-job-export-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExport = async () => {
     if (selectedIds.length === 0) {
       message.warning('Select jobs to export');
@@ -23,14 +33,18 @@ export default function ImportExportButtons({
     }
     try {
       const json = await exportJobs(selectedIds);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `xxl-job-export-${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      message.success('Exported successfully');
+      try {
+        await navigator.clipboard.writeText(json);
+        message.success(
+          <span>
+            Copied to clipboard{' '}
+            <a onClick={() => downloadJson(json)}>Download</a>
+          </span>,
+        );
+      } catch {
+        downloadJson(json);
+        message.success('Exported successfully');
+      }
     } catch (e: unknown) {
       message.error(e instanceof Error ? e.message : 'Export failed');
     }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
-import { Card, Spin, Button, Space, Row, Col } from 'antd';
+import { useParams, useNavigate, Link } from 'react-router';
+import { Card, Spin, Button, Space, Row, Col, Alert } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchGlueCode } from '../../api/glue';
@@ -43,9 +43,25 @@ export default function GlueCodePage() {
   }
 
   const glueType = data.jobInfo.glueType;
+  const isSubTask = data.jobInfo.superTaskId != null && data.jobInfo.superTaskId > 0;
 
   return (
     <>
+      {isSubTask && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={
+            <span>
+              This is a sub-task. Edit code on the SuperTask instead.{' '}
+              <Link to={`/jobs/${data.jobInfo.superTaskId}/code`}>
+                Go to SuperTask #{data.jobInfo.superTaskId}
+              </Link>
+            </span>
+          }
+        />
+      )}
       <Card
         title={
           <Space>
@@ -64,6 +80,7 @@ export default function GlueCodePage() {
             type="primary"
             icon={<SaveOutlined />}
             onClick={() => setSaveModalOpen(true)}
+            disabled={isSubTask}
           >
             Save
           </Button>
@@ -74,8 +91,9 @@ export default function GlueCodePage() {
           <Col flex="1" style={{ minWidth: 0 }}>
             <CodeEditor
               value={code}
-              onChange={setCode}
+              onChange={isSubTask ? () => {} : setCode}
               glueType={glueType}
+              readOnly={isSubTask}
             />
           </Col>
           <Col
