@@ -7,6 +7,7 @@ import {
   FileTextOutlined,
   ClusterOutlined,
   UserOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import { useConfigStore } from '../../store/configStore';
 import { mapMenuUrl } from '../../utils/constants';
@@ -15,11 +16,12 @@ import type { MenuItem } from '../../types/menu';
 const { Sider } = Layout;
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  '/': <DashboardOutlined />,
+  '/dashboard': <DashboardOutlined />,
   '/jobinfo': <ScheduleOutlined />,
   '/joblog': <FileTextOutlined />,
   '/jobgroup': <ClusterOutlined />,
   '/user': <UserOutlined />,
+  '/help': <BookOutlined />,
 };
 
 function buildMenuItems(items: MenuItem[]): any[] {
@@ -84,7 +86,13 @@ export default function AppSider() {
         mode="inline"
         selectedKeys={[selectedKey]}
         items={menuItems}
-        onClick={({ key }) => navigate(key)}
+        onClick={({ key }) => {
+          if (key === '/help') {
+            window.open('https://github.com/zombie12138/orth', '_blank');
+          } else {
+            navigate(key);
+          }
+        }}
       />
     </Sider>
   );
