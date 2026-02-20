@@ -61,7 +61,7 @@ export default function ExecutorGroupsPage() {
       dataIndex: 'addressType',
       width: 90,
       render: (v: number) => (
-        <Tag color={v === 0 ? 'blue' : 'orange'}>
+        <Tag color={v === 0 ? 'gold' : 'orange'}>
           {v === 0 ? 'Auto' : 'Manual'}
         </Tag>
       ),

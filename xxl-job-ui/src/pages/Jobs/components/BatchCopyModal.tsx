@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { App, Modal, Tag, Typography } from 'antd';
+import { App, Modal, Tag, Typography, theme } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { fetchJob, batchCopy } from '../../../api/jobs';
 import type { BatchCopyRequest, BatchCopyResult } from '../../../types/batch';
@@ -20,6 +20,7 @@ export default function BatchCopyModal({
   onSuccess,
 }: Props) {
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [jsonText, setJsonText] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BatchCopyResult | null>(null);
@@ -113,7 +114,7 @@ export default function BatchCopyModal({
           {result.errors.length > 0 && (
             <ul>
               {result.errors.map((e, i) => (
-                <li key={i} style={{ color: 'red' }}>
+                <li key={i} style={{ color: token.colorError }}>
                   {e}
                 </li>
               ))}
@@ -140,10 +141,12 @@ export default function BatchCopyModal({
               fontSize: 13,
               lineHeight: 1.5,
               padding: 12,
-              border: '1px solid #d9d9d9',
+              border: `1px solid ${token.colorBorder}`,
               borderRadius: 6,
               resize: 'vertical',
               tabSize: 2,
+              background: token.colorBgContainer,
+              color: token.colorText,
             }}
           />
         </div>

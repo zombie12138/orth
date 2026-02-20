@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import { Layout, Menu } from 'antd';
+import { Layout, Menu, theme } from 'antd';
 import {
   DashboardOutlined,
   ScheduleOutlined,
@@ -48,6 +48,7 @@ function buildMenuItems(items: MenuItem[]): any[] {
 export default function AppSider() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = theme.useToken();
   const menus = useConfigStore((s) => s.menus);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -62,7 +63,6 @@ export default function AppSider() {
       collapsible
       collapsed={collapsed}
       onCollapse={setCollapsed}
-      theme="dark"
       style={{ minHeight: '100vh' }}
     >
       <div
@@ -72,7 +72,7 @@ export default function AppSider() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#fff',
+          color: token.colorText,
           fontWeight: 700,
           fontSize: collapsed ? 16 : 20,
           whiteSpace: 'nowrap',
@@ -82,7 +82,6 @@ export default function AppSider() {
         {collapsed ? 'O' : 'Orth Job'}
       </div>
       <Menu
-        theme="dark"
         mode="inline"
         selectedKeys={[selectedKey]}
         items={menuItems}

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet } from 'react-router';
-import { Layout, Spin } from 'antd';
+import { Layout, Spin, theme } from 'antd';
 import { useConfigStore } from '../../store/configStore';
 import AppHeader from './AppHeader';
 import AppSider from './AppSider';
@@ -10,6 +10,7 @@ const { Content } = Layout;
 export default function AppLayout() {
   const loaded = useConfigStore((s) => s.loaded);
   const loadConfig = useConfigStore((s) => s.loadConfig);
+  const { token } = theme.useToken();
 
   useEffect(() => {
     if (!loaded) {
@@ -25,6 +26,7 @@ export default function AppLayout() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
+          background: token.colorBgLayout,
         }}
       >
         <Spin size="large" />

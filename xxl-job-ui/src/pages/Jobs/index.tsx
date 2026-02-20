@@ -16,6 +16,7 @@ import {
   Popover,
   Spin,
   List,
+  theme,
 } from 'antd';
 import {
   PlusOutlined,
@@ -47,6 +48,7 @@ import BatchCopyModal from './components/BatchCopyModal';
 import ImportExportButtons from './components/ImportExportButtons';
 
 function SchedulePreview({ scheduleType, scheduleConf }: { scheduleType: string; scheduleConf: string }) {
+  const { token } = theme.useToken();
   const { data, isLoading, refetch, isFetched } = useQuery({
     queryKey: ['next-trigger-time', scheduleType, scheduleConf],
     queryFn: () => nextTriggerTime(scheduleType, scheduleConf),
@@ -71,7 +73,7 @@ function SchedulePreview({ scheduleType, scheduleConf }: { scheduleType: string;
       trigger="click"
       onOpenChange={(open) => { if (open && !isFetched) refetch(); }}
     >
-      <CalendarOutlined style={{ cursor: 'pointer', color: '#1890ff' }} />
+      <CalendarOutlined style={{ cursor: 'pointer', color: token.colorPrimary }} />
     </Popover>
   );
 }

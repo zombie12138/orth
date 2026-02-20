@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { Card, Spin, Button, Space, Row, Col, Alert } from 'antd';
+import { Card, Spin, Button, Space, Row, Col, Alert, theme } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchGlueCode } from '../../api/glue';
@@ -12,6 +12,7 @@ export default function GlueCodePage() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { token } = theme.useToken();
   const id = Number(jobId);
 
   const { data, isLoading } = useQuery({
@@ -98,7 +99,7 @@ export default function GlueCodePage() {
           </Col>
           <Col
             flex="280px"
-            style={{ borderLeft: '1px solid #f0f0f0' }}
+            style={{ borderLeft: `1px solid ${token.colorBorderSecondary}` }}
           >
             <VersionHistory
               versions={data.jobLogGlues}

@@ -62,7 +62,7 @@ export default function UsersPage() {
       dataIndex: 'role',
       width: 100,
       render: (v: number) => (
-        <Tag color={v === 1 ? 'blue' : 'default'}>
+        <Tag color={v === 1 ? 'gold' : 'default'}>
           {v === 1 ? 'Admin' : 'User'}
         </Tag>
       ),

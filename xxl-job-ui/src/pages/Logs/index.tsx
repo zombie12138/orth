@@ -9,6 +9,7 @@ import {
   Tag,
   Button,
   Form,
+  theme,
 } from 'antd';
 import {
   EyeOutlined,
@@ -31,6 +32,7 @@ import ClearLogsModal from './components/ClearLogsModal';
 import { message, Popconfirm } from 'antd';
 
 export default function LogsPage() {
+  const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { current, pageSize, offset, onChange } = usePagination();
@@ -221,7 +223,7 @@ export default function LogsPage() {
         </Form>
 
         {!filters.jobGroup ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+          <div style={{ textAlign: 'center', padding: 40, color: token.colorTextSecondary }}>
             Select an executor group to view logs
           </div>
         ) : (

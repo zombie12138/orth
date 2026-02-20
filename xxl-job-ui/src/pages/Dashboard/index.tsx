@@ -9,8 +9,13 @@ import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
 import dayjs from 'dayjs';
 import { fetchDashboard, fetchChart } from '../../api/dashboard';
+import { useThemeStore } from '../../store/themeStore';
+import { CHART_COLORS, STAT_COLORS } from '../../theme/themeConfig';
 
 export default function DashboardPage() {
+  const resolved = useThemeStore((s) => s.resolved);
+  const colors = CHART_COLORS[resolved];
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: fetchDashboard,
@@ -26,36 +31,51 @@ export default function DashboardPage() {
 
   const chartOption = chart
     ? {
-        tooltip: { trigger: 'axis' as const },
-        legend: { data: ['Running', 'Success', 'Failed'] },
+        tooltip: {
+          trigger: 'axis' as const,
+          backgroundColor: colors.tooltipBg,
+          borderColor: colors.tooltipBorder,
+          textStyle: { color: colors.tooltipText },
+        },
+        legend: {
+          data: ['Running', 'Success', 'Failed'],
+          textStyle: { color: colors.legend },
+        },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: {
           type: 'category' as const,
           boundaryGap: false,
           data: chart.triggerDayList,
+          axisLabel: { color: colors.axisLabel },
+          axisLine: { lineStyle: { color: colors.axisLine } },
         },
-        yAxis: { type: 'value' as const },
+        yAxis: {
+          type: 'value' as const,
+          axisLabel: { color: colors.axisLabel },
+          axisLine: { lineStyle: { color: colors.axisLine } },
+          splitLine: { lineStyle: { color: colors.splitLine } },
+        },
         series: [
           {
             name: 'Running',
             type: 'line' as const,
             data: chart.triggerDayCountRunningList,
             smooth: true,
-            itemStyle: { color: '#1890ff' },
+            itemStyle: { color: colors.running },
           },
           {
             name: 'Success',
             type: 'line' as const,
             data: chart.triggerDayCountSucList,
             smooth: true,
-            itemStyle: { color: '#52c41a' },
+            itemStyle: { color: colors.success },
           },
           {
             name: 'Failed',
             type: 'line' as const,
             data: chart.triggerDayCountFailList,
             smooth: true,
-            itemStyle: { color: '#ff4d4f' },
+            itemStyle: { color: colors.failed },
           },
         ],
       }
@@ -91,7 +111,7 @@ export default function DashboardPage() {
               value={stats?.jobLogSuccessCount ?? 0}
               loading={statsLoading}
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              valueStyle={{ color: STAT_COLORS.success }}
             />
           </Card>
         </Col>
@@ -102,7 +122,7 @@ export default function DashboardPage() {
               value={stats?.executorCount ?? 0}
               loading={statsLoading}
               prefix={<ClusterOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: STAT_COLORS.primary }}
             />
           </Card>
         </Col>

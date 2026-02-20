@@ -1,16 +1,26 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { App, Card, Form, Input, Button } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { App, Card, Form, Input, Button, Segmented, theme } from 'antd';
+import {
+  UserOutlined,
+  LockOutlined,
+  DesktopOutlined,
+  SunOutlined,
+  MoonOutlined,
+} from '@ant-design/icons';
 import { login as apiLogin } from '../../api/auth';
 import { useAuthStore } from '../../store/authStore';
 import { useConfigStore } from '../../store/configStore';
+import { useThemeStore } from '../../store/themeStore';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
   const storeLogin = useAuthStore((s) => s.login);
   const loadConfig = useConfigStore((s) => s.loadConfig);
+  const { token } = theme.useToken();
+  const themeMode = useThemeStore((s) => s.mode);
+  const setThemeMode = useThemeStore((s) => s.setMode);
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values: { username: string; password: string }) => {
@@ -34,9 +44,22 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f0f2f5',
+        background: token.colorBgLayout,
+        position: 'relative',
       }}
     >
+      <div style={{ position: 'absolute', top: 16, right: 24 }}>
+        <Segmented
+          size="small"
+          value={themeMode}
+          onChange={(v) => setThemeMode(v as 'system' | 'light' | 'dark')}
+          options={[
+            { value: 'system', icon: <DesktopOutlined /> },
+            { value: 'light', icon: <SunOutlined /> },
+            { value: 'dark', icon: <MoonOutlined /> },
+          ]}
+        />
+      </div>
       <Card
         title="Orth Job Admin"
         style={{ width: 400 }}

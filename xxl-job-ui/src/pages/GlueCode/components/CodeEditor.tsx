@@ -6,6 +6,8 @@ import { java } from '@codemirror/lang-java';
 import { php } from '@codemirror/lang-php';
 import { StreamLanguage } from '@codemirror/language';
 import { shell } from '@codemirror/legacy-modes/mode/shell';
+import { useThemeStore } from '../../../store/themeStore';
+
 interface Props {
   value: string;
   onChange: (value: string) => void;
@@ -32,6 +34,7 @@ function getLanguageExtension(glueType: string) {
 }
 
 export default function CodeEditor({ value, onChange, glueType, readOnly }: Props) {
+  const resolved = useThemeStore((s) => s.resolved);
   const extensions = useMemo(() => getLanguageExtension(glueType), [glueType]);
 
   return (
@@ -39,7 +42,7 @@ export default function CodeEditor({ value, onChange, glueType, readOnly }: Prop
       value={value}
       onChange={onChange}
       extensions={extensions}
-      theme="dark"
+      theme={resolved}
       height="calc(100vh - 200px)"
       style={{ fontSize: 13 }}
       readOnly={readOnly}
