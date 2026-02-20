@@ -107,6 +107,30 @@ public class JobGroupPermissionUtil {
     }
 
     /**
+     * Returns the list of permitted group IDs for the current user.
+     *
+     * <p>Admin users get an empty list (meaning no filtering needed — all groups allowed). Regular
+     * users get their explicitly permitted group IDs parsed from the permission field.
+     *
+     * @param request HTTP request containing authenticated user
+     * @return empty list for admin (no filter), or list of permitted group IDs for regular users
+     * @throws RuntimeException if user is not authenticated
+     */
+    public static List<Integer> getPermittedGroupIds(HttpServletRequest request) {
+        JwtUserInfo userInfo = SecurityContext.getCurrentUser(request);
+        if (userInfo == null) {
+            throw new RuntimeException(I18nUtil.getString("system_permission_limit"));
+        }
+
+        if (userInfo.getRole() == ADMIN_ROLE) {
+            return Collections.emptyList();
+        }
+
+        List<String> groups = extractJobGroups(userInfo);
+        return groups.stream().map(Integer::parseInt).toList();
+    }
+
+    /**
      * Extracts job group IDs from user's permission field.
      *
      * @param userInfo JWT user information

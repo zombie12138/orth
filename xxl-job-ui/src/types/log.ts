@@ -20,7 +20,7 @@ export interface XxlJobLog {
 export interface LogQueryParams {
   offset: number;
   pagesize: number;
-  jobGroup: number;
+  jobGroup?: number;
   jobId?: number;
   logStatus?: number;
   filterTime?: string;

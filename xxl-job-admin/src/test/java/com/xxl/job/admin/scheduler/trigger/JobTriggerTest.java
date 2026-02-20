@@ -86,7 +86,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(testJob.getId(), TriggerTypeEnum.MANUAL, -1, null, null, null, null);
 
         // Then - log should be created
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log).isNotNull();
         assertThat(log.getJobId()).isEqualTo(testJob.getId());
     }
@@ -99,7 +99,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
                 testJob.getId(), TriggerTypeEnum.CRON, -1, null, null, null, scheduleTime);
 
         // Then
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log.getScheduleTime()).isNotNull();
     }
 
@@ -111,7 +111,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         }
 
         // Then - logs created for each type
-        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).size())
+        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).size())
                 .isEqualTo(TriggerTypeEnum.values().length);
     }
 
@@ -127,7 +127,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(testJob.getId(), TriggerTypeEnum.MANUAL, -1, null, null, null, null);
 
         // Then - log created
-        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1)).isNotEmpty();
+        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null)).isNotEmpty();
     }
 
     @Test
@@ -143,7 +143,8 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(testJob.getId(), TriggerTypeEnum.MANUAL, -1, null, null, null, null);
 
         // Then - log for each executor
-        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).size()).isEqualTo(3);
+        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).size())
+                .isEqualTo(3);
     }
 
     // ==================== Sharding Parameter Tests ====================
@@ -154,7 +155,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(testJob.getId(), TriggerTypeEnum.MANUAL, -1, "2/5", null, null, null);
 
         // Then - sharding param in log
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log.getExecutorShardingParam()).isEqualTo("2/5");
     }
 
@@ -165,7 +166,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
                 testJob.getId(), TriggerTypeEnum.MANUAL, -1, "invalid", null, null, null);
 
         // Then - default 0/1
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log).isNotNull();
     }
 
@@ -178,7 +179,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
                 testJob.getId(), TriggerTypeEnum.MANUAL, -1, null, "overrideParam", null, null);
 
         // Then
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log.getExecutorParam()).isEqualTo("overrideParam");
     }
 
@@ -189,7 +190,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
                 testJob.getId(), TriggerTypeEnum.MANUAL, -1, null, null, "192.168.1.1:9999", null);
 
         // Then - log created with custom address
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log).isNotNull();
     }
 
@@ -201,7 +202,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(testJob.getId(), TriggerTypeEnum.MANUAL, 5, null, null, null, null);
 
         // Then
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log.getExecutorFailRetryCount()).isEqualTo(5);
     }
 
@@ -215,7 +216,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(testJob.getId(), TriggerTypeEnum.MANUAL, -1, null, null, null, null);
 
         // Then
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log.getExecutorFailRetryCount()).isEqualTo(3);
     }
 
@@ -227,7 +228,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(99999, TriggerTypeEnum.MANUAL, -1, null, null, null, null);
 
         // Then - no log created
-        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1)).isEmpty();
+        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null)).isEmpty();
     }
 
     @Test
@@ -240,7 +241,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(testJob.getId(), TriggerTypeEnum.MANUAL, -1, null, null, null, null);
 
         // Then - log created with failure
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log.getTriggerCode()).isNotEqualTo(200);
     }
 
@@ -262,7 +263,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(subTask.getId(), TriggerTypeEnum.MANUAL, -1, null, null, null, null);
 
         // Then - should use super task handler
-        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).get(0);
+        XxlJobLog log = xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).get(0);
         assertThat(log.getExecutorHandler()).isEqualTo("superHandler");
 
         // Cleanup
@@ -281,7 +282,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         jobTrigger.trigger(subTask.getId(), TriggerTypeEnum.MANUAL, -1, null, null, null, null);
 
         // Then - no log created
-        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1)).isEmpty();
+        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null)).isEmpty();
 
         // Cleanup
         xxlJobInfoMapper.delete(subTask.getId());
@@ -300,7 +301,7 @@ class JobTriggerTest extends AbstractIntegrationTest {
         }
 
         // Then - logs for each strategy
-        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1).size())
+        assertThat(xxlJobLogMapper.pageList(0, 100, 0, 0, null, null, -1, null).size())
                 .isEqualTo(ExecutorBlockStrategyEnum.values().length);
     }
 

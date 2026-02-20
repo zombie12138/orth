@@ -68,7 +68,8 @@ public class XxlJobLogMapperTest {
                         TEST_JOB_ID,
                         null,
                         null,
-                        TEST_TRIGGER_STATUS_SUCCESS);
+                        TEST_TRIGGER_STATUS_SUCCESS,
+                        null);
         int totalCount =
                 xxlJobLogMapper.pageListCount(
                         PAGE_OFFSET,
@@ -77,7 +78,8 @@ public class XxlJobLogMapperTest {
                         TEST_JOB_ID,
                         null,
                         null,
-                        TEST_TRIGGER_STATUS_SUCCESS);
+                        TEST_TRIGGER_STATUS_SUCCESS,
+                        null);
         assertNotNull(pageResult, "Page result should not be null");
 
         // Create new execution log

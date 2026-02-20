@@ -253,7 +253,9 @@ class JobScheduleHelperTest extends AbstractIntegrationTest {
                         () -> {
                             // Check that job was triggered (log entry created)
                             int logCount =
-                                    xxlJobLogMapper.pageList(0, 1000, 0, 0, null, null, -1).size();
+                                    xxlJobLogMapper
+                                            .pageList(0, 1000, 0, 0, null, null, -1, null)
+                                            .size();
                             assertThat(logCount).isGreaterThan(0);
                         });
     }
@@ -297,7 +299,7 @@ class JobScheduleHelperTest extends AbstractIntegrationTest {
         Thread.sleep(5000);
 
         // Then - job should not be triggered (no log entry)
-        int logCount = xxlJobLogMapper.pageList(0, 1000, 0, 0, null, null, -1).size();
+        int logCount = xxlJobLogMapper.pageList(0, 1000, 0, 0, null, null, -1, null).size();
         assertThat(logCount).isEqualTo(0);
     }
 
@@ -369,7 +371,9 @@ class JobScheduleHelperTest extends AbstractIntegrationTest {
                 .untilAsserted(
                         () -> {
                             int logCount =
-                                    xxlJobLogMapper.pageList(0, 1000, 0, 0, null, null, -1).size();
+                                    xxlJobLogMapper
+                                            .pageList(0, 1000, 0, 0, null, null, -1, null)
+                                            .size();
                             assertThat(logCount).isGreaterThanOrEqualTo(10);
                         });
     }

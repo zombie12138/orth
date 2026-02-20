@@ -311,4 +311,23 @@
 		LIMIT 20
 	</select>
 
+	<select id="searchByIdOrDescMultiGroup" parameterType="java.util.HashMap" resultMap="XxlJobInfo">
+		SELECT <include refid="Base_Column_List" />
+		FROM xxl_job_info AS t
+		<trim prefix="WHERE" prefixOverrides="AND | OR" >
+			<if test="permittedGroupIds != null and permittedGroupIds.size() gt 0">
+				AND t.job_group IN
+				<foreach collection="permittedGroupIds" item="gid" open="(" close=")" separator=",">
+					#{gid}
+				</foreach>
+			</if>
+			AND (
+				CAST(t.id AS CHAR) LIKE CONCAT('%', #{query}, '%')
+				OR t.job_desc LIKE CONCAT('%', #{query}, '%')
+			)
+		</trim>
+		ORDER BY t.id ASC
+		LIMIT 20
+	</select>
+
 </mapper>

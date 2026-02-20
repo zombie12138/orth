@@ -68,25 +68,40 @@ public class LogController {
             HttpServletRequest request,
             @RequestParam(required = false, defaultValue = "0") int offset,
             @RequestParam(required = false, defaultValue = "10") int pagesize,
-            @RequestParam int jobGroup,
+            @RequestParam(required = false, defaultValue = "0") int jobGroup,
             @RequestParam(required = false, defaultValue = "0") int jobId,
             @RequestParam(required = false, defaultValue = "0") int logStatus,
             @RequestParam(required = false, defaultValue = "") String filterTime) {
 
-        JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
-
-        if (jobId < 1) {
-            return Response.ofFail(
-                    I18nUtil.getString("system_please_choose") + I18nUtil.getString("jobinfo_job"));
+        List<Integer> permittedGroupIds;
+        if (jobGroup > 0) {
+            JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
+            permittedGroupIds = null;
+        } else {
+            permittedGroupIds = JobGroupPermissionUtil.getPermittedGroupIds(request);
         }
 
         Date[] timeRange = parseFilterTime(filterTime);
         List<XxlJobLog> list =
                 xxlJobLogMapper.pageList(
-                        offset, pagesize, jobGroup, jobId, timeRange[0], timeRange[1], logStatus);
+                        offset,
+                        pagesize,
+                        jobGroup,
+                        jobId,
+                        timeRange[0],
+                        timeRange[1],
+                        logStatus,
+                        permittedGroupIds);
         int totalCount =
                 xxlJobLogMapper.pageListCount(
-                        offset, pagesize, jobGroup, jobId, timeRange[0], timeRange[1], logStatus);
+                        offset,
+                        pagesize,
+                        jobGroup,
+                        jobId,
+                        timeRange[0],
+                        timeRange[1],
+                        logStatus,
+                        permittedGroupIds);
 
         PageModel<XxlJobLog> pageModel = new PageModel<>();
         pageModel.setData(list);

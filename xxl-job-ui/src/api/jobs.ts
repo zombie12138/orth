@@ -99,3 +99,11 @@ export function searchSuperTask(jobGroup: number, query: string) {
     }),
   );
 }
+
+export function searchJobs(query: string, jobGroup?: number) {
+  return unwrap<XxlJobInfo[]>(
+    client.get('/api/v1/jobs/search', {
+      params: { query, jobGroup: jobGroup || undefined },
+    }),
+  );
+}

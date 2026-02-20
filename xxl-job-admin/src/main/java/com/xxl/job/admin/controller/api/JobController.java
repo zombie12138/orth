@@ -274,6 +274,23 @@ public class JobController {
         return Response.ofSuccess(jobs);
     }
 
+    @GetMapping("/search")
+    public Response<List<XxlJobInfo>> searchJobs(
+            HttpServletRequest request,
+            @RequestParam String query,
+            @RequestParam(required = false, defaultValue = "0") int jobGroup) {
+        if (jobGroup > 0) {
+            JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
+            List<XxlJobInfo> jobs = xxlJobInfoMapper.searchByIdOrDesc(jobGroup, query);
+            return Response.ofSuccess(jobs);
+        }
+
+        List<Integer> permittedGroupIds = JobGroupPermissionUtil.getPermittedGroupIds(request);
+        List<XxlJobInfo> jobs =
+                xxlJobInfoMapper.searchByIdOrDescMultiGroup(permittedGroupIds, query);
+        return Response.ofSuccess(jobs);
+    }
+
     // ==================== Private Helper Methods ====================
 
     private Date[] parseTimeRange(String startTimeStr, String endTimeStr) {

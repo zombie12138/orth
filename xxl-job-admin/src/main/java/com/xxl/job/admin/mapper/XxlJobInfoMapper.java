@@ -105,4 +105,18 @@ public interface XxlJobInfoMapper {
      */
     List<XxlJobInfo> searchByIdOrDesc(
             @Param("jobGroup") int jobGroup, @Param("query") String query);
+
+    /**
+     * Search jobs by ID or description across multiple groups.
+     *
+     * <p>When permittedGroupIds is empty, searches all groups (admin). Otherwise restricts to the
+     * given group IDs.
+     *
+     * @param permittedGroupIds list of permitted group IDs (empty for admin)
+     * @param query search query (matches job ID or description)
+     * @return list of matching jobs (max 20)
+     */
+    List<XxlJobInfo> searchByIdOrDescMultiGroup(
+            @Param("permittedGroupIds") List<Integer> permittedGroupIds,
+            @Param("query") String query);
 }

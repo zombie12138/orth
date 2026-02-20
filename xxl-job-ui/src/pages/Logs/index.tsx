@@ -1,15 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Card,
   Table,
   Select,
-  InputNumber,
   DatePicker,
   Space,
   Tag,
   Button,
   Form,
-  theme,
+  Tooltip,
 } from 'antd';
 import {
   EyeOutlined,
@@ -20,6 +19,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router';
 import type { ColumnsType } from 'antd/es/table';
 import { fetchLogs, killJob } from '../../api/logs';
+import { searchJobs } from '../../api/jobs';
 import { fetchPermittedGroups } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -28,12 +28,13 @@ import { formatDate, formatDateRange } from '../../utils/date';
 import { getResultTag } from '../../utils/constants';
 import type { XxlJobLog } from '../../types/log';
 import type { XxlJobGroup } from '../../types/group';
+import type { XxlJobInfo } from '../../types/job';
 import LogDrawer from './components/LogDrawer';
 import ClearLogsModal from './components/ClearLogsModal';
 import { message, Popconfirm } from 'antd';
+import debounce from '../_utils/debounce';
 
 export default function LogsPage() {
-  const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
@@ -48,6 +49,8 @@ export default function LogsPage() {
 
   const [drawerLogId, setDrawerLogId] = useState<number | null>(null);
   const [clearOpen, setClearOpen] = useState(false);
+  const [jobSearchQuery, setJobSearchQuery] = useState('');
+  const [jobOptions, setJobOptions] = useState<{ value: number; label: string }[]>([]);
 
   const { data: groups = [] } = useQuery({
     queryKey: ['permitted-groups'],
@@ -60,12 +63,11 @@ export default function LogsPage() {
       fetchLogs({
         offset,
         pagesize: pageSize,
-        jobGroup: filters.jobGroup,
+        jobGroup: filters.jobGroup || undefined,
         jobId: filters.jobId || undefined,
         logStatus: filters.logStatus !== -1 ? filters.logStatus : undefined,
         filterTime: filters.filterTime || undefined,
       }),
-    enabled: filters.jobGroup > 0,
   });
 
   const killMutation = useMutation({
@@ -76,6 +78,41 @@ export default function LogsPage() {
     },
     onError: (e) => message.error(e.message),
   });
+
+  const handleJobSearch = useMemo(
+    () =>
+      debounce(async (query: string) => {
+        if (!query) {
+          setJobOptions([]);
+          return;
+        }
+        try {
+          const jobs = await searchJobs(query, filters.jobGroup || undefined);
+          setJobOptions(
+            jobs.map((j: XxlJobInfo) => ({
+              value: j.id,
+              label: `#${j.id} ${j.jobDesc}`,
+            })),
+          );
+        } catch {
+          setJobOptions([]);
+        }
+      }, 400),
+    [filters.jobGroup],
+  );
+
+  const handleGroupChange = useCallback((v: number | undefined) => {
+    setFilters((p) => ({ ...p, jobGroup: v ?? 0, jobId: 0 }));
+    setJobOptions([]);
+    setJobSearchQuery('');
+  }, []);
+
+  const handleJobChange = useCallback((v: number | undefined) => {
+    setFilters((p) => ({ ...p, jobId: v ?? 0 }));
+    if (!v) {
+      setJobSearchQuery('');
+    }
+  }, []);
 
   const groupMap = new Map(groups.map((g: XxlJobGroup) => [g.id, g.title]));
 
@@ -89,7 +126,7 @@ export default function LogsPage() {
     } as const]),
     { title: 'Job ID', dataIndex: 'jobId', width: 70 },
     ...(isMobile ? [] : [
-      { title: 'Handler', dataIndex: 'executorHandler', width: 130, ellipsis: true } as const,
+      { title: 'Handler', dataIndex: 'executorHandler', width: 130, ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}><span>{v}</span></Tooltip> } as const,
     ]),
     ...(isMobile ? [] : [{
       title: 'Schedule Time',
@@ -169,8 +206,9 @@ export default function LogsPage() {
             <Select
               style={{ width: isMobile ? '100%' : 160 }}
               placeholder="Executor Group"
+              allowClear
               value={filters.jobGroup || undefined}
-              onChange={(v) => setFilters((p) => ({ ...p, jobGroup: v ?? 0 }))}
+              onChange={handleGroupChange}
               options={groups.map((g: XxlJobGroup) => ({
                 value: g.id,
                 label: g.title,
@@ -178,11 +216,21 @@ export default function LogsPage() {
             />
           </Form.Item>
           <Form.Item>
-            <InputNumber
-              style={{ width: isMobile ? '100%' : 100 }}
-              placeholder="Job ID"
+            <Select
+              style={{ width: isMobile ? '100%' : 200 }}
+              placeholder="Search Job ID / Desc"
+              showSearch
+              allowClear
+              filterOption={false}
               value={filters.jobId || undefined}
-              onChange={(v) => setFilters((p) => ({ ...p, jobId: v ?? 0 }))}
+              searchValue={jobSearchQuery}
+              onSearch={(v) => {
+                setJobSearchQuery(v);
+                handleJobSearch(v);
+              }}
+              onChange={handleJobChange}
+              options={jobOptions}
+              notFoundContent={jobSearchQuery ? 'No matches' : null}
             />
           </Form.Item>
           <Form.Item>
@@ -219,34 +267,28 @@ export default function LogsPage() {
             <Button
               icon={<DeleteOutlined />}
               onClick={() => setClearOpen(true)}
-              disabled={!filters.jobGroup}
+              disabled={!filters.jobGroup || !filters.jobId}
             >
               Clear Logs
             </Button>
           </Form.Item>
         </Form>
 
-        {!filters.jobGroup ? (
-          <div style={{ textAlign: 'center', padding: 40, color: token.colorTextSecondary }}>
-            Select an executor group to view logs
-          </div>
-        ) : (
-          <Table<XxlJobLog>
-            rowKey="id"
-            columns={columns}
-            dataSource={data?.data}
-            loading={isLoading}
-            scroll={{ x: 1000 }}
-            pagination={{
-              current,
-              pageSize,
-              total: data?.total ?? 0,
-              showSizeChanger: true,
-              showTotal: (total) => `Total ${total}`,
-              onChange,
-            }}
-          />
-        )}
+        <Table<XxlJobLog>
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.data}
+          loading={isLoading}
+          scroll={{ x: 1000 }}
+          pagination={{
+            current,
+            pageSize,
+            total: data?.total ?? 0,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total}`,
+            onChange,
+          }}
+        />
       </Card>
 
       <LogDrawer

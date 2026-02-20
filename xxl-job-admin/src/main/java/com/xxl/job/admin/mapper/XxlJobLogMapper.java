@@ -39,7 +39,8 @@ public interface XxlJobLogMapper {
             @Param("jobId") int jobId,
             @Param("triggerTimeStart") Date triggerTimeStart,
             @Param("triggerTimeEnd") Date triggerTimeEnd,
-            @Param("logStatus") int logStatus);
+            @Param("logStatus") int logStatus,
+            @Param("permittedGroupIds") List<Integer> permittedGroupIds);
 
     /** Count total records matching pageList query criteria. */
     int pageListCount(
@@ -49,7 +50,8 @@ public interface XxlJobLogMapper {
             @Param("jobId") int jobId,
             @Param("triggerTimeStart") Date triggerTimeStart,
             @Param("triggerTimeEnd") Date triggerTimeEnd,
-            @Param("logStatus") int logStatus);
+            @Param("logStatus") int logStatus,
+            @Param("permittedGroupIds") List<Integer> permittedGroupIds);
 
     /** Load job log by ID. */
     XxlJobLog load(@Param("id") long id);
