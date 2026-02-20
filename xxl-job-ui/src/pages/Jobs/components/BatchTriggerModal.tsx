@@ -3,6 +3,7 @@ import { Modal, Form, Input, DatePicker, Button, List, message } from 'antd';
 import dayjs from 'dayjs';
 import { triggerBatch, previewTriggerBatch } from '../../../api/jobs';
 import { DATE_FORMAT } from '../../../utils/date';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 interface Props {
   open: boolean;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function BatchTriggerModal({ open, jobId, onClose }: Props) {
+  const isMobile = useIsMobile();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string[]>([]);
@@ -63,7 +65,7 @@ export default function BatchTriggerModal({ open, jobId, onClose }: Props) {
         onClose();
       }}
       confirmLoading={loading}
-      width={600}
+      width={isMobile ? '95vw' : 600}
       destroyOnClose
     >
       <Form form={form} layout="vertical">

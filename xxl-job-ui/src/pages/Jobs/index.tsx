@@ -38,6 +38,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { fetchJobs, deleteJob, startJob, stopJob, nextTriggerTime } from '../../api/jobs';
 import { fetchPermittedGroups } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { TRIGGER_STATUS } from '../../utils/constants';
 import type { XxlJobInfo } from '../../types/job';
 import type { XxlJobGroup } from '../../types/group';
@@ -81,6 +82,7 @@ function SchedulePreview({ scheduleType, scheduleConf }: { scheduleType: string;
 export default function JobsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { current, pageSize, offset, onChange } = usePagination();
 
   const [filters, setFilters] = useState({
@@ -157,7 +159,7 @@ export default function JobsPage() {
   );
 
   const columns: ColumnsType<XxlJobInfo> = [
-    { title: 'ID', dataIndex: 'id', width: 60 },
+    { title: 'ID', dataIndex: 'id', width: 50 },
     {
       title: 'Group',
       dataIndex: 'jobGroup',
@@ -181,7 +183,7 @@ export default function JobsPage() {
     },
     {
       title: 'Schedule',
-      width: 200,
+      width: 173,
       ellipsis: { showTitle: false },
       render: (_: unknown, r: XxlJobInfo) => {
         if (r.scheduleType === 'NONE') return '-';
@@ -346,10 +348,10 @@ export default function JobsPage() {
   return (
     <>
       <Card>
-        <Form layout="inline" onFinish={handleSearch} style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+        <Form layout={isMobile ? 'vertical' : 'inline'} onFinish={handleSearch} style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <Form.Item name="jobGroup">
             <Select
-              style={{ width: 160 }}
+              style={{ width: isMobile ? '100%' : 160 }}
               placeholder="Executor Group"
               allowClear
               value={filters.jobGroup || undefined}
@@ -362,7 +364,7 @@ export default function JobsPage() {
           </Form.Item>
           <Form.Item name="triggerStatus">
             <Select
-              style={{ width: 120 }}
+              style={{ width: isMobile ? '100%' : 120 }}
               placeholder="Status"
               allowClear
               onChange={(v) =>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Drawer, Spin } from 'antd';
 import { fetchLogContent } from '../../../api/logs';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 interface Props {
   logId: number | null;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function LogDrawer({ logId, onClose }: Props) {
+  const isMobile = useIsMobile();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const fromLineRef = useRef(1);
@@ -61,7 +63,7 @@ export default function LogDrawer({ logId, onClose }: Props) {
       title={`Log #${logId ?? ''}`}
       open={logId !== null}
       onClose={onClose}
-      width={700}
+      width={isMobile ? '100%' : 700}
       destroyOnClose
     >
       {loading && !content && (

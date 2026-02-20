@@ -8,9 +8,10 @@ const { Text } = Typography;
 interface Props {
   versions: XxlJobLogGlue[];
   onRestore: (source: string) => void;
+  maxHeight?: string;
 }
 
-export default function VersionHistory({ versions, onRestore }: Props) {
+export default function VersionHistory({ versions, onRestore, maxHeight }: Props) {
   return (
     <div style={{ padding: 16 }}>
       <Text strong style={{ display: 'block', marginBottom: 12 }}>
@@ -19,7 +20,7 @@ export default function VersionHistory({ versions, onRestore }: Props) {
       <List
         size="small"
         dataSource={versions}
-        style={{ maxHeight: 'calc(100vh - 260px)', overflow: 'auto' }}
+        style={{ maxHeight: maxHeight ?? 'calc(100vh - 260px)', overflow: 'auto' }}
         renderItem={(item) => (
           <List.Item
             actions={[

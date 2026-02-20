@@ -13,6 +13,7 @@ interface Props {
   onChange: (value: string) => void;
   glueType: string;
   readOnly?: boolean;
+  height?: string;
 }
 
 function getLanguageExtension(glueType: string) {
@@ -33,7 +34,7 @@ function getLanguageExtension(glueType: string) {
   }
 }
 
-export default function CodeEditor({ value, onChange, glueType, readOnly }: Props) {
+export default function CodeEditor({ value, onChange, glueType, readOnly, height }: Props) {
   const resolved = useThemeStore((s) => s.resolved);
   const extensions = useMemo(() => getLanguageExtension(glueType), [glueType]);
 
@@ -43,7 +44,7 @@ export default function CodeEditor({ value, onChange, glueType, readOnly }: Prop
       onChange={onChange}
       extensions={extensions}
       theme={resolved}
-      height="calc(100vh - 200px)"
+      height={height ?? 'calc(100vh - 200px)'}
       style={{ fontSize: 13 }}
       readOnly={readOnly}
     />

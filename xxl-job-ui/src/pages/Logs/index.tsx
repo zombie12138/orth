@@ -22,6 +22,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { fetchLogs, killJob } from '../../api/logs';
 import { fetchPermittedGroups } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import dayjs from 'dayjs';
 import { formatDate, formatDateRange } from '../../utils/date';
 import { getResultTag } from '../../utils/constants';
@@ -34,6 +35,7 @@ import { message, Popconfirm } from 'antd';
 export default function LogsPage() {
   const { token } = theme.useToken();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const { current, pageSize, offset, onChange } = usePagination();
 
@@ -79,27 +81,29 @@ export default function LogsPage() {
 
   const columns: ColumnsType<XxlJobLog> = [
     { title: 'ID', dataIndex: 'id', width: 70 },
-    {
+    ...(isMobile ? [] : [{
       title: 'Group',
       dataIndex: 'jobGroup',
       width: 110,
       render: (v: number) => groupMap.get(v) ?? v,
-    },
+    } as const]),
     { title: 'Job ID', dataIndex: 'jobId', width: 70 },
-    { title: 'Handler', dataIndex: 'executorHandler', width: 130, ellipsis: true },
-    {
+    ...(isMobile ? [] : [
+      { title: 'Handler', dataIndex: 'executorHandler', width: 130, ellipsis: true } as const,
+    ]),
+    ...(isMobile ? [] : [{
       title: 'Schedule Time',
       dataIndex: 'scheduleTime',
       width: 160,
       render: (v: string | null) => formatDate(v),
-    },
+    } as const]),
     {
       title: 'Trigger Time',
       dataIndex: 'triggerTime',
       width: 160,
       render: (v: string) => formatDate(v),
     },
-    {
+    ...(isMobile ? [] : [{
       title: 'Execution',
       width: 200,
       render: (_: unknown, r: XxlJobLog) => {
@@ -113,7 +117,7 @@ export default function LogsPage() {
         else duration = `${(diffMs / 60000).toFixed(1)}m`;
         return `${formatDate(r.handleTime)} (${duration})`;
       },
-    },
+    } as const]),
     {
       title: 'Trigger',
       dataIndex: 'triggerCode',
@@ -160,10 +164,10 @@ export default function LogsPage() {
   return (
     <>
       <Card>
-        <Form layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+        <Form layout={isMobile ? 'vertical' : 'inline'} style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <Form.Item>
             <Select
-              style={{ width: 160 }}
+              style={{ width: isMobile ? '100%' : 160 }}
               placeholder="Executor Group"
               value={filters.jobGroup || undefined}
               onChange={(v) => setFilters((p) => ({ ...p, jobGroup: v ?? 0 }))}
@@ -175,7 +179,7 @@ export default function LogsPage() {
           </Form.Item>
           <Form.Item>
             <InputNumber
-              style={{ width: 100 }}
+              style={{ width: isMobile ? '100%' : 100 }}
               placeholder="Job ID"
               value={filters.jobId || undefined}
               onChange={(v) => setFilters((p) => ({ ...p, jobId: v ?? 0 }))}
@@ -183,7 +187,7 @@ export default function LogsPage() {
           </Form.Item>
           <Form.Item>
             <Select
-              style={{ width: 120 }}
+              style={{ width: isMobile ? '100%' : 120 }}
               placeholder="Status"
               allowClear
               onChange={(v) =>

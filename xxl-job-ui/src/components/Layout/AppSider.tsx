@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import { Layout, Menu, theme } from 'antd';
+import { Layout, Menu, Drawer, theme } from 'antd';
 import {
   DashboardOutlined,
   ScheduleOutlined,
@@ -24,6 +24,12 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   '/help': <BookOutlined />,
 };
 
+interface Props {
+  isMobile: boolean;
+  drawerOpen: boolean;
+  onClose: () => void;
+}
+
 function buildMenuItems(items: MenuItem[]): any[] {
   return items
     .filter((m) => m.type <= 1 && m.status === 0)
@@ -45,7 +51,7 @@ function buildMenuItems(items: MenuItem[]): any[] {
     });
 }
 
-export default function AppSider() {
+export default function AppSider({ isMobile, drawerOpen, onClose }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = theme.useToken();
@@ -58,6 +64,60 @@ export default function AppSider() {
   const selectedKey =
     '/' + (location.pathname.split('/').filter(Boolean)[0] ?? 'dashboard');
 
+  const handleMenuClick = ({ key }: { key: string }) => {
+    if (key === '/help') {
+      window.open('https://github.com/zombie12138/orth', '_blank');
+    } else {
+      navigate(key);
+    }
+    if (isMobile) {
+      onClose();
+    }
+  };
+
+  const logo = (
+    <div
+      style={{
+        height: 48,
+        margin: 16,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: token.colorText,
+        fontWeight: 700,
+        fontSize: isMobile || !collapsed ? 20 : 16,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+      }}
+    >
+      {!isMobile && collapsed ? 'O' : 'Orth Job'}
+    </div>
+  );
+
+  const menu = (
+    <Menu
+      mode="inline"
+      selectedKeys={[selectedKey]}
+      items={menuItems}
+      onClick={handleMenuClick}
+    />
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer
+        placement="left"
+        open={drawerOpen}
+        onClose={onClose}
+        width={250}
+        styles={{ body: { padding: 0 } }}
+      >
+        {logo}
+        {menu}
+      </Drawer>
+    );
+  }
+
   return (
     <Sider
       collapsible
@@ -65,34 +125,8 @@ export default function AppSider() {
       onCollapse={setCollapsed}
       style={{ minHeight: '100vh' }}
     >
-      <div
-        style={{
-          height: 48,
-          margin: 16,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: token.colorText,
-          fontWeight: 700,
-          fontSize: collapsed ? 16 : 20,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-        }}
-      >
-        {collapsed ? 'O' : 'Orth Job'}
-      </div>
-      <Menu
-        mode="inline"
-        selectedKeys={[selectedKey]}
-        items={menuItems}
-        onClick={({ key }) => {
-          if (key === '/help') {
-            window.open('https://github.com/zombie12138/orth', '_blank');
-          } else {
-            navigate(key);
-          }
-        }}
-      />
+      {logo}
+      {menu}
     </Sider>
   );
 }

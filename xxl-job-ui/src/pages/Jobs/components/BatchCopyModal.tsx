@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { App, Modal, Tag, Typography, theme } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { fetchJob, batchCopy } from '../../../api/jobs';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 import type { BatchCopyRequest, BatchCopyResult } from '../../../types/batch';
 
 const { Text } = Typography;
@@ -20,6 +21,7 @@ export default function BatchCopyModal({
   onSuccess,
 }: Props) {
   const { message } = App.useApp();
+  const isMobile = useIsMobile();
   const { token } = theme.useToken();
   const [jsonText, setJsonText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -97,7 +99,7 @@ export default function BatchCopyModal({
       onCancel={handleClose}
       okText={result ? 'Done' : 'Create SubTasks'}
       confirmLoading={loading}
-      width={700}
+      width={isMobile ? '95vw' : 700}
       destroyOnClose
     >
       {result ? (

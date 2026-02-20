@@ -19,12 +19,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { fetchGroups, deleteGroup } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { formatDate } from '../../utils/date';
 import type { XxlJobGroup } from '../../types/group';
 import GroupFormModal from './components/GroupFormModal';
 
 export default function ExecutorGroupsPage() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { current, pageSize, offset, onChange } = usePagination();
   const [appname, setAppname] = useState('');
   const [title, setTitle] = useState('');
@@ -77,12 +79,12 @@ export default function ExecutorGroupsPage() {
         return list.length > 0 ? list.join(', ') : '-';
       },
     },
-    {
+    ...(isMobile ? [] : [{
       title: 'Updated',
       dataIndex: 'updateTime',
       width: 160,
       render: (v: string) => formatDate(v),
-    },
+    } as const]),
     {
       title: 'Actions',
       width: 100,
@@ -111,7 +113,7 @@ export default function ExecutorGroupsPage() {
   return (
     <>
       <Card>
-        <Form layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+        <Form layout={isMobile ? 'vertical' : 'inline'} style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <Form.Item>
             <Input
               placeholder="AppName"

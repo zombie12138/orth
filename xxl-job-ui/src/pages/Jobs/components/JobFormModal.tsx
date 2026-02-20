@@ -14,6 +14,7 @@ import { useMutation } from '@tanstack/react-query';
 import debounce from '../../_utils/debounce';
 import { createJob, updateJob, nextTriggerTime, searchSuperTask } from '../../../api/jobs';
 import { useEnumOptions } from '../../../hooks/useEnums';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 import type { XxlJobInfo } from '../../../types/job';
 import type { XxlJobGroup } from '../../../types/group';
 
@@ -32,6 +33,7 @@ export default function JobFormModal({
   onClose,
   onSuccess,
 }: Props) {
+  const isMobile = useIsMobile();
   const [form] = Form.useForm();
   const isEdit = job != null && job.id > 0;
 
@@ -118,7 +120,7 @@ export default function JobFormModal({
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={saveMutation.isPending}
-      width={700}
+      width={isMobile ? '95vw' : 700}
       destroyOnClose
     >
       <Form form={form} layout="vertical" initialValues={{

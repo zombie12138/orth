@@ -20,12 +20,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { fetchUsers, deleteUser } from '../../api/users';
 import { usePagination } from '../../hooks/usePagination';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { useAuthStore } from '../../store/authStore';
 import type { XxlJobUser } from '../../types/user';
 import UserFormModal from './components/UserFormModal';
 
 export default function UsersPage() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const currentUserId = useAuthStore((s) => s.userInfo?.userId);
   const { current, pageSize, offset, onChange } = usePagination();
   const [usernameFilter, setUsernameFilter] = useState('');
@@ -108,7 +110,7 @@ export default function UsersPage() {
   return (
     <>
       <Card>
-        <Form layout="inline" style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+        <Form layout={isMobile ? 'vertical' : 'inline'} style={{ marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
           <Form.Item>
             <Input
               placeholder="Username"
@@ -118,7 +120,7 @@ export default function UsersPage() {
           </Form.Item>
           <Form.Item>
             <Select
-              style={{ width: 120 }}
+              style={{ width: isMobile ? '100%' : 120 }}
               placeholder="Role"
               allowClear
               onChange={(v) => setRoleFilter(v)}

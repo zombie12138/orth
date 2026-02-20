@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
 import { updatePassword } from '../api/auth';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface Props {
   open: boolean;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function PasswordChangeModal({ open, onClose }: Props) {
+  const isMobile = useIsMobile();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +39,7 @@ export default function PasswordChangeModal({ open, onClose }: Props) {
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={loading}
+      width={isMobile ? '95vw' : undefined}
       destroyOnClose
     >
       <Form form={form} layout="vertical">

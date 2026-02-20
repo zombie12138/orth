@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
 import { triggerJob } from '../../../api/jobs';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 interface Props {
   open: boolean;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function TriggerModal({ open, jobId, onClose }: Props) {
+  const isMobile = useIsMobile();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -38,6 +40,7 @@ export default function TriggerModal({ open, jobId, onClose }: Props) {
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={loading}
+      width={isMobile ? '95vw' : undefined}
       destroyOnClose
     >
       <Form form={form} layout="vertical">

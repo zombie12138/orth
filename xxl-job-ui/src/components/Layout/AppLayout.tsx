@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router';
 import { Layout, Spin, theme } from 'antd';
 import { useConfigStore } from '../../store/configStore';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import AppHeader from './AppHeader';
 import AppSider from './AppSider';
 
@@ -11,6 +12,8 @@ export default function AppLayout() {
   const loaded = useConfigStore((s) => s.loaded);
   const loadConfig = useConfigStore((s) => s.loadConfig);
   const { token } = theme.useToken();
+  const isMobile = useIsMobile();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!loaded) {
@@ -36,10 +39,14 @@ export default function AppLayout() {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <AppSider />
+      <AppSider
+        isMobile={isMobile}
+        drawerOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
       <Layout>
-        <AppHeader />
-        <Content style={{ margin: 24 }}>
+        <AppHeader isMobile={isMobile} onMenuClick={() => setDrawerOpen(true)} />
+        <Content style={{ margin: isMobile ? 12 : 24 }}>
           <Outlet />
         </Content>
       </Layout>

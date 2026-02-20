@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
 import { saveGlueCode } from '../../../api/glue';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 interface Props {
   open: boolean;
@@ -17,6 +18,7 @@ export default function SaveCodeModal({
   onClose,
   onSuccess,
 }: Props) {
+  const isMobile = useIsMobile();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -43,6 +45,7 @@ export default function SaveCodeModal({
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={loading}
+      width={isMobile ? '95vw' : undefined}
       destroyOnClose
     >
       <Form form={form} layout="vertical">

@@ -3,6 +3,7 @@ import { Modal, Form, Input, Select, message } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createUser, updateUser } from '../../../api/users';
 import { fetchPermittedGroups } from '../../../api/groups';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 import type { XxlJobUser } from '../../../types/user';
 
 interface Props {
@@ -18,6 +19,7 @@ export default function UserFormModal({
   onClose,
   onSuccess,
 }: Props) {
+  const isMobile = useIsMobile();
   const [form] = Form.useForm();
   const isEdit = !!user;
 
@@ -73,6 +75,7 @@ export default function UserFormModal({
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={saveMutation.isPending}
+      width={isMobile ? '95vw' : undefined}
       destroyOnClose
     >
       <Form

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, Select, message } from 'antd';
 import { clearLogs } from '../../../api/logs';
 import { CLEAR_LOG_TYPES } from '../../../utils/constants';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 interface Props {
   open: boolean;
@@ -18,6 +19,7 @@ export default function ClearLogsModal({
   onClose,
   onSuccess,
 }: Props) {
+  const isMobile = useIsMobile();
   const [type, setType] = useState<number>(1);
   const [loading, setLoading] = useState(false);
 
@@ -42,6 +44,7 @@ export default function ClearLogsModal({
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={loading}
+      width={isMobile ? '95vw' : undefined}
     >
       <Select
         style={{ width: '100%' }}

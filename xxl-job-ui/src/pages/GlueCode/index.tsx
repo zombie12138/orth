@@ -4,6 +4,7 @@ import { Card, Spin, Button, Space, Row, Col, Alert, theme } from 'antd';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchGlueCode } from '../../api/glue';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import CodeEditor from './components/CodeEditor';
 import VersionHistory from './components/VersionHistory';
 import SaveCodeModal from './components/SaveCodeModal';
@@ -13,6 +14,7 @@ export default function GlueCodePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { token } = theme.useToken();
+  const isMobile = useIsMobile();
   const id = Number(jobId);
 
   const { data, isLoading } = useQuery({
@@ -88,22 +90,27 @@ export default function GlueCodePage() {
         }
         bodyStyle={{ padding: 0 }}
       >
-        <Row>
-          <Col flex="1" style={{ minWidth: 0 }}>
+        <Row style={isMobile ? { flexDirection: 'column' } : undefined}>
+          <Col flex={isMobile ? 'auto' : '1'} style={{ minWidth: 0 }}>
             <CodeEditor
               value={code}
               onChange={isSubTask ? () => {} : setCode}
               glueType={glueType}
               readOnly={isSubTask}
+              height={isMobile ? '50vh' : undefined}
             />
           </Col>
           <Col
-            flex="280px"
-            style={{ borderLeft: `1px solid ${token.colorBorderSecondary}` }}
+            flex={isMobile ? 'auto' : '280px'}
+            style={isMobile
+              ? { borderTop: `1px solid ${token.colorBorderSecondary}` }
+              : { borderLeft: `1px solid ${token.colorBorderSecondary}` }
+            }
           >
             <VersionHistory
               versions={data.jobLogGlues}
               onRestore={(source) => setCode(source)}
+              maxHeight={isMobile ? '40vh' : undefined}
             />
           </Col>
         </Row>

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Modal, Form, Input, Radio, message } from 'antd';
 import { useMutation } from '@tanstack/react-query';
 import { createGroup, updateGroup } from '../../../api/groups';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 import type { XxlJobGroup } from '../../../types/group';
 
 interface Props {
@@ -17,6 +18,7 @@ export default function GroupFormModal({
   onClose,
   onSuccess,
 }: Props) {
+  const isMobile = useIsMobile();
   const [form] = Form.useForm();
   const isEdit = !!group;
   const addressType = Form.useWatch('addressType', form);
@@ -52,6 +54,7 @@ export default function GroupFormModal({
       onOk={handleOk}
       onCancel={onClose}
       confirmLoading={saveMutation.isPending}
+      width={isMobile ? '95vw' : undefined}
       destroyOnClose
     >
       <Form

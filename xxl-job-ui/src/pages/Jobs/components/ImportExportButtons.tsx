@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { App, Button, Space, Modal, Input, Upload } from 'antd';
 import { ExportOutlined, ImportOutlined } from '@ant-design/icons';
 import { exportJobs, importJobs } from '../../../api/jobs';
+import { useIsMobile } from '../../../hooks/useIsMobile';
 
 interface Props {
   selectedIds: number[];
@@ -13,6 +14,7 @@ export default function ImportExportButtons({
   onImportSuccess,
 }: Props) {
   const { message } = App.useApp();
+  const isMobile = useIsMobile();
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importJson, setImportJson] = useState('');
   const [importing, setImporting] = useState(false);
@@ -110,6 +112,7 @@ export default function ImportExportButtons({
         onOk={handleImport}
         onCancel={() => setImportModalOpen(false)}
         confirmLoading={importing}
+        width={isMobile ? '95vw' : undefined}
       >
         <Upload.Dragger
           accept=".json"

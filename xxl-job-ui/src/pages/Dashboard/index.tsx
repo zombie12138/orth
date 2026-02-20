@@ -10,9 +10,11 @@ import ReactECharts from 'echarts-for-react';
 import dayjs from 'dayjs';
 import { fetchDashboard, fetchChart } from '../../api/dashboard';
 import { useThemeStore } from '../../store/themeStore';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { CHART_COLORS, STAT_COLORS } from '../../theme/themeConfig';
 
 export default function DashboardPage() {
+  const isMobile = useIsMobile();
   const resolved = useThemeStore((s) => s.resolved);
   const colors = CHART_COLORS[resolved];
 
@@ -133,7 +135,7 @@ export default function DashboardPage() {
             <Spin />
           </div>
         ) : (
-          <ReactECharts option={chartOption} style={{ height: 350 }} />
+          <ReactECharts option={chartOption} style={{ height: isMobile ? 250 : 350 }} />
         )}
       </Card>
     </div>

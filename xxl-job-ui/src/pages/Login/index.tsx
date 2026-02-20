@@ -46,6 +46,7 @@ export default function LoginPage() {
         justifyContent: 'center',
         background: token.colorBgLayout,
         position: 'relative',
+        padding: '0 16px',
       }}
     >
       <div style={{ position: 'absolute', top: 16, right: 24 }}>
@@ -62,7 +63,7 @@ export default function LoginPage() {
       </div>
       <Card
         title="Orth Job Admin"
-        style={{ width: 400 }}
+        style={{ width: '100%', maxWidth: 400 }}
         styles={{ header: { textAlign: 'center', fontSize: 20, fontWeight: 700 } }}
       >
         <Form onFinish={onFinish} size="large">
