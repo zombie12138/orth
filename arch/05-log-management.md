@@ -27,46 +27,56 @@ flowchart LR
     FS --> B3
 ```
 
+## Log Status Reference
+
+A log record's status is derived from two database fields: `trigger_code` and `handle_code`.
+
+| Status | `trigger_code` | `handle_code` | Scenario | Terminal? |
+|--------|---------------|---------------|----------|-----------|
+| **Init** | `0` | `0` | Log record just inserted, scheduler hasn't sent trigger request yet | No |
+| **Pending** | `200` | `0` | Trigger succeeded (Admin→Executor HTTP returned 200), awaiting execution result | No |
+| **Success** | `200` | `200` | Trigger succeeded + executor callback reported success | Yes |
+| **Timeout** | `200` | `502` | Trigger succeeded, but execution timed out (JobThread detected `executorTimeout` exceeded) | Yes |
+| **Trigger Failed** | `≠0, ≠200` (usually `500`) | any | Trigger phase failed: no available executor, routing failure, network error, missing handler, etc. | Yes |
+| **Failed** | `200` | `≠0, ≠200, ≠502` (usually `500`) | Trigger succeeded, but executor callback reported failure (handler threw exception, returned FAIL, etc.) | Yes |
+
+### Status Transitions
+
+```
+Init ──trigger──→ Trigger Failed          (terminal)
+  │
+  └──trigger ok──→ Pending ──callback──→ Success   (terminal)
+                       │            ├──→ Failed    (terminal)
+                       │            └──→ Timeout   (terminal)
+                       │
+                       └──no callback > 10min──→ Failed (lost job detection)
+```
+
+### UI Representation
+
+The frontend merges these two codes into a single **Status** column with a clickable `<Tag>`:
+- **Tag label**: `{status} {triggerCode}/{handleCode}` (e.g., `Success 200/200`)
+- **Tag color**: green (Success), processing/blue (Pending), red (Failed/Trigger Failed), orange (Timeout), default/gray (Init)
+- **Click**: Opens a popover showing the raw `trigger_msg` and `handle_msg` from the database for debugging
+
 ## Log Lifecycle
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Created: Trigger starts
-    
-    state Created {
-        [*] --> InitialRecord
-        InitialRecord: trigger_code = 0
-        InitialRecord: handle_code = 0
-    }
-    
-    Created --> Triggered: Executor receives
-    
-    state Triggered {
-        [*] --> TriggerSuccess
-        TriggerSuccess: trigger_code = 200
-    }
-    
-    Triggered --> Executing: Job running
-    
-    state Executing {
-        [*] --> Running
-        Running: handle_code = 0
-        Running: File logs accumulating
-    }
-    
-    Executing --> Completed: Callback received
-    Executing --> Lost: No callback > 10min
-    
-    state Completed {
-        [*] --> Success
-        [*] --> Failed
-        [*] --> Timeout
-        Success: handle_code = 200
-        Failed: handle_code = 500
-        Timeout: handle_code = 502
-    }
-    
-    Lost --> Completed: Mark as failed
+    [*] --> Init: Log record inserted
+
+    Init --> TriggerFailed: Trigger phase fails
+    Init --> Pending: Trigger succeeds (trigger_code=200)
+
+    Pending --> Success: Callback handle_code=200
+    Pending --> Failed: Callback handle_code=500
+    Pending --> Timeout: Callback handle_code=502
+    Pending --> Failed: No callback > 10min (lost job)
+
+    TriggerFailed --> [*]
+    Success --> [*]
+    Failed --> [*]
+    Timeout --> [*]
 ```
 
 ## Callback Flow
