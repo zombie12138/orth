@@ -25,7 +25,7 @@ import { usePagination } from '../../hooks/usePagination';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import dayjs from 'dayjs';
 import { formatDate, formatDateRange } from '../../utils/date';
-import { getResultTag } from '../../utils/constants';
+import { getLogStatus } from '../../utils/constants';
 import type { XxlJobLog } from '../../types/log';
 import type { XxlJobGroup } from '../../types/group';
 import type { XxlJobInfo } from '../../types/job';
@@ -124,7 +124,7 @@ export default function LogsPage() {
       width: 110,
       render: (v: number) => groupMap.get(v) ?? v,
     } as const]),
-    { title: 'Job ID', dataIndex: 'jobId', width: 70 },
+    { title: 'JID', dataIndex: 'jobId', width: 70 },
     ...(isMobile ? [] : [
       { title: 'Handler', dataIndex: 'executorHandler', width: 130, ellipsis: { showTitle: false }, render: (v: string) => <Tooltip title={v}><span>{v}</span></Tooltip> } as const,
     ]),
@@ -156,25 +156,15 @@ export default function LogsPage() {
       },
     } as const]),
     {
-      title: 'Trigger',
-      dataIndex: 'triggerCode',
-      width: 90,
-      render: (v: number) => {
-        const t = getResultTag(v);
+      title: 'Status',
+      width: 110,
+      render: (_: unknown, r: XxlJobLog) => {
+        const t = getLogStatus(r.triggerCode, r.handleCode);
         return <Tag color={t.color}>{t.text}</Tag>;
       },
     },
     {
-      title: 'Handle',
-      dataIndex: 'handleCode',
-      width: 90,
-      render: (v: number) => {
-        const t = getResultTag(v);
-        return <Tag color={t.color}>{t.text}</Tag>;
-      },
-    },
-    {
-      title: 'Actions',
+      title: 'Detail',
       width: 100,
       fixed: 'right',
       render: (_: unknown, record: XxlJobLog) => (

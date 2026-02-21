@@ -14,6 +14,15 @@ export function getResultTag(code: number) {
   return { text: `Failed (${code})`, color: 'red' };
 }
 
+export function getLogStatus(triggerCode: number, handleCode: number) {
+  if (triggerCode === 0) return { text: 'Init', color: 'default' };
+  if (triggerCode === 200 && handleCode === 0) return { text: 'Pending', color: 'processing' };
+  if (handleCode === 200) return { text: 'Success', color: 'green' };
+  if (handleCode === 502) return { text: 'Timeout', color: 'orange' };
+  if (triggerCode !== 200) return { text: 'Trigger Failed', color: 'red' };
+  return { text: 'Failed', color: 'red' };
+}
+
 export const CLEAR_LOG_TYPES = [
   { value: 1, label: 'Clear logs older than 1 month' },
   { value: 2, label: 'Clear logs older than 3 months' },
