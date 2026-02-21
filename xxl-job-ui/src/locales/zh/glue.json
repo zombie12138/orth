@@ -1,0 +1,22 @@
+{
+  "title": "GLUE 代码 - #{{id}} {{desc}}",
+  "save": "保存",
+  "jobNotFound": "任务未找到",
+  "subTaskAlert": "这是子任务，请在父任务上编辑代码。",
+  "goToSuperTask": "前往父任务 #{{id}}",
+  "saveModal": {
+    "title": "保存 GLUE 代码",
+    "remark": "备注",
+    "remarkRequired": "请输入备注",
+    "remarkMin": "至少4个字符",
+    "remarkMax": "最多100个字符",
+    "remarkPlaceholder": "描述本次修改内容",
+    "saved": "代码已保存",
+    "saveFailed": "保存失败"
+  },
+  "versionHistory": {
+    "title": "版本历史 ({{count}})",
+    "restore": "恢复",
+    "restoreTooltip": "恢复此版本"
+  }
+}

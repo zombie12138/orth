@@ -1,0 +1,10 @@
+{
+  "jobsCount": "Jobs Count",
+  "totalExecutions": "Total Executions",
+  "successful": "Successful",
+  "onlineExecutors": "Online Executors",
+  "executionTrend": "Execution Trend (Last 7 Days)",
+  "chartRunning": "Running",
+  "chartSuccess": "Success",
+  "chartFailed": "Failed"
+}

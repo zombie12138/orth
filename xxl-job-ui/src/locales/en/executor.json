@@ -1,0 +1,38 @@
+{
+  "addGroup": "Add Group",
+  "editGroup": "Edit Executor Group",
+  "createGroup": "Create Executor Group",
+  "columns": {
+    "id": "ID",
+    "appName": "AppName",
+    "title": "Title",
+    "type": "Type",
+    "onlineMachines": "Online Machines",
+    "updated": "Updated",
+    "actions": "Actions"
+  },
+  "filters": {
+    "appName": "AppName",
+    "title": "Title"
+  },
+  "type": {
+    "auto": "Auto",
+    "manual": "Manual"
+  },
+  "deleteConfirm": "Delete this group?",
+  "messages": {
+    "groupDeleted": "Group deleted",
+    "groupUpdated": "Group updated",
+    "groupCreated": "Group created"
+  },
+  "form": {
+    "appName": "AppName",
+    "title": "Title",
+    "addressType": "Address Type",
+    "autoDiscovery": "Auto Discovery",
+    "manual": "Manual",
+    "addresses": "Addresses",
+    "addressesRequired": "Enter executor addresses",
+    "addressesPlaceholder": "Comma-separated URLs (e.g., http://host:9999)"
+  }
+}

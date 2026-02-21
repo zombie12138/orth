@@ -1,0 +1,22 @@
+{
+  "title": "GLUE Code - #{{id}} {{desc}}",
+  "save": "Save",
+  "jobNotFound": "Job not found",
+  "subTaskAlert": "This is a sub-task. Edit code on the SuperTask instead.",
+  "goToSuperTask": "Go to SuperTask #{{id}}",
+  "saveModal": {
+    "title": "Save GLUE Code",
+    "remark": "Remark",
+    "remarkRequired": "Please enter a remark",
+    "remarkMin": "At least 4 characters",
+    "remarkMax": "At most 100 characters",
+    "remarkPlaceholder": "Describe what changed",
+    "saved": "Code saved",
+    "saveFailed": "Save failed"
+  },
+  "versionHistory": {
+    "title": "Version History ({{count}})",
+    "restore": "Restore",
+    "restoreTooltip": "Restore this version"
+  }
+}

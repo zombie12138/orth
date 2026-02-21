@@ -1,0 +1,48 @@
+{
+  "columns": {
+    "id": "ID",
+    "group": "执行器",
+    "jid": "任务ID",
+    "handler": "Handler",
+    "scheduleTime": "调度时间",
+    "triggerTime": "触发时间",
+    "execution": "执行",
+    "status": "状态",
+    "detail": "详情"
+  },
+  "filters": {
+    "executorGroup": "执行器",
+    "searchJob": "搜索任务ID/描述",
+    "status": "状态",
+    "noMatches": "无匹配结果"
+  },
+  "statusOptions": {
+    "success": "成功",
+    "failed": "失败",
+    "running": "运行中"
+  },
+  "clearLogs": "清理日志",
+  "clearLogsTitle": "清理日志",
+  "logsCleared": "日志已清理",
+  "clearFailed": "清理日志失败",
+  "killConfirm": "终止此任务？",
+  "killSent": "终止信号已发送",
+  "noDetails": "暂无详情",
+  "triggerMessage": "触发信息",
+  "handleMessage": "执行信息",
+  "drawer": {
+    "title": "日志 #{{id}}",
+    "noContent": "暂无日志内容"
+  },
+  "clearTypes": {
+    "oneMonth": "清理1个月前的日志",
+    "threeMonths": "清理3个月前的日志",
+    "sixMonths": "清理6个月前的日志",
+    "oneYear": "清理1年前的日志",
+    "tenThousand": "清理1万条以前的日志",
+    "hundredThousand": "清理10万条以前的日志",
+    "all": "清理全部日志",
+    "oneWeek": "清理1周前的日志",
+    "oneDay": "清理1天前的日志"
+  }
+}

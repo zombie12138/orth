@@ -1,0 +1,48 @@
+{
+  "addUser": "Add User",
+  "editUser": "Edit User",
+  "createUser": "Create User",
+  "columns": {
+    "id": "ID",
+    "username": "Username",
+    "role": "Role",
+    "permissions": "Permissions",
+    "actions": "Actions"
+  },
+  "filters": {
+    "username": "Username",
+    "role": "Role"
+  },
+  "roles": {
+    "user": "User",
+    "admin": "Admin"
+  },
+  "deleteConfirm": "Delete this user?",
+  "messages": {
+    "userDeleted": "User deleted",
+    "userUpdated": "User updated",
+    "userCreated": "User created"
+  },
+  "form": {
+    "username": "Username",
+    "password": "Password",
+    "newPasswordEdit": "New Password (leave blank to keep)",
+    "role": "Role",
+    "permissions": "Permissions",
+    "permissionsPlaceholder": "Select executor groups"
+  },
+  "passwordChange": {
+    "title": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "currentRequired": "Please enter current password",
+    "newRequired": "Please enter new password",
+    "confirmRequired": "Please confirm new password",
+    "minLength": "Password must be at least 4 characters",
+    "maxLength": "Password must be at most 20 characters",
+    "mismatch": "Passwords do not match",
+    "updated": "Password updated successfully",
+    "updateFailed": "Failed to update password"
+  }
+}

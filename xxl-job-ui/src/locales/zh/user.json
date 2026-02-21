@@ -1,0 +1,48 @@
+{
+  "addUser": "新增用户",
+  "editUser": "编辑用户",
+  "createUser": "创建用户",
+  "columns": {
+    "id": "ID",
+    "username": "用户名",
+    "role": "角色",
+    "permissions": "权限",
+    "actions": "操作"
+  },
+  "filters": {
+    "username": "用户名",
+    "role": "角色"
+  },
+  "roles": {
+    "user": "普通用户",
+    "admin": "管理员"
+  },
+  "deleteConfirm": "确定删除此用户？",
+  "messages": {
+    "userDeleted": "用户已删除",
+    "userUpdated": "用户已更新",
+    "userCreated": "用户已创建"
+  },
+  "form": {
+    "username": "用户名",
+    "password": "密码",
+    "newPasswordEdit": "新密码（留空则不修改）",
+    "role": "角色",
+    "permissions": "权限",
+    "permissionsPlaceholder": "选择执行器"
+  },
+  "passwordChange": {
+    "title": "修改密码",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码",
+    "confirmPassword": "确认密码",
+    "currentRequired": "请输入当前密码",
+    "newRequired": "请输入新密码",
+    "confirmRequired": "请确认新密码",
+    "minLength": "密码至少4个字符",
+    "maxLength": "密码最多20个字符",
+    "mismatch": "两次输入密码不一致",
+    "updated": "密码修改成功",
+    "updateFailed": "密码修改失败"
+  }
+}

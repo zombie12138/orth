@@ -1,0 +1,10 @@
+{
+  "jobsCount": "任务数量",
+  "totalExecutions": "调度次数",
+  "successful": "成功次数",
+  "onlineExecutors": "在线执行器",
+  "executionTrend": "调度趋势（近7天）",
+  "chartRunning": "运行中",
+  "chartSuccess": "成功",
+  "chartFailed": "失败"
+}

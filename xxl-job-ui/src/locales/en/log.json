@@ -1,0 +1,48 @@
+{
+  "columns": {
+    "id": "ID",
+    "group": "Group",
+    "jid": "JID",
+    "handler": "Handler",
+    "scheduleTime": "Schedule Time",
+    "triggerTime": "Trigger Time",
+    "execution": "Execution",
+    "status": "Status",
+    "detail": "Detail"
+  },
+  "filters": {
+    "executorGroup": "Executor Group",
+    "searchJob": "Search Job ID / Desc",
+    "status": "Status",
+    "noMatches": "No matches"
+  },
+  "statusOptions": {
+    "success": "Success",
+    "failed": "Failed",
+    "running": "Running"
+  },
+  "clearLogs": "Clear Logs",
+  "clearLogsTitle": "Clear Logs",
+  "logsCleared": "Logs cleared",
+  "clearFailed": "Failed to clear logs",
+  "killConfirm": "Kill this job?",
+  "killSent": "Kill signal sent",
+  "noDetails": "No details",
+  "triggerMessage": "Trigger Message",
+  "handleMessage": "Handle Message",
+  "drawer": {
+    "title": "Log #{{id}}",
+    "noContent": "No log content"
+  },
+  "clearTypes": {
+    "oneMonth": "Clear logs older than 1 month",
+    "threeMonths": "Clear logs older than 3 months",
+    "sixMonths": "Clear logs older than 6 months",
+    "oneYear": "Clear logs older than 1 year",
+    "tenThousand": "Clear logs older than 10000 records",
+    "hundredThousand": "Clear logs older than 100000 records",
+    "all": "Clear all logs",
+    "oneWeek": "Clear logs older than 1 week",
+    "oneDay": "Clear logs older than 1 day"
+  }
+}

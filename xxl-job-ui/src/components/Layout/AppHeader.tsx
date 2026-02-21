@@ -10,6 +10,7 @@ import {
   MoonOutlined,
   MenuOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { logout as apiLogout } from '../../api/auth';
@@ -25,12 +26,15 @@ interface Props {
 export default function AppHeader({ isMobile, onMenuClick }: Props) {
   const navigate = useNavigate();
   const { token } = theme.useToken();
+  const { t, i18n } = useTranslation();
   const userInfo = useAuthStore((s) => s.userInfo);
   const logout = useAuthStore((s) => s.logout);
   const [pwdOpen, setPwdOpen] = useState(false);
 
   const themeMode = useThemeStore((s) => s.mode);
   const setThemeMode = useThemeStore((s) => s.setMode);
+
+  const currentLang = i18n.language.startsWith('zh') ? 'zh' : 'en';
 
   const handleLogout = async () => {
     try {
@@ -46,14 +50,14 @@ export default function AppHeader({ isMobile, onMenuClick }: Props) {
     {
       key: 'password',
       icon: <KeyOutlined />,
-      label: 'Change Password',
+      label: t('changePassword'),
       onClick: () => setPwdOpen(true),
     },
     { type: 'divider' as const },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Logout',
+      label: t('logout'),
       onClick: handleLogout,
     },
   ];
@@ -81,6 +85,15 @@ export default function AppHeader({ isMobile, onMenuClick }: Props) {
         <div />
       )}
       <Space>
+        <Segmented
+          size="small"
+          value={currentLang}
+          onChange={(v) => i18n.changeLanguage(v as string)}
+          options={[
+            { value: 'en', label: 'EN' },
+            { value: 'zh', label: '中文' },
+          ]}
+        />
         <Segmented
           size="small"
           value={themeMode}

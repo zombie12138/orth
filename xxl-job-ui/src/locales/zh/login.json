@@ -1,0 +1,11 @@
+{
+  "title": "Orth 任务管理",
+  "username": "用户名",
+  "password": "密码",
+  "loginButton": "登录",
+  "usernamePlaceholder": "请输入用户名",
+  "passwordPlaceholder": "请输入密码",
+  "usernameRequired": "请输入用户名",
+  "passwordRequired": "请输入密码",
+  "loginFailed": "登录失败"
+}

@@ -1,0 +1,130 @@
+{
+  "addJob": "Add Job",
+  "editJob": "Edit Job",
+  "createJob": "Create Job",
+  "columns": {
+    "id": "ID",
+    "group": "Group",
+    "description": "Description",
+    "schedule": "Schedule",
+    "glueType": "GLUE Type",
+    "handler": "Handler",
+    "author": "Author",
+    "superTask": "SuperTask",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "filters": {
+    "executorGroup": "Executor Group",
+    "status": "Status",
+    "jobDescription": "Job Description",
+    "handler": "Handler",
+    "author": "Author",
+    "superTask": "SuperTask"
+  },
+  "noOnlineExecutors": "No online executors",
+  "noUpcomingTriggers": "No upcoming triggers",
+  "nextTriggerTimes": "Next Trigger Times",
+  "subTaskPrefix": "Sub: #{{id}} {{name}}",
+  "copySuffix": "(Copy)",
+  "actions": {
+    "trigger": "Trigger",
+    "copy": "Copy",
+    "batchTrigger": "Batch Trigger",
+    "viewLogs": "View Logs",
+    "glueCode": "GLUE Code",
+    "forkSuperTask": "Fork SuperTask"
+  },
+  "messages": {
+    "jobDeleted": "Job deleted",
+    "jobStarted": "Job started",
+    "jobStopped": "Job stopped",
+    "jobUpdated": "Job updated",
+    "jobCreated": "Job created",
+    "jobTriggered": "Job triggered",
+    "triggerFailed": "Trigger failed"
+  },
+  "form": {
+    "tabs": {
+      "basic": "Basic",
+      "schedule": "Schedule",
+      "execution": "Execution",
+      "advanced": "Advanced"
+    },
+    "labels": {
+      "executorGroup": "Executor Group",
+      "description": "Description",
+      "author": "Author",
+      "alarmEmail": "Alarm Email",
+      "alarmEmailPlaceholder": "Comma-separated emails",
+      "scheduleType": "Schedule Type",
+      "cronExpression": "CRON Expression",
+      "previewNext5": "Preview Next 5",
+      "intervalSeconds": "Interval (seconds)",
+      "nextTriggerTimes": "Next trigger times",
+      "misfireStrategy": "Misfire Strategy",
+      "blockStrategy": "Block Strategy",
+      "glueType": "GLUE Type",
+      "handler": "Handler",
+      "parameters": "Parameters",
+      "routeStrategy": "Route Strategy",
+      "timeoutSeconds": "Timeout (s)",
+      "retryCount": "Retry Count",
+      "childJobIds": "Child Job IDs",
+      "childJobIdsPlaceholder": "Comma-separated job IDs",
+      "superTask": "SuperTask",
+      "superTaskPlaceholder": "Search by ID or description"
+    },
+    "messages": {
+      "previewFailed": "Failed to preview"
+    }
+  },
+  "trigger": {
+    "title": "Trigger Job",
+    "executorParams": "Executor Parameters",
+    "executorParamsPlaceholder": "Optional override",
+    "addressOverride": "Address Override",
+    "addressOverridePlaceholder": "Optional: comma-separated executor addresses"
+  },
+  "batchTrigger": {
+    "title": "Batch Trigger",
+    "timeRange": "Time Range",
+    "timeRangeRequired": "Select time range",
+    "previewButton": "Preview Schedule Times",
+    "triggerTimesFound": "{{count}} trigger time(s) found",
+    "executorParams": "Executor Parameters",
+    "addressOverride": "Address Override",
+    "optional": "Optional",
+    "messages": {
+      "submitted": "Batch trigger submitted",
+      "previewFailed": "Preview failed",
+      "triggerFailed": "Batch trigger failed"
+    }
+  },
+  "batchCopy": {
+    "title": "Fork SuperTask - Batch Create SubTasks",
+    "createButton": "Create SubTasks",
+    "successTag": "Success: {{count}}",
+    "failedTag": "Failed: {{count}}",
+    "createdIds": "Created IDs: {{ids}}",
+    "jsonHint": "Edit the JSON below to configure SubTasks. Each task in the <1>tasks</1> array can override: <3>jobDesc</3>, <5>executorParam</5>, <7>scheduleType</7>, <9>scheduleConf</9>, <11>author</11>, <13>alarmEmail</13>.",
+    "messages": {
+      "invalidJson": "Invalid JSON format",
+      "created": "Created {{count}} tasks",
+      "failed": "Batch copy failed"
+    }
+  },
+  "importExport": {
+    "selectToExport": "Select jobs to export",
+    "copiedToClipboard": "Copied to clipboard",
+    "download": "Download",
+    "exportedSuccess": "Exported successfully",
+    "exportFailed": "Export failed",
+    "importTitle": "Import Jobs",
+    "pasteOrUpload": "Paste or upload job JSON",
+    "importedSuccess": "Imported successfully",
+    "importFailed": "Import failed",
+    "dragFile": "Click or drag JSON file here",
+    "pasteJson": "Or paste JSON here..."
+  }
+}

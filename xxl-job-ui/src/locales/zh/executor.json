@@ -1,0 +1,38 @@
+{
+  "addGroup": "新增执行器",
+  "editGroup": "编辑执行器",
+  "createGroup": "新建执行器",
+  "columns": {
+    "id": "ID",
+    "appName": "AppName",
+    "title": "名称",
+    "type": "注册方式",
+    "onlineMachines": "在线机器",
+    "updated": "更新时间",
+    "actions": "操作"
+  },
+  "filters": {
+    "appName": "AppName",
+    "title": "名称"
+  },
+  "type": {
+    "auto": "自动注册",
+    "manual": "手动录入"
+  },
+  "deleteConfirm": "确定删除此执行器？",
+  "messages": {
+    "groupDeleted": "执行器已删除",
+    "groupUpdated": "执行器已更新",
+    "groupCreated": "执行器已创建"
+  },
+  "form": {
+    "appName": "AppName",
+    "title": "名称",
+    "addressType": "注册方式",
+    "autoDiscovery": "自动注册",
+    "manual": "手动录入",
+    "addresses": "机器地址",
+    "addressesRequired": "请输入执行器地址",
+    "addressesPlaceholder": "逗号分隔的URL（如 http://host:9999）"
+  }
+}

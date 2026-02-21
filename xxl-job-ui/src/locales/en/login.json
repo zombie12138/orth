@@ -1,0 +1,11 @@
+{
+  "title": "Orth Job Admin",
+  "username": "Username",
+  "password": "Password",
+  "loginButton": "Login",
+  "usernamePlaceholder": "Username",
+  "passwordPlaceholder": "Password",
+  "usernameRequired": "Please enter username",
+  "passwordRequired": "Please enter password",
+  "loginFailed": "Login failed"
+}

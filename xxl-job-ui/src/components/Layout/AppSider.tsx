@@ -9,6 +9,8 @@ import {
   UserOutlined,
   BookOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useConfigStore } from '../../store/configStore';
 import { mapMenuUrl } from '../../utils/constants';
 import type { MenuItem } from '../../types/menu';
@@ -30,19 +32,21 @@ interface Props {
   onClose: () => void;
 }
 
-function buildMenuItems(items: MenuItem[]): any[] {
+function buildMenuItems(items: MenuItem[], t: TFunction): any[] {
   return items
     .filter((m) => m.type <= 1 && m.status === 0)
     .sort((a, b) => a.order - b.order)
     .map((m) => {
       const frontendUrl = mapMenuUrl(m.url);
+      const menuKey = `menu.${m.url}`;
+      const translated = t(menuKey, { defaultValue: '' });
       const item: any = {
         key: frontendUrl,
         icon: ICON_MAP[m.url],
-        label: m.name,
+        label: translated || m.name,
       };
       if (m.children?.length) {
-        const children = buildMenuItems(m.children);
+        const children = buildMenuItems(m.children, t);
         if (children.length > 0) {
           item.children = children;
         }
@@ -55,10 +59,11 @@ export default function AppSider({ isMobile, drawerOpen, onClose }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
   const { token } = theme.useToken();
+  const { t } = useTranslation();
   const menus = useConfigStore((s) => s.menus);
   const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = buildMenuItems(menus);
+  const menuItems = buildMenuItems(menus, t);
 
   // Determine selected key from current path
   const selectedKey =
@@ -90,7 +95,7 @@ export default function AppSider({ isMobile, drawerOpen, onClose }: Props) {
         overflow: 'hidden',
       }}
     >
-      {!isMobile && collapsed ? 'O' : 'Orth Job'}
+      {!isMobile && collapsed ? t('brandLetter') : t('brandShort')}
     </div>
   );
 

@@ -1,0 +1,130 @@
+{
+  "addJob": "新增任务",
+  "editJob": "编辑任务",
+  "createJob": "创建任务",
+  "columns": {
+    "id": "ID",
+    "group": "执行器",
+    "description": "任务描述",
+    "schedule": "调度配置",
+    "glueType": "运行模式",
+    "handler": "Handler",
+    "author": "负责人",
+    "superTask": "父任务",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "filters": {
+    "executorGroup": "执行器",
+    "status": "状态",
+    "jobDescription": "任务描述",
+    "handler": "Handler",
+    "author": "负责人",
+    "superTask": "父任务"
+  },
+  "noOnlineExecutors": "无在线执行器",
+  "noUpcomingTriggers": "暂无调度计划",
+  "nextTriggerTimes": "下次调度时间",
+  "subTaskPrefix": "子: #{{id}} {{name}}",
+  "copySuffix": "（副本）",
+  "actions": {
+    "trigger": "触发",
+    "copy": "复制",
+    "batchTrigger": "批量触发",
+    "viewLogs": "查看日志",
+    "glueCode": "GLUE 代码",
+    "forkSuperTask": "派生子任务"
+  },
+  "messages": {
+    "jobDeleted": "任务已删除",
+    "jobStarted": "任务已启动",
+    "jobStopped": "任务已停止",
+    "jobUpdated": "任务已更新",
+    "jobCreated": "任务已创建",
+    "jobTriggered": "任务已触发",
+    "triggerFailed": "触发失败"
+  },
+  "form": {
+    "tabs": {
+      "basic": "基本信息",
+      "schedule": "调度配置",
+      "execution": "执行配置",
+      "advanced": "高级设置"
+    },
+    "labels": {
+      "executorGroup": "执行器",
+      "description": "任务描述",
+      "author": "负责人",
+      "alarmEmail": "报警邮件",
+      "alarmEmailPlaceholder": "多个邮件用逗号分隔",
+      "scheduleType": "调度类型",
+      "cronExpression": "CRON 表达式",
+      "previewNext5": "预览后5次",
+      "intervalSeconds": "间隔时间（秒）",
+      "nextTriggerTimes": "下次调度时间",
+      "misfireStrategy": "调度过期策略",
+      "blockStrategy": "阻塞处理策略",
+      "glueType": "运行模式",
+      "handler": "Handler",
+      "parameters": "任务参数",
+      "routeStrategy": "路由策略",
+      "timeoutSeconds": "超时时间（秒）",
+      "retryCount": "失败重试次数",
+      "childJobIds": "子任务 ID",
+      "childJobIdsPlaceholder": "多个ID用逗号分隔",
+      "superTask": "父任务",
+      "superTaskPlaceholder": "按ID或描述搜索"
+    },
+    "messages": {
+      "previewFailed": "预览失败"
+    }
+  },
+  "trigger": {
+    "title": "触发任务",
+    "executorParams": "任务参数",
+    "executorParamsPlaceholder": "可选覆盖参数",
+    "addressOverride": "机器地址",
+    "addressOverridePlaceholder": "可选: 逗号分隔的执行器地址"
+  },
+  "batchTrigger": {
+    "title": "批量触发",
+    "timeRange": "时间范围",
+    "timeRangeRequired": "请选择时间范围",
+    "previewButton": "预览调度时间",
+    "triggerTimesFound": "找到 {{count}} 个调度时间",
+    "executorParams": "任务参数",
+    "addressOverride": "机器地址",
+    "optional": "可选",
+    "messages": {
+      "submitted": "批量触发已提交",
+      "previewFailed": "预览失败",
+      "triggerFailed": "批量触发失败"
+    }
+  },
+  "batchCopy": {
+    "title": "派生子任务 - 批量创建",
+    "createButton": "创建子任务",
+    "successTag": "成功: {{count}}",
+    "failedTag": "失败: {{count}}",
+    "createdIds": "已创建 ID: {{ids}}",
+    "jsonHint": "编辑下方 JSON 配置子任务。<1>tasks</1> 数组中每个任务可覆盖: <3>jobDesc</3>、<5>executorParam</5>、<7>scheduleType</7>、<9>scheduleConf</9>、<11>author</11>、<13>alarmEmail</13>。",
+    "messages": {
+      "invalidJson": "JSON 格式无效",
+      "created": "已创建 {{count}} 个任务",
+      "failed": "批量复制失败"
+    }
+  },
+  "importExport": {
+    "selectToExport": "请先选择要导出的任务",
+    "copiedToClipboard": "已复制到剪贴板",
+    "download": "下载",
+    "exportedSuccess": "导出成功",
+    "exportFailed": "导出失败",
+    "importTitle": "导入任务",
+    "pasteOrUpload": "请粘贴或上传任务 JSON",
+    "importedSuccess": "导入成功",
+    "importFailed": "导入失败",
+    "dragFile": "点击或拖拽 JSON 文件到此处",
+    "pasteJson": "或粘贴 JSON 到此处..."
+  }
+}
