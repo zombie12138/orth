@@ -9,6 +9,8 @@ import {
   Button,
   Form,
   Tooltip,
+  Popover,
+  Typography,
 } from 'antd';
 import {
   EyeOutlined,
@@ -33,6 +35,41 @@ import LogDrawer from './components/LogDrawer';
 import ClearLogsModal from './components/ClearLogsModal';
 import { message, Popconfirm } from 'antd';
 import debounce from '../_utils/debounce';
+
+function stripHtml(html: string) {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .trim();
+}
+
+function StatusPopoverContent({ record }: { record: XxlJobLog }) {
+  const triggerText = record.triggerMsg ? stripHtml(record.triggerMsg) : '';
+  const handleText = record.handleMsg ? stripHtml(record.handleMsg) : '';
+  if (!triggerText && !handleText) {
+    return <Typography.Text type="secondary">No details</Typography.Text>;
+  }
+  return (
+    <div style={{ maxWidth: 420, maxHeight: 300, overflow: 'auto' }}>
+      {triggerText && (
+        <>
+          <Typography.Text strong>Trigger Message</Typography.Text>
+          <pre style={{ margin: '4px 0 8px', whiteSpace: 'pre-wrap', fontSize: 12 }}>
+            {triggerText}
+          </pre>
+        </>
+      )}
+      {handleText && (
+        <>
+          <Typography.Text strong>Handle Message</Typography.Text>
+          <pre style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap', fontSize: 12 }}>
+            {handleText}
+          </pre>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function LogsPage() {
   const queryClient = useQueryClient();
@@ -157,10 +194,20 @@ export default function LogsPage() {
     } as const]),
     {
       title: 'Status',
-      width: 110,
+      width: 140,
       render: (_: unknown, r: XxlJobLog) => {
         const t = getLogStatus(r.triggerCode, r.handleCode);
-        return <Tag color={t.color}>{t.text}</Tag>;
+        return (
+          <Popover
+            content={<StatusPopoverContent record={r} />}
+            title={`${t.text} (${r.triggerCode}/${r.handleCode})`}
+            trigger="click"
+          >
+            <Tag color={t.color} style={{ cursor: 'pointer' }}>
+              {t.text} {r.triggerCode}/{r.handleCode}
+            </Tag>
+          </Popover>
+        );
       },
     },
     {
