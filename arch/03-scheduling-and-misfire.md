@@ -230,6 +230,61 @@ flowchart LR
     end
 ```
 
+## Trigger Dispatch & Routing
+
+After the time ring fires a job, `JobTrigger` resolves **which executor(s)** receive the trigger. This is the bridge between the scheduling engine (admin) and execution (executor).
+
+### Dispatch Flow
+
+```mermaid
+flowchart LR
+    Ring["Time Ring fires"] --> JT["JobTrigger"]
+    JT --> Route{Routing Strategy}
+
+    Route -->|"9 strategies"| Single["Single Executor"]
+    Route -->|"SHARDING_BROADCAST"| All["All Executors<br/>(with shard index)"]
+
+    Single --> Exec1["Executor"]
+    All --> ExecA["Executor 0/3"]
+    All --> ExecB["Executor 1/3"]
+    All --> ExecC["Executor 2/3"]
+```
+
+### Routing Strategies
+
+| Category | Strategies | Target | Use Case |
+|----------|-----------|--------|----------|
+| Fixed | FIRST, LAST | 1 executor (deterministic) | Debugging, single node |
+| Distributing | ROUND, RANDOM, LFU, LRU | 1 executor (rotating) | Stateless jobs, load balancing |
+| Affinity | CONSISTENT_HASH | 1 executor (sticky by job ID) | Jobs with local state/cache |
+| Health-aware | FAILOVER, BUSYOVER | 1 executor (first healthy/idle) | Critical jobs |
+| Broadcast | SHARDING_BROADCAST | **All executors** | Parallel data collection |
+
+**Default behavior: one trigger → one executor.** Only SHARDING_BROADCAST fans out to all registered executors, each receiving its shard index and total count.
+
+### Interaction with Block Strategies
+
+Routing decides **where**, block strategy decides **what happens on arrival**:
+
+```mermaid
+flowchart TD
+    Trigger["Trigger arrives<br/>at executor"] --> Exists{JobThread<br/>already running?}
+
+    Exists -->|No| Create["Create JobThread<br/>→ execute"]
+    Exists -->|Yes| Block{Block Strategy}
+
+    Block -->|SERIAL| Queue["Queue behind<br/>current execution"]
+    Block -->|DISCARD| Drop["Reject trigger<br/>(job is busy)"]
+    Block -->|COVER| Replace["Kill old thread<br/>→ restart with new trigger"]
+    Block -->|CONCURRENT| Parallel["Submit to worker pool<br/>(parallel execution)"]
+```
+
+**Key distinction:**
+- **Routing** controls cross-executor parallelism (single vs broadcast)
+- **Block strategy** controls intra-executor parallelism (serial vs concurrent)
+
+These are orthogonal — SHARDING_BROADCAST + CONCURRENT means all executors run multiple instances in parallel.
+
 ## Design Strengths
 
 1. **Sub-second Precision**: Time ring enables exact-second execution
