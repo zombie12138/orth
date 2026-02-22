@@ -69,7 +69,7 @@ public class OrthExecutorExampleBootApplicationTests {
      * <p>If this test fails, check:
      *
      * <ul>
-     *   <li>application.properties xxl.job.* configuration
+     *   <li>application.properties orth.job.* configuration
      *   <li>OrthJobConfig bean definition in config package
      *   <li>Spring Boot and Orth dependency versions compatibility
      * </ul>
@@ -133,10 +133,10 @@ public class OrthExecutorExampleBootApplicationTests {
      * <p>Example test structure:
      *
      * <pre>{@code
-     * @Value("${xxl.job.admin.addresses}")
+     * @Value("${orth.job.admin.addresses}")
      * private String adminAddresses;
      *
-     * @Value("${xxl.job.executor.appname}")
+     * @Value("${orth.job.executor.appname}")
      * private String appName;
      *
      * @Test
@@ -151,7 +151,7 @@ public class OrthExecutorExampleBootApplicationTests {
     @DisplayName("Should validate executor configuration properties")
     public void shouldValidateExecutorConfiguration() {
         // TODO: Add executor configuration validation
-        // Verify xxl.job.admin.addresses, appname, port, accessToken, logpath
+        // Verify orth.job.admin.addresses, appname, port, accessToken, logpath
         logger.debug("Executor configuration test - implement as needed");
         assertTrue(true, "Placeholder for executor configuration tests");
     }

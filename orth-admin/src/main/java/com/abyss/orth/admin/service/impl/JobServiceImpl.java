@@ -753,8 +753,9 @@ public class JobServiceImpl implements JobService {
         long nextTriggerTime = existingJob.getTriggerNextTime();
 
         boolean scheduleUnchanged =
-                newJobInfo.getScheduleType().equals(existingJob.getScheduleType())
-                        && newJobInfo.getScheduleConf().equals(existingJob.getScheduleConf());
+                Objects.equals(newJobInfo.getScheduleType(), existingJob.getScheduleType())
+                        && Objects.equals(
+                                newJobInfo.getScheduleConf(), existingJob.getScheduleConf());
 
         if (existingJob.getTriggerStatus() == TriggerStatus.RUNNING.getValue()
                 && !scheduleUnchanged) {

@@ -34,21 +34,21 @@ import com.xxl.tool.core.PropTool;
  *
  * <pre>
  * # Admin Connection
- * xxl.job.admin.addresses=http://localhost:18080/orth-admin
- * xxl.job.admin.accessToken=default_token
- * xxl.job.admin.timeout=3000
+ * orth.job.admin.addresses=http://localhost:18080/orth-admin
+ * orth.job.admin.accessToken=default_token
+ * orth.job.admin.timeout=3000
  *
  * # Executor Identity
- * xxl.job.executor.appname=orth-executor-frameless-sample
- * xxl.job.executor.port=9997
+ * orth.job.executor.appname=orth-executor-frameless-sample
+ * orth.job.executor.port=9997
  *
  * # Executor Network (optional)
- * xxl.job.executor.address=
- * xxl.job.executor.ip=
+ * orth.job.executor.address=
+ * orth.job.executor.ip=
  *
  * # Logging
- * xxl.job.executor.logpath=/data/applogs/orth/jobhandler
- * xxl.job.executor.logretentiondays=30
+ * orth.job.executor.logpath=/data/applogs/orth/jobhandler
+ * orth.job.executor.logretentiondays=30
  * </pre>
  *
  * <h2>Job Handler Registration:</h2>
@@ -185,18 +185,18 @@ public class FrameLessOrthJobConfig {
      * @param orthJobProp configuration properties
      */
     private void configureExecutor(Properties orthJobProp) {
-        orthJobExecutor.setAdminAddresses(orthJobProp.getProperty("xxl.job.admin.addresses"));
-        orthJobExecutor.setAccessToken(orthJobProp.getProperty("xxl.job.admin.accessToken"));
-        orthJobExecutor.setTimeout(parseIntProperty(orthJobProp, "xxl.job.admin.timeout", 3000));
+        orthJobExecutor.setAdminAddresses(orthJobProp.getProperty("orth.job.admin.addresses"));
+        orthJobExecutor.setAccessToken(orthJobProp.getProperty("orth.job.admin.accessToken"));
+        orthJobExecutor.setTimeout(parseIntProperty(orthJobProp, "orth.job.admin.timeout", 3000));
 
-        orthJobExecutor.setAppname(orthJobProp.getProperty("xxl.job.executor.appname"));
-        orthJobExecutor.setAddress(orthJobProp.getProperty("xxl.job.executor.address"));
-        orthJobExecutor.setIp(orthJobProp.getProperty("xxl.job.executor.ip"));
-        orthJobExecutor.setPort(parseIntProperty(orthJobProp, "xxl.job.executor.port", 9999));
+        orthJobExecutor.setAppname(orthJobProp.getProperty("orth.job.executor.appname"));
+        orthJobExecutor.setAddress(orthJobProp.getProperty("orth.job.executor.address"));
+        orthJobExecutor.setIp(orthJobProp.getProperty("orth.job.executor.ip"));
+        orthJobExecutor.setPort(parseIntProperty(orthJobProp, "orth.job.executor.port", 9999));
 
-        orthJobExecutor.setLogPath(orthJobProp.getProperty("xxl.job.executor.logpath"));
+        orthJobExecutor.setLogPath(orthJobProp.getProperty("orth.job.executor.logpath"));
         orthJobExecutor.setLogRetentionDays(
-                parseIntProperty(orthJobProp, "xxl.job.executor.logretentiondays", 30));
+                parseIntProperty(orthJobProp, "orth.job.executor.logretentiondays", 30));
     }
 
     /**

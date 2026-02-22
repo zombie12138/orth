@@ -39,9 +39,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * <pre>
  * # Executor config (same as standard executor)
- * xxl.job.admin.addresses=http://localhost:18080/orth-admin
- * xxl.job.executor.appname=orth-executor-ai-sample
- * xxl.job.executor.port=9998
+ * orth.job.admin.addresses=http://localhost:18080/orth-admin
+ * orth.job.executor.appname=orth-executor-ai-sample
+ * orth.job.executor.port=9998
  *
  * # Ollama config
  * spring.ai.ollama.base-url=http://localhost:11434

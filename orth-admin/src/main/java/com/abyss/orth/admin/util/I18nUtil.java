@@ -33,7 +33,7 @@ public class I18nUtil implements InitializingBean {
     private static final List<String> SUPPORTED_LOCALES = List.of("zh_CN", "zh_TC", "en");
     private static final String DEFAULT_LOCALE = "zh_CN";
 
-    @Value("${xxl.job.i18n}")
+    @Value("${orth.job.i18n}")
     private String i18n;
 
     private static I18nUtil single = null;

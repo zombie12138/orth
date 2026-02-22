@@ -23,10 +23,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * <p>Executor configuration is managed in {@code application.properties}:
  *
  * <pre>
- * xxl.job.admin.addresses=http://localhost:18080/orth-admin
- * xxl.job.admin.accessToken=default_token
- * xxl.job.executor.appname=orth-executor-sample
- * xxl.job.executor.port=9999
+ * orth.job.admin.addresses=http://localhost:18080/orth-admin
+ * orth.job.admin.accessToken=default_token
+ * orth.job.executor.appname=orth-executor-sample
+ * orth.job.executor.port=9999
  * </pre>
  *
  * <h2>Job Registration:</h2>

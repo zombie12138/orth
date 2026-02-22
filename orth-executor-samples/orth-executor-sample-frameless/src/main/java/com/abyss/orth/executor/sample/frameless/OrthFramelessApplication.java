@@ -37,15 +37,15 @@ import com.abyss.orth.executor.sample.frameless.config.FrameLessOrthJobConfig;
  * <p>All configuration is loaded from {@code orth-executor.properties} on the classpath:
  *
  * <pre>
- * xxl.job.admin.addresses=http://localhost:18080/orth-admin
- * xxl.job.admin.accessToken=default_token
- * xxl.job.admin.timeout=3000
- * xxl.job.executor.appname=orth-executor-frameless-sample
- * xxl.job.executor.address=
- * xxl.job.executor.ip=
- * xxl.job.executor.port=9997
- * xxl.job.executor.logpath=/data/applogs/orth/jobhandler
- * xxl.job.executor.logretentiondays=30
+ * orth.job.admin.addresses=http://localhost:18080/orth-admin
+ * orth.job.admin.accessToken=default_token
+ * orth.job.admin.timeout=3000
+ * orth.job.executor.appname=orth-executor-frameless-sample
+ * orth.job.executor.address=
+ * orth.job.executor.ip=
+ * orth.job.executor.port=9997
+ * orth.job.executor.logpath=/data/applogs/orth/jobhandler
+ * orth.job.executor.logretentiondays=30
  * </pre>
  *
  * <h2>Job Handler Registration:</h2>

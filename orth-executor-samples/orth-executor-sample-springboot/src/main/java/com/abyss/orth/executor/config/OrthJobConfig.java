@@ -21,44 +21,44 @@ import com.abyss.orth.core.executor.impl.OrthJobSpringExecutor;
  * <h3>Admin Connection (Required):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.admin.addresses} - Admin scheduler addresses (comma-separated for cluster).
+ *   <li>{@code orth.job.admin.addresses} - Admin scheduler addresses (comma-separated for cluster).
  *       Example: {@code http://localhost:18080/orth-admin}
- *   <li>{@code xxl.job.admin.accessToken} - Access token for authentication. Must match admin
+ *   <li>{@code orth.job.admin.accessToken} - Access token for authentication. Must match admin
  *       configuration. Empty string disables authentication.
- *   <li>{@code xxl.job.admin.timeout} - HTTP request timeout in milliseconds. Default: 3000.
+ *   <li>{@code orth.job.admin.timeout} - HTTP request timeout in milliseconds. Default: 3000.
  * </ul>
  *
  * <h3>Executor Identity (Required):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.executor.appname} - Executor app name, used for grouping executors. Must
+ *   <li>{@code orth.job.executor.appname} - Executor app name, used for grouping executors. Must
  *       match the executor group configured in admin. Example: {@code orth-executor-sample}
- *   <li>{@code xxl.job.executor.port} - Embedded Netty server port for receiving job triggers.
+ *   <li>{@code orth.job.executor.port} - Embedded Netty server port for receiving job triggers.
  *       Default: 9999. Must be unique per executor on the same host.
  * </ul>
  *
  * <h3>Executor Network (Optional):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.executor.address} - Manual executor address registration. Optional. Format:
+ *   <li>{@code orth.job.executor.address} - Manual executor address registration. Optional. Format:
  *       {@code http://ip:port}. Leave empty for auto-registration via IP detection.
- *   <li>{@code xxl.job.executor.ip} - Manual IP override for registration. Optional. Leave empty
+ *   <li>{@code orth.job.executor.ip} - Manual IP override for registration. Optional. Leave empty
  *       for automatic IP detection. Useful for multi-NIC or container environments.
  * </ul>
  *
  * <h3>Logging (Required):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.executor.logpath} - Directory path for job execution logs. Example: {@code
+ *   <li>{@code orth.job.executor.logpath} - Directory path for job execution logs. Example: {@code
  *       /data/applogs/orth/jobhandler}
- *   <li>{@code xxl.job.executor.logretentiondays} - Number of days to retain logs before cleanup.
+ *   <li>{@code orth.job.executor.logretentiondays} - Number of days to retain logs before cleanup.
  *       Default: 30. Set to -1 to disable cleanup.
  * </ul>
  *
  * <h3>Job Handler Scanning (Optional):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.executor.excludedpackage} - Comma-separated list of package prefixes to
+ *   <li>{@code orth.job.executor.excludedpackage} - Comma-separated list of package prefixes to
  *       exclude from job handler scanning. Example: {@code com.example.internal}. Leave empty to
  *       scan all packages.
  * </ul>
@@ -108,34 +108,34 @@ import com.abyss.orth.core.executor.impl.OrthJobSpringExecutor;
 public class OrthJobConfig {
     private static final Logger logger = LoggerFactory.getLogger(OrthJobConfig.class);
 
-    @Value("${xxl.job.admin.addresses}")
+    @Value("${orth.job.admin.addresses}")
     private String adminAddresses;
 
-    @Value("${xxl.job.admin.accessToken}")
+    @Value("${orth.job.admin.accessToken}")
     private String accessToken;
 
-    @Value("${xxl.job.admin.timeout}")
+    @Value("${orth.job.admin.timeout}")
     private int timeout;
 
-    @Value("${xxl.job.executor.appname}")
+    @Value("${orth.job.executor.appname}")
     private String appname;
 
-    @Value("${xxl.job.executor.address}")
+    @Value("${orth.job.executor.address}")
     private String address;
 
-    @Value("${xxl.job.executor.ip}")
+    @Value("${orth.job.executor.ip}")
     private String ip;
 
-    @Value("${xxl.job.executor.port}")
+    @Value("${orth.job.executor.port}")
     private int port;
 
-    @Value("${xxl.job.executor.logpath}")
+    @Value("${orth.job.executor.logpath}")
     private String logPath;
 
-    @Value("${xxl.job.executor.logretentiondays}")
+    @Value("${orth.job.executor.logretentiondays}")
     private int logRetentionDays;
 
-    @Value("${xxl.job.executor.excludedpackage}")
+    @Value("${orth.job.executor.excludedpackage}")
     private String excludedPackage;
 
     /**

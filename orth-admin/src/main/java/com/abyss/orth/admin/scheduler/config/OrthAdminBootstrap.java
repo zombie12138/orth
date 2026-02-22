@@ -165,25 +165,25 @@ public class OrthAdminBootstrap implements InitializingBean, DisposableBean {
     // ---------------------- field ----------------------
 
     // conf
-    @Value("${xxl.job.i18n}")
+    @Value("${orth.job.i18n}")
     private String i18n;
 
-    @Value("${xxl.job.accessToken}")
+    @Value("${orth.job.accessToken}")
     private String accessToken;
 
-    @Value("${xxl.job.timeout}")
+    @Value("${orth.job.timeout}")
     private int timeout;
 
     @Value("${spring.mail.from}")
     private String emailFrom;
 
-    @Value("${xxl.job.triggerpool.fast.max}")
+    @Value("${orth.job.triggerpool.fast.max}")
     private int triggerPoolFastMax;
 
-    @Value("${xxl.job.triggerpool.slow.max}")
+    @Value("${orth.job.triggerpool.slow.max}")
     private int triggerPoolSlowMax;
 
-    @Value("${xxl.job.logretentiondays}")
+    @Value("${orth.job.logretentiondays}")
     private int logretentiondays;
 
     // service, mapper

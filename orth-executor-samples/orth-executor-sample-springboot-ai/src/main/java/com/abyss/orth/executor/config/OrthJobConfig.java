@@ -20,33 +20,33 @@ import com.abyss.orth.core.executor.impl.OrthJobSpringExecutor;
  * <h3>Admin Connection (Required):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.admin.addresses} - Admin scheduler addresses. Example: {@code
+ *   <li>{@code orth.job.admin.addresses} - Admin scheduler addresses. Example: {@code
  *       http://localhost:18080/orth-admin}
- *   <li>{@code xxl.job.admin.accessToken} - Access token for authentication
- *   <li>{@code xxl.job.admin.timeout} - HTTP request timeout in milliseconds. Default: 3000
+ *   <li>{@code orth.job.admin.accessToken} - Access token for authentication
+ *   <li>{@code orth.job.admin.timeout} - HTTP request timeout in milliseconds. Default: 3000
  * </ul>
  *
  * <h3>Executor Identity (Required):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.executor.appname} - Executor app name. Example: {@code
+ *   <li>{@code orth.job.executor.appname} - Executor app name. Example: {@code
  *       orth-executor-ai-sample}
- *   <li>{@code xxl.job.executor.port} - Embedded Netty server port. Example: 9998 (different from
+ *   <li>{@code orth.job.executor.port} - Embedded Netty server port. Example: 9998 (different from
  *       standard executor)
  * </ul>
  *
  * <h3>Executor Network (Optional):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.executor.address} - Manual executor address. Optional
- *   <li>{@code xxl.job.executor.ip} - Manual IP override. Optional
+ *   <li>{@code orth.job.executor.address} - Manual executor address. Optional
+ *   <li>{@code orth.job.executor.ip} - Manual IP override. Optional
  * </ul>
  *
  * <h3>Logging (Required):</h3>
  *
  * <ul>
- *   <li>{@code xxl.job.executor.logpath} - Job execution log directory
- *   <li>{@code xxl.job.executor.logretentiondays} - Log retention days. Default: 30
+ *   <li>{@code orth.job.executor.logpath} - Job execution log directory
+ *   <li>{@code orth.job.executor.logretentiondays} - Log retention days. Default: 30
  * </ul>
  *
  * <h2>AI Framework Configuration:</h2>
@@ -88,31 +88,31 @@ import com.abyss.orth.core.executor.impl.OrthJobSpringExecutor;
 public class OrthJobConfig {
     private static final Logger logger = LoggerFactory.getLogger(OrthJobConfig.class);
 
-    @Value("${xxl.job.admin.addresses}")
+    @Value("${orth.job.admin.addresses}")
     private String adminAddresses;
 
-    @Value("${xxl.job.admin.accessToken}")
+    @Value("${orth.job.admin.accessToken}")
     private String accessToken;
 
-    @Value("${xxl.job.admin.timeout}")
+    @Value("${orth.job.admin.timeout}")
     private int timeout;
 
-    @Value("${xxl.job.executor.appname}")
+    @Value("${orth.job.executor.appname}")
     private String appname;
 
-    @Value("${xxl.job.executor.address}")
+    @Value("${orth.job.executor.address}")
     private String address;
 
-    @Value("${xxl.job.executor.ip}")
+    @Value("${orth.job.executor.ip}")
     private String ip;
 
-    @Value("${xxl.job.executor.port}")
+    @Value("${orth.job.executor.port}")
     private int port;
 
-    @Value("${xxl.job.executor.logpath}")
+    @Value("${orth.job.executor.logpath}")
     private String logPath;
 
-    @Value("${xxl.job.executor.logretentiondays}")
+    @Value("${orth.job.executor.logretentiondays}")
     private int logRetentionDays;
 
     /**

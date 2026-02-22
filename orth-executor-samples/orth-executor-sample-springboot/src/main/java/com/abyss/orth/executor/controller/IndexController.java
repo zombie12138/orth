@@ -29,7 +29,7 @@
 //  * </ul>
 //  *
 //  * <p><strong>Note:</strong> The executor's embedded Netty server (for job triggers) runs
-//  * independently on the configured {@code xxl.job.executor.port} and does not require this
+//  * independently on the configured {@code orth.job.executor.port} and does not require this
 //  * controller to be enabled.
 //  *
 //  * @author xuxueli 2018-10-28 00:38:13

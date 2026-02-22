@@ -12,10 +12,10 @@ SET NAMES utf8mb4;
 CREATE TABLE `orth_job_group`
 (
     `id`           int(11)     NOT NULL AUTO_INCREMENT,
-    `app_name`     varchar(64) NOT NULL COMMENT '执行器AppName',
-    `title`        varchar(64) NOT NULL COMMENT 'Executor Name',
-    `address_type` tinyint(4)  NOT NULL DEFAULT '0' COMMENT '执行器地址类型：0=自动注册、1=手动录入',
-    `address_list` text COMMENT '执行器地址列表，多地址逗号分隔',
+    `app_name`     varchar(64) NOT NULL COMMENT 'Executor app name',
+    `title`        varchar(64) NOT NULL COMMENT 'Executor display name',
+    `address_type` tinyint(4)  NOT NULL DEFAULT '0' COMMENT 'Address type: 0=auto-register, 1=manual',
+    `address_list` text COMMENT 'Executor address list, comma-separated',
     `update_time`  datetime             DEFAULT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
@@ -38,30 +38,30 @@ CREATE TABLE `orth_job_registry`
 CREATE TABLE `orth_job_info`
 (
     `id`                        int(11)      NOT NULL AUTO_INCREMENT,
-    `job_group`                 int(11)      NOT NULL COMMENT '执行器主键ID',
+    `job_group`                 int(11)      NOT NULL COMMENT 'Executor group ID',
     `job_desc`                  varchar(255) NOT NULL,
     `add_time`                  datetime              DEFAULT NULL,
     `update_time`               datetime              DEFAULT NULL,
-    `author`                    varchar(64)           DEFAULT NULL COMMENT '作者',
-    `alarm_email`               varchar(255)          DEFAULT NULL COMMENT '报警邮件',
-    `schedule_type`             varchar(50)  NOT NULL DEFAULT 'NONE' COMMENT '调度类型',
-    `schedule_conf`             varchar(128)          DEFAULT NULL COMMENT '调度配置，值含义取决于调度类型',
-    `misfire_strategy`          varchar(50)  NOT NULL DEFAULT 'DO_NOTHING' COMMENT '调度过期策略',
-    `executor_route_strategy`   varchar(50)           DEFAULT NULL COMMENT '执行器路由策略',
-    `executor_handler`          varchar(255)          DEFAULT NULL COMMENT '执行器任务handler',
-    `executor_param`            varchar(512)          DEFAULT NULL COMMENT '执行器任务参数',
-    `executor_block_strategy`   varchar(50)           DEFAULT NULL COMMENT '阻塞处理策略',
-    `executor_timeout`          int(11)      NOT NULL DEFAULT '0' COMMENT '任务执行超时时间，单位秒',
-    `executor_fail_retry_count` int(11)      NOT NULL DEFAULT '0' COMMENT '失败重试次数',
-    `glue_type`                 varchar(50)  NOT NULL COMMENT 'GLUE类型',
-    `glue_source`               mediumtext COMMENT 'GLUE源代码',
-    `glue_remark`               varchar(128)          DEFAULT NULL COMMENT 'GLUE备注',
-    `glue_updatetime`           datetime              DEFAULT NULL COMMENT 'GLUE更新时间',
-    `child_jobid`               varchar(255)          DEFAULT NULL COMMENT '子任务ID，多个逗号分隔',
+    `author`                    varchar(64)           DEFAULT NULL COMMENT 'Author',
+    `alarm_email`               varchar(255)          DEFAULT NULL COMMENT 'Alarm email addresses',
+    `schedule_type`             varchar(50)  NOT NULL DEFAULT 'NONE' COMMENT 'Schedule type: CRON, FIX_RATE, NONE',
+    `schedule_conf`             varchar(128)          DEFAULT NULL COMMENT 'Schedule config, meaning depends on schedule type',
+    `misfire_strategy`          varchar(50)  NOT NULL DEFAULT 'DO_NOTHING' COMMENT 'Misfire strategy: DO_NOTHING, FIRE_ONCE_NOW',
+    `executor_route_strategy`   varchar(50)           DEFAULT NULL COMMENT 'Executor routing strategy',
+    `executor_handler`          varchar(255)          DEFAULT NULL COMMENT 'Job handler name',
+    `executor_param`            varchar(512)          DEFAULT NULL COMMENT 'Job handler parameters',
+    `executor_block_strategy`   varchar(50)           DEFAULT NULL COMMENT 'Block strategy when job is already running',
+    `executor_timeout`          int(11)      NOT NULL DEFAULT '0' COMMENT 'Execution timeout in seconds, 0=unlimited',
+    `executor_fail_retry_count` int(11)      NOT NULL DEFAULT '0' COMMENT 'Fail retry count',
+    `glue_type`                 varchar(50)  NOT NULL COMMENT 'GLUE type: BEAN, GLUE_GROOVY, GLUE_SHELL, etc.',
+    `glue_source`               mediumtext COMMENT 'GLUE source code',
+    `glue_remark`               varchar(128)          DEFAULT NULL COMMENT 'GLUE remark',
+    `glue_updatetime`           datetime              DEFAULT NULL COMMENT 'GLUE update time',
+    `child_jobid`               varchar(255)          DEFAULT NULL COMMENT 'Child job IDs, comma-separated',
     `super_task_id`             int(11)      NOT NULL DEFAULT '0' COMMENT 'SuperTask ID, 0 means no parent',
-    `trigger_status`            tinyint(4)   NOT NULL DEFAULT '0' COMMENT '调度状态：0-停止，1-运行',
-    `trigger_last_time`         bigint(13)   NOT NULL DEFAULT '0' COMMENT '上次调度时间',
-    `trigger_next_time`         bigint(13)   NOT NULL DEFAULT '0' COMMENT '下次调度时间',
+    `trigger_status`            tinyint(4)   NOT NULL DEFAULT '0' COMMENT 'Trigger status: 0=stopped, 1=running',
+    `trigger_last_time`         bigint(13)   NOT NULL DEFAULT '0' COMMENT 'Last trigger time (epoch ms)',
+    `trigger_next_time`         bigint(13)   NOT NULL DEFAULT '0' COMMENT 'Next trigger time (epoch ms)',
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4;
@@ -69,10 +69,10 @@ CREATE TABLE `orth_job_info`
 CREATE TABLE `orth_job_logglue`
 (
     `id`          int(11)      NOT NULL AUTO_INCREMENT,
-    `job_id`      int(11)      NOT NULL COMMENT '任务，主键ID',
-    `glue_type`   varchar(50) DEFAULT NULL COMMENT 'GLUE类型',
-    `glue_source` mediumtext COMMENT 'GLUE源代码',
-    `glue_remark` varchar(128) NOT NULL COMMENT 'GLUE备注',
+    `job_id`      int(11)      NOT NULL COMMENT 'Job ID',
+    `glue_type`   varchar(50) DEFAULT NULL COMMENT 'GLUE type',
+    `glue_source` mediumtext COMMENT 'GLUE source code',
+    `glue_remark` varchar(128) NOT NULL COMMENT 'GLUE remark',
     `add_time`    datetime    DEFAULT NULL,
     `update_time` datetime    DEFAULT NULL,
     PRIMARY KEY (`id`)
@@ -84,21 +84,21 @@ CREATE TABLE `orth_job_logglue`
 CREATE TABLE `orth_job_log`
 (
     `id`                        bigint(20) NOT NULL AUTO_INCREMENT,
-    `job_group`                 int(11)    NOT NULL COMMENT '执行器主键ID',
-    `job_id`                    int(11)    NOT NULL COMMENT '任务，主键ID',
-    `executor_address`          varchar(255)        DEFAULT NULL COMMENT '执行器地址，本次执行的地址',
-    `executor_handler`          varchar(255)        DEFAULT NULL COMMENT '执行器任务handler',
-    `executor_param`            varchar(512)        DEFAULT NULL COMMENT '执行器任务参数',
-    `executor_sharding_param`   varchar(20)         DEFAULT NULL COMMENT '执行器任务分片参数，格式如 1/2',
-    `executor_fail_retry_count` int(11)    NOT NULL DEFAULT '0' COMMENT '失败重试次数',
-    `trigger_time`              datetime            DEFAULT NULL COMMENT '调度-时间',
-    `schedule_time`             datetime            DEFAULT NULL COMMENT 'Theoretical scheduling time; NULL when triggered manually.',
-    `trigger_code`              int(11)    NOT NULL COMMENT '调度-结果',
-    `trigger_msg`               text COMMENT '调度-日志',
-    `handle_time`               datetime            DEFAULT NULL COMMENT '执行-时间',
-    `handle_code`               int(11)    NOT NULL COMMENT '执行-状态',
-    `handle_msg`                text COMMENT '执行-日志',
-    `alarm_status`              tinyint(4) NOT NULL DEFAULT '0' COMMENT '告警状态：0-默认、1-无需告警、2-告警成功、3-告警失败',
+    `job_group`                 int(11)    NOT NULL COMMENT 'Executor group ID',
+    `job_id`                    int(11)    NOT NULL COMMENT 'Job ID',
+    `executor_address`          varchar(255)        DEFAULT NULL COMMENT 'Executor address used for this execution',
+    `executor_handler`          varchar(255)        DEFAULT NULL COMMENT 'Job handler name',
+    `executor_param`            varchar(512)        DEFAULT NULL COMMENT 'Job handler parameters',
+    `executor_sharding_param`   varchar(20)         DEFAULT NULL COMMENT 'Sharding parameters, e.g. 1/2',
+    `executor_fail_retry_count` int(11)    NOT NULL DEFAULT '0' COMMENT 'Fail retry count',
+    `trigger_time`              datetime            DEFAULT NULL COMMENT 'Trigger time',
+    `schedule_time`             datetime            DEFAULT NULL COMMENT 'Theoretical schedule time; NULL when triggered manually',
+    `trigger_code`              int(11)    NOT NULL COMMENT 'Trigger result code',
+    `trigger_msg`               text COMMENT 'Trigger message/log',
+    `handle_time`               datetime            DEFAULT NULL COMMENT 'Handle time',
+    `handle_code`               int(11)    NOT NULL COMMENT 'Handle result code',
+    `handle_msg`                text COMMENT 'Handle message/log',
+    `alarm_status`              tinyint(4) NOT NULL DEFAULT '0' COMMENT 'Alarm status: 0=default, 1=skip, 2=sent, 3=failed',
     PRIMARY KEY (`id`),
     KEY `I_trigger_time` (`trigger_time`),
     KEY `I_handle_code` (`handle_code`),
@@ -110,10 +110,10 @@ CREATE TABLE `orth_job_log`
 CREATE TABLE `orth_job_log_report`
 (
     `id`            int(11) NOT NULL AUTO_INCREMENT,
-    `trigger_day`   datetime         DEFAULT NULL COMMENT '调度-时间',
-    `running_count` int(11) NOT NULL DEFAULT '0' COMMENT '运行中-日志数量',
-    `suc_count`     int(11) NOT NULL DEFAULT '0' COMMENT '执行成功-日志数量',
-    `fail_count`    int(11) NOT NULL DEFAULT '0' COMMENT '执行失败-日志数量',
+    `trigger_day`   datetime         DEFAULT NULL COMMENT 'Report date',
+    `running_count` int(11) NOT NULL DEFAULT '0' COMMENT 'Running log count',
+    `suc_count`     int(11) NOT NULL DEFAULT '0' COMMENT 'Success log count',
+    `fail_count`    int(11) NOT NULL DEFAULT '0' COMMENT 'Failure log count',
     `update_time`   datetime         DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `i_trigger_day` (`trigger_day`) USING BTREE
@@ -124,7 +124,7 @@ CREATE TABLE `orth_job_log_report`
 
 CREATE TABLE `orth_job_lock`
 (
-    `lock_name` varchar(50) NOT NULL COMMENT '锁名称',
+    `lock_name` varchar(50) NOT NULL COMMENT 'Lock name',
     PRIMARY KEY (`lock_name`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4;
@@ -134,49 +134,57 @@ CREATE TABLE `orth_job_lock`
 CREATE TABLE `orth_job_user`
 (
     `id`         int(11)     NOT NULL AUTO_INCREMENT,
-    `username`   varchar(50) NOT NULL COMMENT '账号',
-    `password`   varchar(100) NOT NULL COMMENT '密码加密信息',
-    `token`      varchar(100) DEFAULT NULL COMMENT '登录token',
-    `role`       tinyint(4)  NOT NULL COMMENT '角色：0-普通用户、1-管理员',
-    `permission` varchar(255) DEFAULT NULL COMMENT '权限：执行器ID列表，多个逗号分割',
+    `username`   varchar(50) NOT NULL COMMENT 'Username',
+    `password`   varchar(100) NOT NULL COMMENT 'Hashed password',
+    `token`      varchar(100) DEFAULT NULL COMMENT 'Login token',
+    `role`       tinyint(4)  NOT NULL COMMENT 'Role: 0=normal, 1=admin',
+    `permission` varchar(255) DEFAULT NULL COMMENT 'Permissions: executor group IDs, comma-separated',
     PRIMARY KEY (`id`),
     UNIQUE KEY `i_username` (`username`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4;
 
 
-## —————————————————————— for default data ——————————————————
+## —————————————————————— default seed data ——————————————————
 
 INSERT INTO `orth_job_group`(`id`, `app_name`, `title`, `address_type`, `address_list`, `update_time`)
     VALUES (1, 'orth-executor-sample', 'Executor Sample', 0, NULL, now()),
            (2, 'orth-executor-sample-ai', 'AI Executor Sample', 0, NULL, now()),
-           (3, 'spring-executor', 'Spring Executor Name', 0, NULL, now());
+           (3, 'spring-executor', 'Spring Executor', 0, NULL, now());
 
 INSERT INTO `orth_job_info`(`id`, `job_group`, `job_desc`, `add_time`, `update_time`, `author`, `alarm_email`,
                            `schedule_type`, `schedule_conf`, `misfire_strategy`, `executor_route_strategy`,
                            `executor_handler`, `executor_param`, `executor_block_strategy`, `executor_timeout`,
                            `executor_fail_retry_count`, `glue_type`, `glue_source`, `glue_remark`, `glue_updatetime`,
                            `child_jobid`)
-VALUES (1, 1, '示例任务01', now(), now(), 'Orth', '', 'CRON', '0 0 0 * * ? *',
-        'DO_NOTHING', 'FIRST', 'demoJobHandler', '', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'GLUE代码初始化',
+VALUES (1, 1, 'Sample Job 01', now(), now(), 'admin', '', 'CRON', '0 0 0 * * ? *',
+        'DO_NOTHING', 'FIRST', 'demoJobHandler', '', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'Initial GLUE code',
         now(), ''),
-       (2, 2, 'Ollama示例任务01', now(), now(), 'Orth', '', 'NONE', '',
+       (2, 2, 'Ollama Sample Job 01', now(), now(), 'admin', '', 'NONE', '',
         'DO_NOTHING', 'FIRST', 'ollamaJobHandler', '{
-    "input": "慢SQL问题分析思路",
-    "prompt": "你是一个研发工程师，擅长解决技术类问题。",
+    "input": "Analyze slow SQL query patterns",
+    "prompt": "You are a software engineer skilled at solving technical problems.",
     "model": "qwen3:0.6b"
-}', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'GLUE代码初始化',
+}', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'Initial GLUE code',
         now(), ''),
-       (3, 2, 'Dify示例任务', now(), now(), 'Orth', '', 'NONE', '',
+       (3, 2, 'Dify Sample Job', now(), now(), 'admin', '', 'NONE', '',
         'DO_NOTHING', 'FIRST', 'difyWorkflowJobHandler', '{
     "inputs":{
-        "input":"查询班级各学科前三名"
+        "input":"Query top 3 students per subject"
     },
     "user": "orth",
     "baseUrl": "http://localhost/v1",
     "apiKey": "app-OUVgNUOQRIMokfmuJvBJoUTN"
-}', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'GLUE代码初始化',
-        now(), '');
+}', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'Initial GLUE code',
+        now(), ''),
+       (4, 1, 'Shell Script Template', now(), now(), 'admin', '', 'NONE', '',
+        'DO_NOTHING', 'FIRST', '', '', 'SERIAL_EXECUTION', 0, 0, 'GLUE_SHELL',
+        '#!/bin/bash\n# Orth Shell Script Template\n#\n# Environment variables (set by executor):\n#   ORTH_JOB_ID        - Job ID\n#   ORTH_JOB_PARAM     - Job parameters\n#   ORTH_LOG_ID        - Log ID for tracking\n#   ORTH_SCHEDULE_TIME - Scheduled time (ISO 8601, empty if manual)\n#   ORTH_TRIGGER_TIME  - Actual trigger time (ISO 8601)\n#   ORTH_SHARD_INDEX   - Shard index (0-based)\n#   ORTH_SHARD_TOTAL   - Total shard count\n#\n# Positional args: $1=jobParam $2=shardIndex $3=shardTotal\n\necho \"[Orth] Job=$ORTH_JOB_ID Param=$ORTH_JOB_PARAM\"\necho \"[Orth] Schedule=$ORTH_SCHEDULE_TIME Trigger=$ORTH_TRIGGER_TIME\"\necho \"[Orth] Shard=$ORTH_SHARD_INDEX/$ORTH_SHARD_TOTAL\"\n\n# --- Your logic below ---\n\nexit 0',
+        'Shell script template with env vars', now(), ''),
+       (5, 1, 'Python Script Template', now(), now(), 'admin', '', 'NONE', '',
+        'DO_NOTHING', 'FIRST', '', '', 'SERIAL_EXECUTION', 0, 0, 'GLUE_PYTHON',
+        '#!/usr/bin/env python3\n# Orth Python Script Template\n#\n# Environment variables (set by executor):\n#   ORTH_JOB_ID        - Job ID\n#   ORTH_JOB_PARAM     - Job parameters\n#   ORTH_LOG_ID        - Log ID for tracking\n#   ORTH_SCHEDULE_TIME - Scheduled time (ISO 8601, empty if manual)\n#   ORTH_TRIGGER_TIME  - Actual trigger time (ISO 8601)\n#   ORTH_SHARD_INDEX   - Shard index (0-based)\n#   ORTH_SHARD_TOTAL   - Total shard count\n#\n# Positional args: sys.argv[1]=jobParam sys.argv[2]=shardIndex sys.argv[3]=shardTotal\n\nimport os, sys\n\njob_id = os.environ.get(\"ORTH_JOB_ID\", \"\")\njob_param = os.environ.get(\"ORTH_JOB_PARAM\", \"\")\nschedule_time = os.environ.get(\"ORTH_SCHEDULE_TIME\", \"\")\ntrigger_time = os.environ.get(\"ORTH_TRIGGER_TIME\", \"\")\nshard_index = os.environ.get(\"ORTH_SHARD_INDEX\", \"0\")\nshard_total = os.environ.get(\"ORTH_SHARD_TOTAL\", \"1\")\n\nprint(f\"[Orth] Job={job_id} Param={job_param}\")\nprint(f\"[Orth] Schedule={schedule_time} Trigger={trigger_time}\")\nprint(f\"[Orth] Shard={shard_index}/{shard_total}\")\n\n# --- Your logic below ---\n\nsys.exit(0)',
+        'Python script template with env vars', now(), '');
 
 INSERT INTO `orth_job_user`(`id`, `username`, `password`, `role`, `permission`)
 VALUES (1, 'admin', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 1, NULL);
