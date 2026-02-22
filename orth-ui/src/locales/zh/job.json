@@ -10,7 +10,7 @@
     "glueType": "运行模式",
     "handler": "Handler",
     "author": "负责人",
-    "superTask": "父任务",
+    "superTask": "模板任务",
     "status": "状态",
     "actions": "操作"
   },
@@ -20,7 +20,7 @@
     "jobDescription": "任务描述",
     "handler": "Handler",
     "author": "负责人",
-    "superTask": "父任务"
+    "superTask": "模板任务"
   },
   "noOnlineExecutors": "无在线执行器",
   "noUpcomingTriggers": "暂无调度计划",
@@ -33,7 +33,7 @@
     "batchTrigger": "批量触发",
     "viewLogs": "查看日志",
     "glueCode": "GLUE 代码",
-    "forkSuperTask": "派生子任务"
+    "forkSuperTask": "从模板派生"
   },
   "messages": {
     "jobDeleted": "任务已删除",
@@ -72,7 +72,7 @@
       "retryCount": "失败重试次数",
       "childJobIds": "子任务 ID",
       "childJobIdsPlaceholder": "多个ID用逗号分隔",
-      "superTask": "父任务",
+      "superTask": "模板任务",
       "superTaskPlaceholder": "按ID或描述搜索"
     },
     "messages": {
@@ -102,7 +102,7 @@
     }
   },
   "batchCopy": {
-    "title": "派生子任务 - 批量创建",
+    "title": "从模板派生 - 批量创建子任务",
     "createButton": "创建子任务",
     "successTag": "成功: {{count}}",
     "failedTag": "失败: {{count}}",

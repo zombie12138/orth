@@ -2,8 +2,8 @@
   "title": "GLUE 代码 - #{{id}} {{desc}}",
   "save": "保存",
   "jobNotFound": "任务未找到",
-  "subTaskAlert": "这是子任务，请在父任务上编辑代码。",
-  "goToSuperTask": "前往父任务 #{{id}}",
+  "subTaskAlert": "这是子任务，请在模板任务上编辑代码。",
+  "goToSuperTask": "前往模板任务 #{{id}}",
   "saveModal": {
     "title": "保存 GLUE 代码",
     "remark": "备注",
