@@ -53,23 +53,23 @@ public class ExecutorBizImpl implements ExecutorBiz {
 
         // Load or create job handler based on glue type
         HandlerLoadResult handlerResult = loadJobHandler(triggerRequest, jobThread, jobHandler);
-        if (!handlerResult.isSuccess()) {
-            return Response.of(OrthJobContext.HANDLE_CODE_FAIL, handlerResult.getErrorMessage());
+        if (!handlerResult.success()) {
+            return Response.of(OrthJobContext.HANDLE_CODE_FAIL, handlerResult.errorMessage());
         }
 
-        jobHandler = handlerResult.getJobHandler();
-        jobThread = handlerResult.getJobThread();
-        removeOldReason = handlerResult.getRemoveOldReason();
+        jobHandler = handlerResult.jobHandler();
+        jobThread = handlerResult.jobThread();
+        removeOldReason = handlerResult.removeOldReason();
 
         // Apply block strategy if thread already exists
         BlockStrategyResult blockResult =
                 applyBlockStrategy(triggerRequest, jobThread, removeOldReason);
-        if (!blockResult.isSuccess()) {
-            return Response.of(OrthJobContext.HANDLE_CODE_FAIL, blockResult.getErrorMessage());
+        if (!blockResult.success()) {
+            return Response.of(OrthJobContext.HANDLE_CODE_FAIL, blockResult.errorMessage());
         }
 
-        jobThread = blockResult.getJobThread();
-        removeOldReason = blockResult.getRemoveOldReason();
+        jobThread = blockResult.jobThread();
+        removeOldReason = blockResult.removeOldReason();
 
         // Create new thread if needed
         if (jobThread == null) {
@@ -86,17 +86,17 @@ public class ExecutorBizImpl implements ExecutorBiz {
     private HandlerLoadResult loadJobHandler(
             TriggerRequest triggerRequest, JobThread jobThread, IJobHandler jobHandler) {
         GlueTypeEnum glueTypeEnum = GlueTypeEnum.match(triggerRequest.getGlueType());
-        String removeOldReason = null;
 
-        if (GlueTypeEnum.BEAN == glueTypeEnum) {
-            return loadBeanHandler(triggerRequest, jobThread, jobHandler);
-        } else if (GlueTypeEnum.GLUE_GROOVY == glueTypeEnum) {
-            return loadGroovyHandler(triggerRequest, jobThread, jobHandler);
-        } else if (glueTypeEnum != null && glueTypeEnum.isScript()) {
-            return loadScriptHandler(triggerRequest, jobThread, jobHandler);
-        } else {
+        if (glueTypeEnum == null) {
             return HandlerLoadResult.error("Invalid glue type: " + triggerRequest.getGlueType());
         }
+
+        return switch (glueTypeEnum) {
+            case BEAN -> loadBeanHandler(triggerRequest, jobThread, jobHandler);
+            case GLUE_GROOVY -> loadGroovyHandler(triggerRequest, jobThread, jobHandler);
+            case GLUE_SHELL, GLUE_PYTHON, GLUE_PYTHON2, GLUE_NODEJS, GLUE_POWERSHELL, GLUE_PHP ->
+                    loadScriptHandler(triggerRequest, jobThread, jobHandler);
+        };
     }
 
     /** Loads Bean-based job handler. */
@@ -178,16 +178,14 @@ public class ExecutorBizImpl implements ExecutorBiz {
 
     /** Checks if Groovy handler is current (not updated). */
     private boolean isGroovyHandlerCurrent(JobThread jobThread, TriggerRequest triggerRequest) {
-        return jobThread.getHandler() instanceof GlueJobHandler
-                && ((GlueJobHandler) jobThread.getHandler()).getGlueUpdatetime()
-                        == triggerRequest.getGlueUpdatetime();
+        return jobThread.getHandler() instanceof GlueJobHandler handler
+                && handler.getGlueUpdatetime() == triggerRequest.getGlueUpdatetime();
     }
 
     /** Checks if Script handler is current (not updated). */
     private boolean isScriptHandlerCurrent(JobThread jobThread, TriggerRequest triggerRequest) {
-        return jobThread.getHandler() instanceof ScriptJobHandler
-                && ((ScriptJobHandler) jobThread.getHandler()).getGlueUpdatetime()
-                        == triggerRequest.getGlueUpdatetime();
+        return jobThread.getHandler() instanceof ScriptJobHandler handler
+                && handler.getGlueUpdatetime() == triggerRequest.getGlueUpdatetime();
     }
 
     /**
@@ -225,25 +223,12 @@ public class ExecutorBizImpl implements ExecutorBiz {
     }
 
     /** Result of handler loading operation. */
-    private static class HandlerLoadResult {
-        private final boolean success;
-        private final IJobHandler jobHandler;
-        private final JobThread jobThread;
-        private final String removeOldReason;
-        private final String errorMessage;
-
-        private HandlerLoadResult(
-                boolean success,
-                IJobHandler jobHandler,
-                JobThread jobThread,
-                String removeOldReason,
-                String errorMessage) {
-            this.success = success;
-            this.jobHandler = jobHandler;
-            this.jobThread = jobThread;
-            this.removeOldReason = removeOldReason;
-            this.errorMessage = errorMessage;
-        }
+    private record HandlerLoadResult(
+            boolean success,
+            IJobHandler jobHandler,
+            JobThread jobThread,
+            String removeOldReason,
+            String errorMessage) {
 
         static HandlerLoadResult success(
                 IJobHandler jobHandler, JobThread jobThread, String removeOldReason) {
@@ -253,42 +238,11 @@ public class ExecutorBizImpl implements ExecutorBiz {
         static HandlerLoadResult error(String errorMessage) {
             return new HandlerLoadResult(false, null, null, null, errorMessage);
         }
-
-        boolean isSuccess() {
-            return success;
-        }
-
-        IJobHandler getJobHandler() {
-            return jobHandler;
-        }
-
-        JobThread getJobThread() {
-            return jobThread;
-        }
-
-        String getRemoveOldReason() {
-            return removeOldReason;
-        }
-
-        String getErrorMessage() {
-            return errorMessage;
-        }
     }
 
     /** Result of block strategy application. */
-    private static class BlockStrategyResult {
-        private final boolean success;
-        private final JobThread jobThread;
-        private final String removeOldReason;
-        private final String errorMessage;
-
-        private BlockStrategyResult(
-                boolean success, JobThread jobThread, String removeOldReason, String errorMessage) {
-            this.success = success;
-            this.jobThread = jobThread;
-            this.removeOldReason = removeOldReason;
-            this.errorMessage = errorMessage;
-        }
+    private record BlockStrategyResult(
+            boolean success, JobThread jobThread, String removeOldReason, String errorMessage) {
 
         static BlockStrategyResult success(JobThread jobThread, String removeOldReason) {
             return new BlockStrategyResult(true, jobThread, removeOldReason, null);
@@ -296,22 +250,6 @@ public class ExecutorBizImpl implements ExecutorBiz {
 
         static BlockStrategyResult error(String errorMessage) {
             return new BlockStrategyResult(false, null, null, errorMessage);
-        }
-
-        boolean isSuccess() {
-            return success;
-        }
-
-        JobThread getJobThread() {
-            return jobThread;
-        }
-
-        String getRemoveOldReason() {
-            return removeOldReason;
-        }
-
-        String getErrorMessage() {
-            return errorMessage;
         }
     }
 
