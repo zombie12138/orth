@@ -82,7 +82,7 @@ public class JobInfoMapperTest {
                         null,
                         null,
                         null,
-                        null);
+                        0);
         int totalCount =
                 jobInfoMapper.pageListCount(
                         PAGE_OFFSET,
@@ -92,7 +92,7 @@ public class JobInfoMapperTest {
                         null,
                         null,
                         null,
-                        null);
+                        0);
 
         assertNotNull(pageResult, "Page result should not be null");
         logger.info("Found {} jobs in page, total count: {}", pageResult.size(), totalCount);

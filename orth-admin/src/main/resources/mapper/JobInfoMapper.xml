@@ -90,8 +90,8 @@
 			<if test="author != null and author != ''">
 				AND t.author like CONCAT(CONCAT('%', #{author}), '%')
 			</if>
-			<if test="superTaskName != null and superTaskName != ''">
-				AND (t.job_desc like CONCAT(CONCAT('%', #{superTaskName}), '%') OR st.job_desc like CONCAT(CONCAT('%', #{superTaskName}), '%'))
+			<if test="superTaskId gt 0">
+				AND t.super_task_id = #{superTaskId}
 			</if>
 		</trim>
 		ORDER BY t.id DESC
@@ -118,8 +118,8 @@
 			<if test="author != null and author != ''">
 				AND t.author like CONCAT(CONCAT('%', #{author}), '%')
 			</if>
-			<if test="superTaskName != null and superTaskName != ''">
-				AND (t.job_desc like CONCAT(CONCAT('%', #{superTaskName}), '%') OR st.job_desc like CONCAT(CONCAT('%', #{superTaskName}), '%'))
+			<if test="superTaskId gt 0">
+				AND t.super_task_id = #{superTaskId}
 			</if>
 		</trim>
 	</select>

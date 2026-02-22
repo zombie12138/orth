@@ -84,7 +84,7 @@ class JobScheduleHelperTest extends AbstractIntegrationTest {
 
         // Clean up test data
         jobInfoMapper
-                .pageList(0, 1000, 0, -1, null, null, null, null)
+                .pageList(0, 1000, 0, -1, null, null, null, 0)
                 .forEach(job -> jobInfoMapper.delete(job.getId()));
         if (testGroup != null) {
             jobGroupMapper.remove(testGroup.getId());

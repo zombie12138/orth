@@ -35,5 +35,5 @@ export interface JobQueryParams {
   jobDesc?: string;
   executorHandler?: string;
   author?: string;
-  superTaskName?: string;
+  superTaskId?: number;
 }

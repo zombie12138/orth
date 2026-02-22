@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
     Card,
     Table,
@@ -36,13 +36,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
-import { fetchJobs, deleteJob, startJob, stopJob, nextTriggerTime } from '../../api/jobs';
+import { fetchJobs, deleteJob, startJob, stopJob, nextTriggerTime, searchJobs } from '../../api/jobs';
 import { fetchPermittedGroups } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { getTriggerStatus } from '../../utils/constants';
 import type { JobInfo } from '../../types/job';
 import type { JobGroup } from '../../types/group';
+import debounce from '../_utils/debounce';
 import JobFormModal from './components/JobFormModal';
 import TriggerModal from './components/TriggerModal';
 import BatchTriggerModal from './components/BatchTriggerModal';
@@ -105,8 +106,31 @@ export default function JobsPage() {
         jobDesc: '',
         executorHandler: '',
         author: '',
-        superTaskName: '',
+        superTaskId: 0,
     });
+
+    const [superTaskFilterOptions, setSuperTaskFilterOptions] = useState<
+        { value: number; label: string }[]
+    >([]);
+
+    const handleSuperTaskFilterSearch = useMemo(
+        () =>
+            debounce(async (query: string) => {
+                if (!query) return;
+                try {
+                    const tasks = await searchJobs(query, filters.jobGroup || undefined);
+                    setSuperTaskFilterOptions(
+                        tasks.map((tsk) => ({
+                            value: tsk.id,
+                            label: `#${tsk.id} ${tsk.jobDesc}`,
+                        })),
+                    );
+                } catch {
+                    // ignore search errors
+                }
+            }, 400),
+        [filters.jobGroup],
+    );
 
     const [formModalOpen, setFormModalOpen] = useState(false);
     const [editingJob, setEditingJob] = useState<JobInfo | null>(null);
@@ -201,6 +225,7 @@ export default function JobsPage() {
         {
             title: t('columns.description'),
             dataIndex: 'jobDesc',
+            width: 180,
             ellipsis: { showTitle: false },
             render: (v: string) => (
                 <Tooltip title={v}>
@@ -455,14 +480,19 @@ export default function JobsPage() {
                             }
                         />
                     </Form.Item>
-                    <Form.Item name="superTaskName">
-                        <Input
+                    <Form.Item name="superTaskId">
+                        <Select
+                            style={{ width: isMobile ? '100%' : 200 }}
                             placeholder={t('filters.superTask')}
                             allowClear
-                            onChange={(e) =>
+                            showSearch
+                            filterOption={false}
+                            onSearch={handleSuperTaskFilterSearch}
+                            options={superTaskFilterOptions}
+                            onChange={(v) =>
                                 setFilters((p) => ({
                                     ...p,
-                                    superTaskName: e.target.value,
+                                    superTaskId: v ?? 0,
                                 }))
                             }
                         />
@@ -500,7 +530,7 @@ export default function JobsPage() {
                     columns={columns}
                     dataSource={data?.data}
                     loading={isLoading}
-                    scroll={{ x: 1100 }}
+                    scroll={{ x: 1300 }}
                     rowSelection={{
                         selectedRowKeys,
                         onChange: (keys) => setSelectedRowKeys(keys as number[]),

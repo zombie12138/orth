@@ -70,7 +70,7 @@ public class JobServiceImpl implements JobService {
             String jobDesc,
             String executorHandler,
             String author,
-            String superTaskName) {
+            int superTaskId) {
 
         List<JobInfo> list =
                 jobInfoMapper.pageList(
@@ -81,7 +81,7 @@ public class JobServiceImpl implements JobService {
                         jobDesc,
                         executorHandler,
                         author,
-                        superTaskName);
+                        superTaskId);
         int totalCount =
                 jobInfoMapper.pageListCount(
                         offset,
@@ -91,7 +91,7 @@ public class JobServiceImpl implements JobService {
                         jobDesc,
                         executorHandler,
                         author,
-                        superTaskName);
+                        superTaskId);
 
         PageModel<JobInfo> pageModel = new PageModel<>();
         pageModel.setData(list);

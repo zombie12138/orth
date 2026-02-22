@@ -52,7 +52,7 @@ public interface JobService {
             String jobDesc,
             String executorHandler,
             String author,
-            String superTaskName);
+            int superTaskId);
 
     /**
      * Creates a new job configuration.

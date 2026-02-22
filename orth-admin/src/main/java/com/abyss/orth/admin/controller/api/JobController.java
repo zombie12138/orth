@@ -68,7 +68,7 @@ public class JobController {
             @RequestParam(defaultValue = "") String jobDesc,
             @RequestParam(defaultValue = "") String executorHandler,
             @RequestParam(defaultValue = "") String author,
-            @RequestParam(required = false) String superTaskName) {
+            @RequestParam(defaultValue = "0") int superTaskId) {
 
         JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
         return orthJobService.pageList(
@@ -79,7 +79,7 @@ public class JobController {
                 jobDesc,
                 executorHandler,
                 author,
-                superTaskName);
+                superTaskId);
     }
 
     @PostMapping

@@ -25,7 +25,7 @@ public interface JobInfoMapper {
             @Param("jobDesc") String jobDesc,
             @Param("executorHandler") String executorHandler,
             @Param("author") String author,
-            @Param("superTaskName") String superTaskName);
+            @Param("superTaskId") int superTaskId);
 
     /** Count total jobs matching pageList query criteria. */
     int pageListCount(
@@ -36,7 +36,7 @@ public interface JobInfoMapper {
             @Param("jobDesc") String jobDesc,
             @Param("executorHandler") String executorHandler,
             @Param("author") String author,
-            @Param("superTaskName") String superTaskName);
+            @Param("superTaskId") int superTaskId);
 
     /** Create new job. */
     int save(JobInfo info);

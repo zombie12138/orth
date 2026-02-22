@@ -138,7 +138,7 @@ public class ExecutorGroupController {
             return adminCheck;
         }
 
-        int jobCount = jobInfoMapper.pageListCount(0, 10, id, -1, null, null, null, null);
+        int jobCount = jobInfoMapper.pageListCount(0, 10, id, -1, null, null, null, 0);
         if (jobCount > 0) {
             return Response.ofFail(I18nUtil.getString("jobgroup_del_limit_0"));
         }

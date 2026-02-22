@@ -49,6 +49,16 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
         if (open && job) {
             form.setFieldsValue(job);
             setScheduleType(job.scheduleType);
+            if (job.superTaskId && job.superTaskId > 0) {
+                setSuperTaskOptions([
+                    {
+                        value: job.superTaskId,
+                        label: `#${job.superTaskId} ${job.superTaskName || ''}`,
+                    },
+                ]);
+            } else {
+                setSuperTaskOptions([]);
+            }
         } else if (open) {
             form.resetFields();
             setScheduleType('NONE');
