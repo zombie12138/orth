@@ -1,32 +1,87 @@
+Orth
+Copyright (c) 2025-present, zombie12138 and contributors.
+
+Orth is a fork of XXL-JOB (https://github.com/xuxueli/xxl-job).
+
+Original work:
 Copyright (c) 2015-present, xuxueli.
+Licensed under the GNU General Public License v3.0.
+
+Modifications from upstream XXL-JOB (per GPLv3 Section 5(a)):
+- Renamed project from XXL-JOB to Orth; changed groupId to com.abyss
+- Replaced JSP admin UI with React 19 + TypeScript + Ant Design 5 SPA (orth-ui/)
+- Added JWT authentication with role-based access control
+- Added SuperTask pattern (batch copy from template jobs)
+- Added batch trigger with logical schedule time support
+- Added job import/export (JSON)
+- Added concurrent execution block strategy
+- Migrated to Spring Boot 3.5, Java 17, Jakarta EE namespace
+- Redesigned REST API with OpenAPI conventions
+- Added architecture documentation (arch/)
+- Converted codebase and documentation to English
 
 Dependencies:
 ================================================================
 
-Spring:
+Spring Framework / Spring Boot:
 
   * LICENSE:
-    * http://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
+    * https://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
   * HOMEPAGE:
-    * http://www.springsource.org
+    * https://spring.io/projects/spring-boot
 
 Netty:
 
   * LICENSE:
-    * http://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
+    * https://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
   * HOMEPAGE:
     * https://github.com/netty/netty
 
-Mybatis:
+MyBatis:
 
   * LICENSE:
-    * http://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
+    * https://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
   * HOMEPAGE:
     * https://mybatis.org/mybatis-3/
 
 SLF4J:
 
   * LICENSE:
-    * http://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
+    * https://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
   * HOMEPAGE:
-    * http://www.slf4j.org
+    * https://www.slf4j.org
+
+Groovy:
+
+  * LICENSE:
+    * https://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
+  * HOMEPAGE:
+    * https://groovy-lang.org
+
+Gson:
+
+  * LICENSE:
+    * https://www.apache.org/licenses/LICENSE-2.0 (Apache License 2.0)
+  * HOMEPAGE:
+    * https://github.com/google/gson
+
+React:
+
+  * LICENSE:
+    * https://opensource.org/licenses/MIT (MIT License)
+  * HOMEPAGE:
+    * https://react.dev
+
+Ant Design:
+
+  * LICENSE:
+    * https://opensource.org/licenses/MIT (MIT License)
+  * HOMEPAGE:
+    * https://ant.design
+
+Vite:
+
+  * LICENSE:
+    * https://opensource.org/licenses/MIT (MIT License)
+  * HOMEPAGE:
+    * https://vite.dev
