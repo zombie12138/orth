@@ -300,6 +300,82 @@ flowchart LR
 
 **Calculation:** 30 cycles × 3s = 90+ seconds idle before cleanup.
 
+## Concurrent Execution
+
+When `executorBlockStrategy = CONCURRENT` and `executorConcurrency > 1`, a `JobThread` uses an internal `ExecutorService` thread pool. The main thread becomes a dispatcher that polls triggers from the queue and submits them to worker threads.
+
+```mermaid
+flowchart TB
+    subgraph JobThread["JobThread (concurrency=3)"]
+        Dispatcher["Dispatcher Thread<br/>Polls trigger queue"]
+        Pool["Worker Pool<br/>(ThreadPoolExecutor)"]
+
+        subgraph Workers["Worker Threads"]
+            W1["Worker 1<br/>Context + Execute + Callback"]
+            W2["Worker 2<br/>Context + Execute + Callback"]
+            W3["Worker 3<br/>Context + Execute + Callback"]
+        end
+
+        Dispatcher -->|"submit"| Pool
+        Pool --> W1
+        Pool --> W2
+        Pool --> W3
+    end
+
+    Queue["Trigger Queue"] --> Dispatcher
+    W1 --> CB["Callback Queue"]
+    W2 --> CB
+    W3 --> CB
+```
+
+### Execution Flow
+
+```mermaid
+sequenceDiagram
+    participant Admin as Admin Scheduler
+    participant EB as ExecutorBizImpl
+    participant JT as JobThread (Dispatcher)
+    participant Pool as Worker Pool
+    participant H as Handler
+
+    Admin->>EB: run(trigger, concurrency=3)
+    EB->>JT: pushTriggerQueue(trigger)
+
+    loop Poll Loop
+        JT->>JT: poll trigger from queue
+        JT->>Pool: submit(trigger)
+        Pool->>Pool: activeCount++
+        Pool->>H: execute()
+        H-->>Pool: result
+        Pool->>Pool: pushCallback(trigger)
+        Pool->>Pool: activeCount--
+    end
+```
+
+### Behavior Details
+
+| Aspect | Serial (concurrency=1) | Concurrent (concurrency>1) |
+|--------|----------------------|---------------------------|
+| Main thread role | Execute triggers inline | Dispatch to worker pool |
+| `isRunningOrHasQueue()` | `running \|\| !queue.empty` | `activeCount > 0 \|\| !queue.empty` |
+| Idle cleanup | `idleTimes > 30 && queue.empty` | `idleTimes > 30 && queue.empty && activeCount == 0` |
+| Context (ThreadLocal) | Set by main thread | Set by each worker thread |
+| Callback | Pushed in `finally` of main loop | Pushed in `finally` of each worker |
+| Shutdown | `toStop` flag exits loop | `toStop` exits loop + `shutdownNow()` on pool |
+| `init()/destroy()` | Called once by main thread | Called once by main thread (not per-worker) |
+
+### Thread Safety Requirements
+
+When using `CONCURRENT`, the job handler's `execute()` method **must be thread-safe**:
+- No shared mutable state without synchronization
+- `OrthJobContext` is per-thread (ThreadLocal) — safe
+- `OrthJobHelper.log()` writes to per-execution log files — safe
+- Handler `init()` and `destroy()` are called once (before/after all workers)
+
+### Concurrency Change Detection
+
+If a trigger arrives with a different `executorConcurrency` than the running `JobThread`, `ExecutorBizImpl` kills the old thread and creates a new one with the updated concurrency level. This ensures the pool size always matches the configured value.
+
 ## Key Metrics
 
 | Metric | Value | Purpose |
