@@ -46,7 +46,7 @@ flowchart TB
 
 ### New Column: `super_task_id`
 
-Added to `xxl_job_info`:
+Added to `orth_job_info`:
 
 | Value | Meaning |
 |-------|---------|
@@ -62,7 +62,7 @@ sequenceDiagram
     participant User
     participant UI as Job List UI
     participant API as Batch Copy API
-    participant DB as xxl_job_info
+    participant DB as orth_job_info
     participant Trigger as Job Trigger
     participant Executor
 
@@ -119,7 +119,7 @@ Returns `BatchCopyResult` with `successCount`, `failCount`, and `createdJobIds`.
 
 At trigger time, `JobTrigger.java:trigger()` resolves the SuperTask chain:
 
-1. Load SubTask from `xxl_job_info`
+1. Load SubTask from `orth_job_info`
 2. If `super_task_id` is set, load the referenced SuperTask
 3. Copy `glue_source` and `glue_updatetime` from SuperTask into the SubTask's in-memory object
 4. Trigger with inherited code + SubTask-specific params
@@ -149,7 +149,7 @@ At trigger time, `JobTrigger.java:trigger()` resolves the SuperTask chain:
 
 ### SuperTask Tag Display
 
-The job list uses a LEFT JOIN (`XxlJobInfoMapper.xml:pageList`) to resolve `super_task_name` from the parent. A transient `superTaskName` field on `XxlJobInfo` carries this to the UI.
+The job list uses a LEFT JOIN (`JobInfoMapper.xml:pageList`) to resolve `super_task_name` from the parent. A transient `superTaskName` field on `JobInfo` carries this to the UI.
 
 | Badge Color | Meaning | Tooltip |
 |-------------|---------|---------|
@@ -158,7 +158,7 @@ The job list uses a LEFT JOIN (`XxlJobInfoMapper.xml:pageList`) to resolve `supe
 
 ## Cascade Delete Protection
 
-SuperTasks with active SubTasks cannot be deleted. `XxlJobServiceImpl.java:delete()` checks `countSubTasks(id)` before proceeding. Users must delete all SubTasks first.
+SuperTasks with active SubTasks cannot be deleted. `JobServiceImpl.java:delete()` checks `countSubTasks(id)` before proceeding. Users must delete all SubTasks first.
 
 A database-level foreign key constraint provides additional safety.
 

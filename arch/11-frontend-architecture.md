@@ -2,14 +2,14 @@
 
 ## Overview
 
-The Orth frontend (`xxl-job-ui/`) is a standalone React SPA, fully decoupled from the Spring Boot admin backend. It communicates exclusively via REST API with JWT authentication.
+The Orth frontend (`orth-ui/`) is a standalone React SPA, fully decoupled from the Spring Boot admin backend. It communicates exclusively via REST API with JWT authentication.
 
 **Tech Stack**: React 19, Ant Design 5, Zustand, TanStack React Query, Vite, TypeScript
 
 ## Directory Structure
 
 ```
-xxl-job-ui/src/
+orth-ui/src/
 ├── api/            # Modular API clients (one file per domain)
 ├── components/     # Layout (AppLayout, AppSider, AppHeader), Guards
 ├── hooks/          # Custom hooks (pagination, permissions, responsive, enums, theme)

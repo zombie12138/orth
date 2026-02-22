@@ -7,6 +7,6 @@ target/
 .gitattributes
 mysql/data
 vscode/
-xxl_data/
-xxl-job-ui/node_modules/
-xxl-job-ui/dist/
+orth_data/
+orth-ui/node_modules/
+orth-ui/dist/

@@ -27,7 +27,7 @@ flowchart TB
     end
 
     subgraph Storage["Persistent Store"]
-        DB[(MySQL<br/>xxl_job_info)]
+        DB[(MySQL<br/>orth_job_info)]
         FILE["JSON File<br/>(clipboard/disk)"]
     end
 

@@ -27,7 +27,7 @@ When modifying lock-related code, document:
  * Acquires scheduling lock to prevent duplicate job triggers.
  * 
  * Lock scope: Single job group scheduling cycle
- * Acquisition: Via XxlJobLockMapper.scheduleLock()
+ * Acquisition: Via JobLockMapper.scheduleLock()
  * Release: Automatic at transaction commit
  * Failure mode: Skip scheduling cycle, retry next iteration
  */

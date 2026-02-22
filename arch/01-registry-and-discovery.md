@@ -20,9 +20,9 @@ flowchart TB
     end
     
     subgraph RegistryStorage["Service Registry"]
-        RT[(xxl_job_registry<br/>• app_name<br/>• address<br/>• update_time)]
+        RT[(orth_job_registry<br/>• app_name<br/>• address<br/>• update_time)]
         
-        JG[(xxl_job_group<br/>• app_name<br/>• address_list)]
+        JG[(orth_job_group<br/>• app_name<br/>• address_list)]
     end
     
     E1 -->|"Heartbeat every 30s"| A1
@@ -86,7 +86,7 @@ sequenceDiagram
 
 ```mermaid
 erDiagram
-    xxl_job_registry {
+    orth_job_registry {
         int id PK
         varchar registry_group "Always: EXECUTOR"
         varchar registry_key "Executor app_name"
@@ -95,7 +95,7 @@ erDiagram
         UNIQUE idx_g_k_v "Composite unique key"
     }
     
-    xxl_job_group {
+    orth_job_group {
         int id PK
         varchar app_name "Links to registry_key"
         int address_type "0=auto, 1=manual"
@@ -115,13 +115,13 @@ sequenceDiagram
     participant Trigger as Job Trigger
     
     loop Every 30 seconds
-        Monitor->>Registry: SELECT * FROM xxl_job_registry<br/>WHERE registry_group = 'EXECUTOR'
+        Monitor->>Registry: SELECT * FROM orth_job_registry<br/>WHERE registry_group = 'EXECUTOR'
         Registry-->>Monitor: All active executors
         
         Monitor->>Monitor: Group by app_name<br/>(registry_key)
         
         loop For each app_name
-            Monitor->>GroupMapper: Find xxl_job_group<br/>WHERE app_name = ?
+            Monitor->>GroupMapper: Find orth_job_group<br/>WHERE app_name = ?
             
             alt Address type = AUTO
                 Monitor->>GroupMapper: UPDATE address_list<br/>with active executors
@@ -130,7 +130,7 @@ sequenceDiagram
             end
         end
         
-        Monitor->>Registry: DELETE FROM xxl_job_registry<br/>WHERE update_time < (now - 90s)
+        Monitor->>Registry: DELETE FROM orth_job_registry<br/>WHERE update_time < (now - 90s)
         Note over Monitor: Remove stale registrations
     end
     
@@ -314,8 +314,8 @@ stateDiagram-v2
 |-----------|----------|----------------|
 | **ExecutorRegistryThread** | Executor side | Send heartbeats every 30s |
 | **JobRegistryHelper** | Admin side | Process registrations, cleanup stale |
-| **xxl_job_registry** | Database | Store active executor addresses |
-| **xxl_job_group** | Database | Cache executor list per app |
+| **orth_job_registry** | Database | Store active executor addresses |
+| **orth_job_group** | Database | Cache executor list per app |
 | **OpenApiController** | Admin API | Handle `/api/registry` endpoint |
 
 ## Registration Request Format

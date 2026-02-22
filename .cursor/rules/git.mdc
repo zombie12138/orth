@@ -25,8 +25,8 @@ body (detailed description)
 
 ### Scope (Module Names)
 
-- `admin`: xxl-job-admin module
-- `core`: xxl-job-core module
+- `admin`: orth-admin module
+- `core`: orth-core module
 - `executor`: Executor samples or Python executor
 - `rpc`: RPC/communication layer
 - `scheduler`: Scheduling logic

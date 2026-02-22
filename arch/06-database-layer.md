@@ -4,11 +4,11 @@
 
 ```mermaid
 erDiagram
-    xxl_job_group ||--o{ xxl_job_info : contains
-    xxl_job_info ||--o{ xxl_job_log : generates
-    xxl_job_group ||--o{ xxl_job_registry : registered
+    orth_job_group ||--o{ orth_job_info : contains
+    orth_job_info ||--o{ orth_job_log : generates
+    orth_job_group ||--o{ orth_job_registry : registered
     
-    xxl_job_group {
+    orth_job_group {
         int id PK
         varchar app_name
         varchar title
@@ -16,7 +16,7 @@ erDiagram
         text address_list
     }
     
-    xxl_job_info {
+    orth_job_info {
         int id PK
         int job_group FK
         varchar schedule_type
@@ -26,7 +26,7 @@ erDiagram
         int trigger_status
     }
     
-    xxl_job_log {
+    orth_job_log {
         bigint id PK
         int job_id FK
         datetime trigger_time
@@ -36,7 +36,7 @@ erDiagram
         int alarm_status
     }
     
-    xxl_job_registry {
+    orth_job_registry {
         int id PK
         varchar registry_group
         varchar registry_key
@@ -49,12 +49,12 @@ erDiagram
 
 | Table | Volume | Growth Rate |
 |-------|--------|-------------|
-| `xxl_job_group` | Low (~10s) | Static |
-| `xxl_job_info` | Medium (~1000s) | Slow |
-| **`xxl_job_log`** | **High (millions)** | **Fast** |
-| `xxl_job_registry` | Low (~100s) | Moderate |
+| `orth_job_group` | Low (~10s) | Static |
+| `orth_job_info` | Medium (~1000s) | Slow |
+| **`orth_job_log`** | **High (millions)** | **Fast** |
+| `orth_job_registry` | Low (~100s) | Moderate |
 
-**Key Design:** `xxl_job_log` uses `bigint` ID to support high-volume logging.
+**Key Design:** `orth_job_log` uses `bigint` ID to support high-volume logging.
 
 ## Transaction Patterns
 
@@ -94,7 +94,7 @@ Most operations rely on MyBatis auto-commit:
 
 ```mermaid
 flowchart LR
-    subgraph LogTable["xxl_job_log (high volume)"]
+    subgraph LogTable["orth_job_log (high volume)"]
         I1["I_trigger_time<br/>Time range queries"]
         I2["I_handle_code<br/>Status filtering"]
         I3["I_jobid_jobgroup<br/>Job filtering"]
@@ -138,7 +138,7 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Input["Input:<br/>maxNextTime<br/>pageSize"] --> Query["SELECT * FROM xxl_job_info<br/>WHERE trigger_status = 1<br/>AND trigger_next_time ≤ ?<br/>ORDER BY id<br/>LIMIT ?"]
+    Input["Input:<br/>maxNextTime<br/>pageSize"] --> Query["SELECT * FROM orth_job_info<br/>WHERE trigger_status = 1<br/>AND trigger_next_time ≤ ?<br/>ORDER BY id<br/>LIMIT ?"]
     
     Query --> Issue["⚠️ Missing composite index<br/>Full table scan"]
     
@@ -164,7 +164,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    subgraph LockTable["xxl_job_lock Table"]
+    subgraph LockTable["orth_job_lock Table"]
         LockRow["Single row:<br/>lock_name = 'schedule_lock'"]
     end
     

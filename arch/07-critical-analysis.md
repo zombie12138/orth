@@ -150,7 +150,7 @@ This analysis identifies architectural flaws, performance bottlenecks, and secur
 
 ### MEDIUM: Plaintext Token Storage
 
-**Problem:** `xxl.job.accessToken` stored and transmitted as plaintext.
+**Problem:** `orth.job.accessToken` stored and transmitted as plaintext.
 
 **Risk:** Token leakage allows:
 - Unauthorized job triggers
@@ -189,8 +189,8 @@ delete job_info  (step 3) ← never runs
 
 | Table | Missing Index | Query Affected | Impact |
 |-------|---------------|----------------|--------|
-| `xxl_job_info` | `(trigger_status, trigger_next_time)` | **Schedule query** | Full table scan every second |
-| `xxl_job_log` | `(alarm_status)` | Alarm monitor | Full scan for failures |
+| `orth_job_info` | `(trigger_status, trigger_next_time)` | **Schedule query** | Full table scan every second |
+| `orth_job_log` | `(alarm_status)` | Alarm monitor | Full scan for failures |
 
 **Estimated Improvement:** 100ms → 5ms per query with proper indexes.
 
@@ -214,7 +214,7 @@ Page 10,000: 5,000 ms
 
 ### HIGH: Global Singleton Anti-Pattern
 
-**Problem:** `XxlJobAdminBootstrap.getInstance()` called 50+ times across codebase.
+**Problem:** `OrthAdminBootstrap.getInstance()` called 50+ times across codebase.
 
 **Consequences:**
 - Tight coupling

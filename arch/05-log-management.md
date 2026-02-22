@@ -195,7 +195,7 @@ flowchart TD
     
     subgraph RetryFlow["Failure & Retry Flow"]
         F1["Network timeout or error"]
-        F2["Write to local file:<br/>callbacklog/xxl-job-callback-{md5}.log"]
+        F2["Write to local file:<br/>callbacklog/orth-callback-{md5}.log"]
         F3["Retry thread scans files"]
         F4["Resend to admin"]
         F5{Success?}

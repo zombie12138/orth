@@ -20,8 +20,8 @@ services:
     volumes:
       - ${MYSQL_DATA_DIR}:/var/lib/mysql
       - type: bind
-        source: ./db/tables_xxl_job.sql
-        target: /docker-entrypoint-initdb.d/tables_xxl_job.sql
+        source: ./db/tables_orth_job.sql
+        target: /docker-entrypoint-initdb.d/tables_orth_job.sql
         read_only: true
       - type: bind
         source: ./my.conf

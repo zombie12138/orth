@@ -89,7 +89,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    Request["HTTP Request"] --> Header["XXL-JOB-ACCESS-TOKEN<br/>in header"]
+    Request["HTTP Request"] --> Header["Orth-ACCESS-TOKEN<br/>in header"]
     
     Header --> Validate{Token matches<br/>configured value?}
     

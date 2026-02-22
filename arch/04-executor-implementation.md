@@ -86,10 +86,10 @@ stateDiagram-v2
 ```mermaid
 flowchart LR
     subgraph ThreadLocal["InheritableThreadLocal"]
-        CTX["XxlJobContext<br/>• jobId<br/>• jobParam<br/>• logId<br/>• scheduleTime<br/>• shardIndex/Total"]
+        CTX["OrthJobContext<br/>• jobId<br/>• jobParam<br/>• logId<br/>• scheduleTime<br/>• shardIndex/Total"]
     end
     
-    subgraph Access["Access via XxlJobHelper"]
+    subgraph Access["Access via OrthJobHelper"]
         A1["getJobParam()"]
         A2["getScheduleTime()"]
         A3["log(message)"]
@@ -114,13 +114,13 @@ flowchart LR
 ```mermaid
 flowchart TD
     subgraph Handlers["IJobHandler Implementations"]
-        Method["MethodJobHandler<br/>@XxlJob annotated methods"]
+        Method["MethodJobHandler<br/>@OrthJob annotated methods"]
         Script["ScriptJobHandler<br/>Python/Shell/PowerShell"]
         Glue["GlueJobHandler<br/>Groovy code"]
     end
     
     subgraph Registration["Handler Registration"]
-        Spring["Spring scans @XxlJob<br/>at startup"]
+        Spring["Spring scans @OrthJob<br/>at startup"]
         Runtime["Runtime creates<br/>Script/Glue handlers"]
     end
     
@@ -149,7 +149,7 @@ sequenceDiagram
     participant Proc as Script Process
     
     JT->>SH: execute()
-    SH->>SH: Build environment variables<br/>XXL_JOB_*
+    SH->>SH: Build environment variables<br/>ORTH_JOB_*
     
     alt Script file doesn't exist
         SH->>FS: Create script file<br/>{jobId}_{updateTime}.py
@@ -173,11 +173,11 @@ sequenceDiagram
 ```
 
 **Environment Variables Passed:**
-- `XXL_JOB_ID`, `XXL_JOB_PARAM`
-- `XXL_JOB_LOG_ID`
-- `XXL_JOB_SCHEDULE_TIME` (ISO 8601 or empty for manual)
-- `XXL_JOB_TRIGGER_TIME` (ISO 8601)
-- `XXL_JOB_SHARD_INDEX`, `XXL_JOB_SHARD_TOTAL`
+- `ORTH_JOB_ID`, `ORTH_JOB_PARAM`
+- `ORTH_JOB_LOG_ID`
+- `ORTH_JOB_SCHEDULE_TIME` (ISO 8601 or empty for manual)
+- `ORTH_JOB_TRIGGER_TIME` (ISO 8601)
+- `ORTH_JOB_SHARD_INDEX`, `ORTH_JOB_SHARD_TOTAL`
 
 ## Block Strategy Execution
 
@@ -266,7 +266,7 @@ flowchart TB
         
         subgraph Callbacks["Callback Retry"]
             CBDir["callbacklog/"]
-            CBFiles["xxl-job-callback-{md5}.log"]
+            CBFiles["orth-callback-{md5}.log"]
         end
         
         Root --> Logs

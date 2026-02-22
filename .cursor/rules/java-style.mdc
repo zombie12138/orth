@@ -1,5 +1,5 @@
 ---
-description: Java coding standards for Orth (xxl-job-admin and xxl-job-core)
+description: Java coding standards for Orth (orth-admin and orth-core)
 globs: "**/*.java"
 alwaysApply: false
 ---

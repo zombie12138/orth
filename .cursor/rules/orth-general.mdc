@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Project Context
 
-Orth is a customized fork of xxl-job under the Abyss project, designed for high-performance Python batch data collection task scheduling and execution.
+Orth is a customized fork of orth under the Abyss project, designed for high-performance Python batch data collection task scheduling and execution.
 
 ## Architecture
 

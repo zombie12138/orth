@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-XXL-Job is a distributed task scheduling framework with a centralized scheduler (admin) and distributed executors (workers). This is a customized fork called "Orth" under the Abyss project, optimized for high-performance Python batch data collection task scheduling.
+Orth is a distributed task scheduling framework with a centralized scheduler (admin) and distributed executors (workers). This is a customized fork called "Orth" under the Abyss project, optimized for high-performance Python batch data collection task scheduling.
 
 **Version**: 3.3.0
 **License**: GPLv3
@@ -14,13 +14,13 @@ XXL-Job is a distributed task scheduling framework with a centralized scheduler 
 ## Module Structure
 
 ```
-xxl-job/
-├── xxl-job-core/           # Core library (executor framework, OpenAPI, handlers)
-├── xxl-job-admin/          # Web admin console and scheduling center
-└── xxl-job-executor-samples/
-    ├── xxl-job-executor-sample-springboot/      # Standard Spring Boot executor
-    ├── xxl-job-executor-sample-springboot-ai/   # AI integration samples (Ollama, Dify)
-    └── xxl-job-executor-sample-frameless/       # Frameless/standalone executor
+orth/
+├── orth-core/           # Core library (executor framework, OpenAPI, handlers)
+├── orth-admin/          # Web admin console and scheduling center
+└── orth-executor-samples/
+    ├── orth-executor-sample-springboot/      # Standard Spring Boot executor
+    ├── orth-executor-sample-springboot-ai/   # AI integration samples (Ollama, Dify)
+    └── orth-executor-sample-frameless/       # Frameless/standalone executor
 ```
 
 ## Build Commands
@@ -36,10 +36,10 @@ mvn clean install spotless:check
 mvn spotless:apply
 
 # Build admin WAR only
-cd xxl-job-admin && mvn clean package
+cd orth-admin && mvn clean package
 
 # Build core library for release
-cd xxl-job-core && mvn clean package -P release
+cd orth-core && mvn clean package -P release
 
 # Skip tests (tests are skipped by default)
 mvn clean install -DskipTests
@@ -52,15 +52,15 @@ mvn clean install -DskipTests
 docker-compose up -d
 
 # Access admin console
-# URL: http://localhost:18080/xxl-job-admin
+# URL: http://localhost:18080/orth-admin
 # Default credentials: admin/123456
 
 # Check services
 docker-compose ps
 
 # View logs
-docker-compose logs -f xxl-job-admin
-docker-compose logs -f xxl-job-worker-1
+docker-compose logs -f orth-admin
+docker-compose logs -f orth-worker-1
 ```
 
 **Debug Ports** (in Docker):
@@ -68,7 +68,7 @@ docker-compose logs -f xxl-job-worker-1
 - Worker 1: 15006
 - Worker 2: 15007
 
-**Environment**: Configure via `.env` file (MYSQL_HOST, MYSQL_PORT, XXL_JOB_ACCESS_TOKEN, etc.)
+**Environment**: Configure via `.env` file (MYSQL_HOST, MYSQL_PORT, ORTH_JOB_ACCESS_TOKEN, etc.)
 
 ## Code Style
 
@@ -103,8 +103,8 @@ docker-compose logs -f xxl-job-worker-1
 ### Scheduling Flow
 
 1. **JobScheduleHelper** (runs every second):
-   - Acquires distributed lock via `SELECT ... FOR UPDATE` on `xxl_job_lock`
-   - Pre-reads jobs due within next 5 seconds from `xxl_job_info`
+   - Acquires distributed lock via `SELECT ... FOR UPDATE` on `orth_job_lock`
+   - Pre-reads jobs due within next 5 seconds from `orth_job_info`
    - Pushes jobs to **time-ring buffer** (60 slots, one per second)
    - Updates `trigger_next_time` for next execution
 
@@ -120,21 +120,21 @@ docker-compose logs -f xxl-job-worker-1
    - **Adaptive routing**: Jobs with 10+ timeouts (>500ms) in 1 minute move to slow pool
 
 4. **JobRegistryHelper** (runs every 30s):
-   - Processes executor heartbeats from `xxl_job_registry`
-   - Updates `xxl_job_group.address_list` cache
+   - Processes executor heartbeats from `orth_job_registry`
+   - Updates `orth_job_group.address_list` cache
    - Cleans stale entries (90s timeout)
 
 ### Database Schema (Key Tables)
 
-- `xxl_job_info`: Job definitions, schedule config, next trigger time
-- `xxl_job_group`: Executor groups and address cache
-- `xxl_job_registry`: Executor heartbeats (30s interval)
-- `xxl_job_log`: Execution logs with trigger/handle times
-- `xxl_job_lock`: Distributed lock for single scheduler in cluster
+- `orth_job_info`: Job definitions, schedule config, next trigger time
+- `orth_job_group`: Executor groups and address cache
+- `orth_job_registry`: Executor heartbeats (30s interval)
+- `orth_job_log`: Execution logs with trigger/handle times
+- `orth_job_lock`: Distributed lock for single scheduler in cluster
 
 ### Executor-Side Components
 
-- **XxlJobExecutor**: Main framework (Spring or Simple implementations)
+- **OrthJobExecutor**: Main framework (Spring or Simple implementations)
 - **ExecutorRegistryThread**: Sends heartbeat every 30s to admin
 - **Embedded Netty Server**: Receives triggers, handles `/run`, `/kill`, `/log` endpoints
 - **Job Handlers**: Bean, Script (Shell/Python/NodeJS/PHP), GLUE (Groovy), HTTP, Command
@@ -177,7 +177,7 @@ This enables backfilling missed executions for batch data collection tasks.
 ### Distributed Locking
 
 - Single scheduler ensures only one admin processes scheduling at a time
-- Lock acquired via database `SELECT ... FOR UPDATE` on `xxl_job_lock.lock_name = 'schedule_lock'`
+- Lock acquired via database `SELECT ... FOR UPDATE` on `orth_job_lock.lock_name = 'schedule_lock'`
 - Lock held for duration of schedule scan (~1 second)
 
 ### Service Discovery
@@ -220,7 +220,7 @@ This enables backfilling missed executions for batch data collection tasks.
 
 - **ALWAYS run `mvn clean package` before building Docker images**
 - Ensures Docker containers use the latest compiled code
-- Required for admin module: `cd xxl-job-admin && mvn clean package -DskipTests`
+- Required for admin module: `cd orth-admin && mvn clean package -DskipTests`
 - Run `mvn spotless:apply` before committing to ensure code formatting
 
 ## Testing
@@ -229,7 +229,7 @@ This enables backfilling missed executions for batch data collection tasks.
 
 **JaCoCo Configuration**: Integrated with Maven build for code coverage analysis.
 - **Overall Target**: 70%+ line coverage, 65%+ branch coverage
-- **Critical Classes**: 100% coverage for core scheduling logic (JobThread, ExecutorBizImpl, TriggerCallbackThread, XxlJobExecutor, JobScheduleHelper, JobTriggerPoolHelper, JobRegistryHelper, JobTrigger)
+- **Critical Classes**: 100% coverage for core scheduling logic (JobThread, ExecutorBizImpl, TriggerCallbackThread, OrthJobExecutor, JobScheduleHelper, JobTriggerPoolHelper, JobRegistryHelper, JobTrigger)
 - **Test Dependencies**: JUnit Jupiter 6.0.1, Mockito 5.14.2, AssertJ 3.27.3, Awaitility 4.2.2, TestContainers 1.20.4
 
 ### Running Tests
@@ -239,8 +239,8 @@ This enables backfilling missed executions for batch data collection tasks.
 mvn clean verify
 
 # Run tests for specific module
-cd xxl-job-core && mvn clean verify
-cd xxl-job-admin && mvn clean verify
+cd orth-core && mvn clean verify
+cd orth-admin && mvn clean verify
 
 # View coverage report
 # Open target/site/jacoco/index.html in browser
@@ -254,13 +254,13 @@ mvn clean install -DskipTests
 
 ### Test Structure
 
-**xxl-job-core (52 active tests, 11 disabled)**:
+**orth-core (52 active tests, 11 disabled)**:
 - JobThreadTest (17 tests): Trigger queue, execution lifecycle, block strategies, timeout handling
 - ExecutorBizImplTest (19 tests): BEAN/GLUE/SCRIPT execution, block strategies, kill/log operations
 - TriggerCallbackThreadTest (1 test, 11 disabled): Callback queue, retry mechanism, multi-admin failover
-- XxlJobExecutorTest (15 tests): Lifecycle, handler registry, job thread registry, concurrent operations
+- OrthJobExecutorTest (15 tests): Lifecycle, handler registry, job thread registry, concurrent operations
 
-**xxl-job-admin (Integration tests - disabled by default)**:
+**orth-admin (Integration tests - disabled by default)**:
 - JobScheduleHelperTest (19 tests): Pre-reading, time-ring, misfire handling, distributed locking
 - JobTriggerPoolHelperTest (22 tests): Fast/slow pool routing, timeout tracking, adaptive routing
 - JobRegistryHelperTest (15 tests): Heartbeat processing, address list updates, stale entry cleanup
@@ -270,8 +270,8 @@ mvn clean install -DskipTests
 
 ### Test Categories
 
-- **Unit Tests**: Fast, isolated tests with mocks (xxl-job-core)
-- **Integration Tests**: Full Spring Boot context with TestContainers MySQL (xxl-job-admin)
+- **Unit Tests**: Fast, isolated tests with mocks (orth-core)
+- **Integration Tests**: Full Spring Boot context with TestContainers MySQL (orth-admin)
 - **Disabled Tests**: Thread timing issues or requiring full integration environment
 
 ### Test Guidelines
@@ -284,7 +284,7 @@ mvn clean install -DskipTests
 ### Coverage Reports
 
 **Current Status** (as of implementation):
-- xxl-job-core: 52/63 tests active (11 disabled due to thread timing)
+- orth-core: 52/63 tests active (11 disabled due to thread timing)
 - All active tests passing with 96% success rate
 - JaCoCo reports generated at: `target/site/jacoco/index.html`
 
@@ -302,8 +302,8 @@ start target/site/jacoco/index.html    # Windows
 - **Architecture docs**: `/arch/` directory contains detailed analysis of registry, RPC, scheduling, executors, logs, database layer
 - **Official docs**: `/doc/` directory (Chinese and English)
 - **Cursor AI rules**: `.cursor/rules/` for coding standards and conventions
-- **Official site**: https://www.xuxueli.com/xxl-job/
-- **GitHub**: https://github.com/xuxueli/xxl-job
+- **Official site**: https://www.xuxueli.com/orth/
+- **GitHub**: https://github.com/xuxueli/orth
 
 ## Project Context (Orth Fork)
 

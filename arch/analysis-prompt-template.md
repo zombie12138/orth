@@ -442,10 +442,10 @@ mkdir -p arch
 
 - If the target framework has unique features (e.g., DAG workflows, MapReduce support, workflow engine), add an **08-advanced-features.md** file
 - Adjust the file order based on the framework's core design (e.g., if it's workflow-first, put workflow before scheduling)
-- Compare with XXL-JOB/Orth architecture where applicable to highlight differences
+- Compare with Orth/Orth architecture where applicable to highlight differences
 
 ---
 
 ## Revision History
 
-- **v1.0** (2026-01-30): Initial template based on Orth (XXL-JOB fork) analysis
+- **v1.0** (2026-01-30): Initial template based on Orth (Orth fork) analysis

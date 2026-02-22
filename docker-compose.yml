@@ -1,7 +1,7 @@
 version: "3.9"
 
 networks:
-  xxl-net:
+  orth-net:
     driver: bridge
 
 # ynl anchor, alias
@@ -12,18 +12,18 @@ x-logging: &rolling-logs
     max-file: "${LOG_MAX_FILE}"
 
 services:
-  xxl-job-admin:
+  orth-admin:
     pull_policy: build   # 只构建，不从 registry 拉取
     build:
       context: .
-      dockerfile: xxl-job-admin/Dockerfile
+      dockerfile: orth-admin/Dockerfile
       # args:
         # Build argument
         # APP_VERSION: "${ADMIN_VERSION}"
-    image: "${REGISTRY}${REPO_PREFIX}xxl-job-admin:${ADMIN_VERSION}"
-    container_name: xxl-job-admin
+    image: "${REGISTRY}${REPO_PREFIX}orth-admin:${ADMIN_VERSION}"
+    container_name: orth-admin
     restart: unless-stopped
-    networks: [xxl-net]
+    networks: [orth-net]
     ports:
       - "${ADMIN_HTTP_PORT}:8080"
       - "${ADMIN_DEBUG_PORT}:5005"
@@ -31,7 +31,7 @@ services:
       SPRING_DATASOURCE_URL: "jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DB}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=${TZ}"
       SPRING_DATASOURCE_USERNAME: "${MYSQL_USER}"
       SPRING_DATASOURCE_PASSWORD: "${MYSQL_PASSWORD}"
-      XXL_JOB_ACCESSTOKEN: "${XXL_JOB_ACCESS_TOKEN}"
+      ORTH_JOB_ACCESSTOKEN: "${ORTH_JOB_ACCESS_TOKEN}"
       TZ: "${TZ}"
     volumes:
       - "${ADMIN_DATA_DIR}/applogs:/data/applogs"
@@ -45,7 +45,7 @@ services:
       retries: 5
     labels:
       # container labels
-      org.opencontainers.image.title: "xxl-job-admin"
+      org.opencontainers.image.title: "orth-admin"
       org.opencontainers.image.version: "${ADMIN_VERSION}"
       org.opencontainers.image.revision: "${GIT_SHA}"
       org.opencontainers.image.created: "${BUILD_DATE}"
@@ -57,18 +57,18 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  xxl-job-ui:
+  orth-ui:
     image: nginx:1.27-alpine
-    container_name: xxl-job-ui
+    container_name: orth-ui
     restart: unless-stopped
-    networks: [xxl-net]
+    networks: [orth-net]
     ports:
       - "${UI_HTTP_PORT}:80"
     volumes:
-      - ./xxl-job-ui/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./xxl-job-ui/dist:/usr/share/nginx/html/xxl-job-admin:ro
+      - ./orth-ui/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./orth-ui/dist:/usr/share/nginx/html/orth-admin:ro
     depends_on:
-      xxl-job-admin:
+      orth-admin:
         condition: service_healthy
     logging: *rolling-logs
     deploy:
@@ -79,41 +79,41 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  xxl-job-worker-1:
+  orth-worker-1:
     pull_policy: build   # 只构建，不从 registry 拉取
     build:
       context: .
-      dockerfile: xxl-job-executor-samples/xxl-job-executor-sample-springboot/Dockerfile
+      dockerfile: orth-executor-samples/orth-executor-sample-springboot/Dockerfile
       # args:
       #   APP_VERSION: "${WORKER_VERSION}"
-    image: "${REGISTRY}${REPO_PREFIX}xxl-job-worker:${WORKER_VERSION}"
-    container_name: xxl-job-worker-1
+    image: "${REGISTRY}${REPO_PREFIX}orth-worker:${WORKER_VERSION}"
+    container_name: orth-worker-1
     restart: unless-stopped
-    networks: [xxl-net]
+    networks: [orth-net]
     # 9999 port;
     # only expose jvm debug port
     ports:
       - "${WORKER1_DEBUG_PORT}:5005"
     environment:
       TZ: "${TZ}"
-      XXL_JOB_ADMIN_ADDRESSES: "http://xxl-job-admin:8080/xxl-job-admin"
-      XXL_JOB_ADMIN_ACCESSTOKEN: "${XXL_JOB_ACCESS_TOKEN}"
-      XXL_JOB_EXECUTOR_APPNAME: "${WORKER1_APPNAME}"
-      XXL_JOB_EXECUTOR_PORT: "${WORKER_EXECUTOR_PORT}"
-      XXL_JOB_EXECUTOR_LOGPATH: "/data/applogs/xxl-job/jobhandler"
-      XXL_JOB_EXECUTOR_LOGRETENTIONDAYS: "7"
+      ORTH_JOB_ADMIN_ADDRESSES: "http://orth-admin:8080/orth-admin"
+      ORTH_JOB_ADMIN_ACCESSTOKEN: "${ORTH_JOB_ACCESS_TOKEN}"
+      ORTH_JOB_EXECUTOR_APPNAME: "${WORKER1_APPNAME}"
+      ORTH_JOB_EXECUTOR_PORT: "${WORKER_EXECUTOR_PORT}"
+      ORTH_JOB_EXECUTOR_LOGPATH: "/data/applogs/orth/jobhandler"
+      ORTH_JOB_EXECUTOR_LOGRETENTIONDAYS: "7"
     volumes:
       - "${WORKER1_DATA_DIR}/applogs:/data/applogs"
       - "${WORKER1_DATA_DIR}/gclogs:/data/gclogs"
     logging: *rolling-logs
     healthcheck:
-      test: ["CMD-SHELL", "bash -lc \"timeout 2 bash -lc 'echo > /dev/tcp/127.0.0.1/${XXL_JOB_EXECUTOR_PORT:-9999}' || exit 1\""]
+      test: ["CMD-SHELL", "bash -lc \"timeout 2 bash -lc 'echo > /dev/tcp/127.0.0.1/${ORTH_JOB_EXECUTOR_PORT:-9999}' || exit 1\""]
       interval: 20s
       timeout: 5s
       start_period: 20s
       retries: 5
     labels:
-      org.opencontainers.image.title: "xxl-job-worker"       
+      org.opencontainers.image.title: "orth-worker"       
       org.opencontainers.image.version: "${WORKER_VERSION}"
       org.opencontainers.image.revision: "${GIT_SHA}"
       org.opencontainers.image.created: "${BUILD_DATE}"
@@ -125,39 +125,39 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  xxl-job-worker-2:
+  orth-worker-2:
     pull_policy: build   # 只构建，不从 registry 拉取
     build:
       context: .
-      dockerfile: xxl-job-executor-samples/xxl-job-executor-sample-springboot/Dockerfile
+      dockerfile: orth-executor-samples/orth-executor-sample-springboot/Dockerfile
       # args:
       #   APP_VERSION: "${WORKER_VERSION}"
-    image: "${REGISTRY}${REPO_PREFIX}xxl-job-worker:${WORKER_VERSION}"
-    container_name: xxl-job-worker-2
+    image: "${REGISTRY}${REPO_PREFIX}orth-worker:${WORKER_VERSION}"
+    container_name: orth-worker-2
     restart: unless-stopped
-    networks: [xxl-net]
+    networks: [orth-net]
     ports:
       - "${WORKER2_DEBUG_PORT}:5005"
     environment:
       TZ: "${TZ}"
-      XXL_JOB_ADMIN_ADDRESSES: "http://xxl-job-admin:8080/xxl-job-admin"
-      XXL_JOB_ADMIN_ACCESSTOKEN: "${XXL_JOB_ACCESS_TOKEN}"
-      XXL_JOB_EXECUTOR_APPNAME: "${WORKER2_APPNAME}"
-      XXL_JOB_EXECUTOR_PORT: "${WORKER_EXECUTOR_PORT}"
-      XXL_JOB_EXECUTOR_LOGPATH: "/data/applogs/xxl-job/jobhandler"
-      XXL_JOB_EXECUTOR_LOGRETENTIONDAYS: "7"
+      ORTH_JOB_ADMIN_ADDRESSES: "http://orth-admin:8080/orth-admin"
+      ORTH_JOB_ADMIN_ACCESSTOKEN: "${ORTH_JOB_ACCESS_TOKEN}"
+      ORTH_JOB_EXECUTOR_APPNAME: "${WORKER2_APPNAME}"
+      ORTH_JOB_EXECUTOR_PORT: "${WORKER_EXECUTOR_PORT}"
+      ORTH_JOB_EXECUTOR_LOGPATH: "/data/applogs/orth/jobhandler"
+      ORTH_JOB_EXECUTOR_LOGRETENTIONDAYS: "7"
     volumes:
       - "${WORKER2_DATA_DIR}/applogs:/data/applogs"
       - "${WORKER2_DATA_DIR}/gclogs:/data/gclogs"
     logging: *rolling-logs
     healthcheck:
-      test: ["CMD-SHELL", "bash -lc \"timeout 2 bash -lc 'echo > /dev/tcp/127.0.0.1/${XXL_JOB_EXECUTOR_PORT:-9999}' || exit 1\""]
+      test: ["CMD-SHELL", "bash -lc \"timeout 2 bash -lc 'echo > /dev/tcp/127.0.0.1/${ORTH_JOB_EXECUTOR_PORT:-9999}' || exit 1\""]
       interval: 20s
       timeout: 5s
       start_period: 20s
       retries: 5
     labels:
-      org.opencontainers.image.title: "xxl-job-worker"
+      org.opencontainers.image.title: "orth-worker"
       org.opencontainers.image.version: "${WORKER_VERSION}"
       org.opencontainers.image.revision: "${GIT_SHA}"
       org.opencontainers.image.created: "${BUILD_DATE}"

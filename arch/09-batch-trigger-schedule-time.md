@@ -28,9 +28,9 @@ flowchart TB
     end
 
     subgraph Executor["Job Execution"]
-        CTX["XxlJobContext<br/>scheduleTime field"]
+        CTX["OrthJobContext<br/>scheduleTime field"]
         ENV["Environment Variables<br/>ORTH_SCHEDULE_TIME"]
-        HANDLER["Job Handler<br/>Access via XxlJobHelper"]
+        HANDLER["Job Handler<br/>Access via OrthJobHelper"]
     end
 
     TM -->|"Select scheduled"| MODE
@@ -75,7 +75,7 @@ sequenceDiagram
     participant UI
     participant Preview as Preview API
     participant Batch as Batch Trigger
-    participant DB as xxl_job_log
+    participant DB as orth_job_log
     participant Executor
 
     User->>UI: Select "Scheduled" mode
@@ -101,7 +101,7 @@ sequenceDiagram
 
 ### New Column: `schedule_time`
 
-Added to `xxl_job_log`:
+Added to `orth_job_log`:
 
 | Trigger Type | trigger_time | schedule_time | Interpretation |
 |-------------|--------------|---------------|----------------|
@@ -138,9 +138,9 @@ Schedule time flows from admin to executor through the full stack. It is preserv
 
 | Layer | Mechanism | Access |
 |-------|-----------|--------|
-| Admin trigger | Set on `XxlJobLog.scheduleTime` | — |
+| Admin trigger | Set on `JobLog.scheduleTime` | — |
 | RPC call | Passed as `TriggerParam.scheduleTime` | — |
-| Java handlers | `XxlJobContext.scheduleTime` field | `XxlJobHelper.getScheduleTime()` |
+| Java handlers | `OrthJobContext.scheduleTime` field | `OrthJobHelper.getScheduleTime()` |
 | Script handlers | Environment variable | `$ORTH_SCHEDULE_TIME` |
 
 ### Environment Variables (Script Jobs)
@@ -149,7 +149,7 @@ Set by `ScriptJobHandler.java` before script execution:
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `ORTH_JOB_ID` | int | Job ID from xxl_job_info |
+| `ORTH_JOB_ID` | int | Job ID from orth_job_info |
 | `ORTH_JOB_PARAM` | string | Executor parameters |
 | `ORTH_LOG_ID` | long | Log entry ID |
 | `ORTH_SCHEDULE_TIME` | datetime | Logical schedule time (NULL for immediate) |
