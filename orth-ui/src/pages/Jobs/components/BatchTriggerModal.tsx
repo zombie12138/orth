@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, DatePicker, Button, List, message } from 'antd';
 import dayjs from 'dayjs';
+import { showError } from '../../../api/client';
 import { useTranslation } from 'react-i18next';
 import { triggerBatch, previewTriggerBatch } from '../../../api/jobs';
 import { DATE_FORMAT } from '../../../utils/date';
@@ -30,9 +31,7 @@ export default function BatchTriggerModal({ open, jobId, onClose }: Props) {
             );
             setPreview(times);
         } catch (e: unknown) {
-            message.error(
-                e instanceof Error ? e.message : t('batchTrigger.messages.previewFailed'),
-            );
+            showError(e);
         }
     };
 
@@ -53,9 +52,7 @@ export default function BatchTriggerModal({ open, jobId, onClose }: Props) {
             setPreview([]);
             onClose();
         } catch (e: unknown) {
-            message.error(
-                e instanceof Error ? e.message : t('batchTrigger.messages.triggerFailed'),
-            );
+            showError(e);
         } finally {
             setLoading(false);
         }

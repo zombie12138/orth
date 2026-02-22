@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Modal, Form, Input, Select, message } from 'antd';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { showError } from '../../../api/client';
 import { useTranslation } from 'react-i18next';
 import { createUser, updateUser } from '../../../api/users';
 import { fetchPermittedGroups } from '../../../api/groups';
@@ -60,7 +61,7 @@ export default function UserFormModal({ open, user, onClose, onSuccess }: Props)
             onClose();
             onSuccess();
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const handleOk = async () => {

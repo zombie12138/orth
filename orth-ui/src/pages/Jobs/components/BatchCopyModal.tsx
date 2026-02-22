@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { App, Modal, Tag, Typography, theme } from 'antd';
 import { useQuery } from '@tanstack/react-query';
+import { showError } from '../../../api/client';
 import { useTranslation } from 'react-i18next';
 import { fetchJob, batchCopy } from '../../../api/jobs';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -76,9 +77,7 @@ export default function BatchCopyModal({ open, jobId, onClose, onSuccess }: Prop
             message.success(t('batchCopy.messages.created', { count: res.successCount }));
             onSuccess();
         } catch (e: unknown) {
-            message.error(
-                e instanceof Error ? e.message : t('batchCopy.messages.failed'),
-            );
+            showError(e);
         } finally {
             setLoading(false);
         }

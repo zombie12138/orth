@@ -8,6 +8,7 @@ import zhCN from 'antd/locale/zh_CN';
 import { useTranslation } from 'react-i18next';
 import './locales';
 import App from './App';
+import { setNotificationApi } from './api/client';
 import { useThemeStore } from './store/themeStore';
 import { useSystemThemeListener } from './hooks/useSystemThemeListener';
 import { lightTheme, darkTheme, fixedDarkAlgorithm } from './theme/themeConfig';
@@ -25,6 +26,13 @@ const ANTD_LOCALE_MAP: Record<string, typeof enUS> = {
   en: enUS,
   zh: zhCN,
 };
+
+// Bridge: extract antd notification instance from React tree into client.ts
+function NotificationBridge() {
+  const { notification } = AntdApp.useApp();
+  useEffect(() => setNotificationApi(notification), [notification]);
+  return null;
+}
 
 function ThemedApp() {
   const resolved = useThemeStore((s) => s.resolved);
@@ -49,6 +57,7 @@ function ThemedApp() {
   return (
     <ConfigProvider theme={{ ...themeConfig, algorithm }} locale={antdLocale}>
       <AntdApp>
+        <NotificationBridge />
         <QueryClientProvider client={queryClient}>
           <BrowserRouter basename="/orth-admin">
             <App />

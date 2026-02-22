@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { App, Button, Space, Modal, Input, Upload } from 'antd';
 import { ExportOutlined, ImportOutlined } from '@ant-design/icons';
+import { showError } from '../../../api/client';
 import { useTranslation } from 'react-i18next';
 import { exportJobs, importJobs } from '../../../api/jobs';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -63,9 +64,7 @@ export default function ImportExportButtons({ selectedIds, onImportSuccess }: Pr
                 message.success(t('importExport.exportedSuccess'));
             }
         } catch (e: unknown) {
-            message.error(
-                e instanceof Error ? e.message : t('importExport.exportFailed'),
-            );
+            showError(e);
         }
     };
 
@@ -82,9 +81,7 @@ export default function ImportExportButtons({ selectedIds, onImportSuccess }: Pr
             setImportModalOpen(false);
             onImportSuccess();
         } catch (e: unknown) {
-            message.error(
-                e instanceof Error ? e.message : t('importExport.importFailed'),
-            );
+            showError(e);
         } finally {
             setImporting(false);
         }

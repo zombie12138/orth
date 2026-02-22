@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { showError } from '../../../api/client';
 import { saveGlueCode } from '../../../api/glue';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 
@@ -28,9 +29,7 @@ export default function SaveCodeModal({ open, jobId, code, onClose, onSuccess }:
             onClose();
             onSuccess();
         } catch (e: unknown) {
-            message.error(
-                e instanceof Error ? e.message : t('saveModal.saveFailed'),
-            );
+            showError(e);
         } finally {
             setLoading(false);
         }

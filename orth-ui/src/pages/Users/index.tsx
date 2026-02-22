@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { fetchUsers, deleteUser } from '../../api/users';
+import { showError } from '../../api/client';
 import { usePagination } from '../../hooks/usePagination';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useAuthStore } from '../../store/authStore';
@@ -52,7 +53,7 @@ export default function UsersPage() {
             message.success(t('messages.userDeleted'));
             queryClient.invalidateQueries({ queryKey: ['users'] });
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const columns: ColumnsType<JobUser> = [

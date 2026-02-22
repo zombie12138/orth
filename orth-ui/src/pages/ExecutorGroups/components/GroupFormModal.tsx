@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Modal, Form, Input, Radio, message } from 'antd';
 import { useMutation } from '@tanstack/react-query';
+import { showError } from '../../../api/client';
 import { useTranslation } from 'react-i18next';
 import { createGroup, updateGroup } from '../../../api/groups';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -39,7 +40,7 @@ export default function GroupFormModal({ open, group, onClose, onSuccess }: Prop
             onClose();
             onSuccess();
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const handleOk = async () => {

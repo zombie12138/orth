@@ -37,6 +37,7 @@ import { useNavigate } from 'react-router';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { fetchJobs, deleteJob, startJob, stopJob, nextTriggerTime, searchJobs } from '../../api/jobs';
+import { showError } from '../../api/client';
 import { fetchPermittedGroups } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -163,7 +164,7 @@ export default function JobsPage() {
             message.success(t('messages.jobDeleted'));
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const startMutation = useMutation({
@@ -172,7 +173,7 @@ export default function JobsPage() {
             message.success(t('messages.jobStarted'));
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const stopMutation = useMutation({
@@ -181,7 +182,7 @@ export default function JobsPage() {
             message.success(t('messages.jobStopped'));
             queryClient.invalidateQueries({ queryKey: ['jobs'] });
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const handleSearch = useCallback(

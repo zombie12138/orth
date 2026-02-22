@@ -1,6 +1,45 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import type { NotificationInstance } from 'antd/es/notification/interface';
 import type { ApiResponse, PageModel } from '../types/api';
 import type { LoginResponse, RefreshRequest } from '../types/auth';
+
+// Strip Java exception class names from error messages.
+// "java.lang.IllegalArgumentException: bad input" → "bad input"
+// "java.lang.NullPointerException" (no message) → "NullPointerException"
+function cleanErrorMessage(msg: string): string {
+    const match = msg.match(/^[\w.]+\.(\w+Exception)(?::\s*(.+))?$/);
+    if (!match) return msg;
+    return match[2]?.trim() || match[1]!;
+}
+
+// Notification instance injected from React tree via App.useApp().
+// Must be set before showError() is called (see main.tsx).
+let notificationApi: NotificationInstance | null = null;
+
+export function setNotificationApi(api: NotificationInstance): void {
+    notificationApi = api;
+}
+
+// Display a persistent error notification that the user must manually dismiss.
+export function showError(error: unknown): void {
+    let msg: string;
+    if (error instanceof AxiosError) {
+        msg = error.response?.data?.msg ?? error.message;
+    } else if (error instanceof Error) {
+        msg = error.message;
+    } else {
+        msg = String(error);
+    }
+    if (notificationApi) {
+        notificationApi.error({
+            message: 'Error',
+            description: msg,
+            duration: 0,
+        });
+    } else {
+        console.error('[showError] notification API not initialized:', msg);
+    }
+}
 
 const client = axios.create({
   baseURL: '/orth-admin',
@@ -120,7 +159,7 @@ export async function unwrap<T>(
 ): Promise<T> {
   const { data } = await promise;
   if (!data.success) {
-    throw new Error(data.msg ?? 'Request failed');
+    throw new Error(cleanErrorMessage(data.msg ?? 'Request failed'));
   }
   return data.data;
 }

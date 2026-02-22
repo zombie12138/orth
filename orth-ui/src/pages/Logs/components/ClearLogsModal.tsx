@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Select, message } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { showError } from '../../../api/client';
 import { clearLogs } from '../../../api/logs';
 import { getClearLogTypes } from '../../../utils/constants';
 import { useIsMobile } from '../../../hooks/useIsMobile';
@@ -33,7 +34,7 @@ export default function ClearLogsModal({
             onClose();
             onSuccess();
         } catch (e: unknown) {
-            message.error(e instanceof Error ? e.message : t('clearFailed'));
+            showError(e);
         } finally {
             setLoading(false);
         }

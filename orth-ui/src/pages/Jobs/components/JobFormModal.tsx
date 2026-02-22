@@ -1,16 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
-import {
-    Modal,
-    Form,
-    Input,
-    Select,
-    InputNumber,
-    message,
-    Tabs,
-    Button,
-    List,
-} from 'antd';
+import { Modal, Form, Input, Select, InputNumber, message, Tabs, Button, List } from 'antd';
 import { useMutation } from '@tanstack/react-query';
+import { showError } from '../../../api/client';
 import { useTranslation } from 'react-i18next';
 import debounce from '../../_utils/debounce';
 import { createJob, updateJob, nextTriggerTime, searchSuperTask } from '../../../api/jobs';
@@ -78,7 +69,7 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
             onClose();
             onSuccess();
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const handleOk = async () => {
@@ -98,7 +89,7 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
             const times = await nextTriggerTime(type, conf);
             setNextTimes(times);
         } catch (e: unknown) {
-            message.error(e instanceof Error ? e.message : t('form.messages.previewFailed'));
+            showError(e);
         }
     };
 

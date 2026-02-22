@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Form, Input, message } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { showError } from '../../../api/client';
 import { triggerJob } from '../../../api/jobs';
 import { useIsMobile } from '../../../hooks/useIsMobile';
 
@@ -29,7 +30,7 @@ export default function TriggerModal({ open, jobId, onClose }: Props) {
             form.resetFields();
             onClose();
         } catch (e: unknown) {
-            message.error(e instanceof Error ? e.message : t('messages.triggerFailed'));
+            showError(e);
         } finally {
             setLoading(false);
         }

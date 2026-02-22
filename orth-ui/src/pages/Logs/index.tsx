@@ -18,6 +18,7 @@ import { useSearchParams } from 'react-router';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { fetchLogs, killJob } from '../../api/logs';
+import { showError } from '../../api/client';
 import { searchJobs } from '../../api/jobs';
 import { fetchPermittedGroups } from '../../api/groups';
 import { usePagination } from '../../hooks/usePagination';
@@ -125,7 +126,7 @@ export default function LogsPage() {
             message.success(t('killSent'));
             queryClient.invalidateQueries({ queryKey: ['logs'] });
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const handleJobSearch = useMemo(

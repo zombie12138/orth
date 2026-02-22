@@ -30,6 +30,10 @@ public class WebHandlerExceptionResolver {
     @ExceptionHandler(Exception.class)
     public Response<String> handleException(Exception ex) {
         logger.error("Unhandled exception in web layer: {}", ex.getMessage(), ex);
-        return Response.ofFail(ex.toString());
+        String msg = ex.getMessage();
+        if (msg == null || msg.isBlank()) {
+            msg = ex.getClass().getSimpleName();
+        }
+        return Response.ofFail(msg);
     }
 }

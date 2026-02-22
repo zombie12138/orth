@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { fetchGroups, deleteGroup } from '../../api/groups';
+import { showError } from '../../api/client';
 import { usePagination } from '../../hooks/usePagination';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { formatDate } from '../../utils/date';
@@ -50,7 +51,7 @@ export default function ExecutorGroupsPage() {
             message.success(t('messages.groupDeleted'));
             queryClient.invalidateQueries({ queryKey: ['groups'] });
         },
-        onError: (e) => message.error(e.message),
+        onError: (e) => showError(e),
     });
 
     const columns: ColumnsType<JobGroup> = [

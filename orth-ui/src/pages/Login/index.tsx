@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { App, Card, Form, Input, Button, Segmented, theme } from 'antd';
+import { Card, Form, Input, Button, Segmented, theme } from 'antd';
 import {
     UserOutlined,
     LockOutlined,
@@ -10,13 +10,13 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { login as apiLogin } from '../../api/auth';
+import { showError } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { useConfigStore } from '../../store/configStore';
 import { useThemeStore } from '../../store/themeStore';
 
 export default function LoginPage() {
     const navigate = useNavigate();
-    const { message } = App.useApp();
     const { t } = useTranslation('login');
     const storeLogin = useAuthStore((s) => s.login);
     const loadConfig = useConfigStore((s) => s.loadConfig);
@@ -33,7 +33,7 @@ export default function LoginPage() {
             await loadConfig();
             navigate('/dashboard', { replace: true });
         } catch (e: unknown) {
-            message.error(e instanceof Error ? e.message : t('loginFailed'));
+            showError(e);
         } finally {
             setLoading(false);
         }
