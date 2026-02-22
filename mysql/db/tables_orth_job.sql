@@ -51,6 +51,7 @@ CREATE TABLE `orth_job_info`
     `executor_handler`          varchar(255)          DEFAULT NULL COMMENT 'Job handler name',
     `executor_param`            varchar(512)          DEFAULT NULL COMMENT 'Job handler parameters',
     `executor_block_strategy`   varchar(50)           DEFAULT NULL COMMENT 'Block strategy when job is already running',
+    `executor_concurrency`      int(11)      NOT NULL DEFAULT '1' COMMENT 'Concurrency level for CONCURRENT block strategy, 1=serial',
     `executor_timeout`          int(11)      NOT NULL DEFAULT '0' COMMENT 'Execution timeout in seconds, 0=unlimited',
     `executor_fail_retry_count` int(11)      NOT NULL DEFAULT '0' COMMENT 'Fail retry count',
     `glue_type`                 varchar(50)  NOT NULL COMMENT 'GLUE type: BEAN, GLUE_GROOVY, GLUE_SHELL, etc.',
@@ -154,18 +155,18 @@ INSERT INTO `orth_job_group`(`id`, `app_name`, `title`, `address_type`, `address
 
 INSERT INTO `orth_job_info`(`id`, `job_group`, `job_desc`, `add_time`, `update_time`, `author`, `alarm_email`,
                            `schedule_type`, `schedule_conf`, `misfire_strategy`, `executor_route_strategy`,
-                           `executor_handler`, `executor_param`, `executor_block_strategy`, `executor_timeout`,
-                           `executor_fail_retry_count`, `glue_type`, `glue_source`, `glue_remark`, `glue_updatetime`,
-                           `child_jobid`)
+                           `executor_handler`, `executor_param`, `executor_block_strategy`, `executor_concurrency`,
+                           `executor_timeout`, `executor_fail_retry_count`, `glue_type`, `glue_source`,
+                           `glue_remark`, `glue_updatetime`, `child_jobid`)
 VALUES (1, 1, 'Sample Job 01', now(), now(), 'admin', '', 'CRON', '0 0 0 * * ? *',
-        'DO_NOTHING', 'FIRST', 'demoJobHandler', '', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'Initial GLUE code',
+        'DO_NOTHING', 'FIRST', 'demoJobHandler', '', 'SERIAL_EXECUTION', 1, 0, 0, 'BEAN', '', 'Initial GLUE code',
         now(), ''),
        (2, 2, 'Ollama Sample Job 01', now(), now(), 'admin', '', 'NONE', '',
         'DO_NOTHING', 'FIRST', 'ollamaJobHandler', '{
     "input": "Analyze slow SQL query patterns",
     "prompt": "You are a software engineer skilled at solving technical problems.",
     "model": "qwen3:0.6b"
-}', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'Initial GLUE code',
+}', 'SERIAL_EXECUTION', 1, 0, 0, 'BEAN', '', 'Initial GLUE code',
         now(), ''),
        (3, 2, 'Dify Sample Job', now(), now(), 'admin', '', 'NONE', '',
         'DO_NOTHING', 'FIRST', 'difyWorkflowJobHandler', '{
@@ -175,14 +176,14 @@ VALUES (1, 1, 'Sample Job 01', now(), now(), 'admin', '', 'CRON', '0 0 0 * * ? *
     "user": "orth",
     "baseUrl": "http://localhost/v1",
     "apiKey": "app-OUVgNUOQRIMokfmuJvBJoUTN"
-}', 'SERIAL_EXECUTION', 0, 0, 'BEAN', '', 'Initial GLUE code',
+}', 'SERIAL_EXECUTION', 1, 0, 0, 'BEAN', '', 'Initial GLUE code',
         now(), ''),
        (4, 1, 'Shell Script Template', now(), now(), 'admin', '', 'NONE', '',
-        'DO_NOTHING', 'FIRST', '', '', 'SERIAL_EXECUTION', 0, 0, 'GLUE_SHELL',
+        'DO_NOTHING', 'FIRST', '', '', 'SERIAL_EXECUTION', 1, 0, 0, 'GLUE_SHELL',
         '#!/bin/bash\n# Orth Shell Script Template\n#\n# Environment variables (set by executor):\n#   ORTH_JOB_ID        - Job ID\n#   ORTH_JOB_PARAM     - Job parameters\n#   ORTH_LOG_ID        - Log ID for tracking\n#   ORTH_SCHEDULE_TIME - Scheduled time (ISO 8601, empty if manual)\n#   ORTH_TRIGGER_TIME  - Actual trigger time (ISO 8601)\n#   ORTH_SHARD_INDEX   - Shard index (0-based)\n#   ORTH_SHARD_TOTAL   - Total shard count\n#\n# Positional args: $1=jobParam $2=shardIndex $3=shardTotal\n\necho \"[Orth] Job=$ORTH_JOB_ID Param=$ORTH_JOB_PARAM\"\necho \"[Orth] Schedule=$ORTH_SCHEDULE_TIME Trigger=$ORTH_TRIGGER_TIME\"\necho \"[Orth] Shard=$ORTH_SHARD_INDEX/$ORTH_SHARD_TOTAL\"\n\n# --- Your logic below ---\n\nexit 0',
         'Shell script template with env vars', now(), ''),
        (5, 1, 'Python Script Template', now(), now(), 'admin', '', 'NONE', '',
-        'DO_NOTHING', 'FIRST', '', '', 'SERIAL_EXECUTION', 0, 0, 'GLUE_PYTHON',
+        'DO_NOTHING', 'FIRST', '', '', 'SERIAL_EXECUTION', 1, 0, 0, 'GLUE_PYTHON',
         '#!/usr/bin/env python3\n# Orth Python Script Template\n#\n# Environment variables (set by executor):\n#   ORTH_JOB_ID        - Job ID\n#   ORTH_JOB_PARAM     - Job parameters\n#   ORTH_LOG_ID        - Log ID for tracking\n#   ORTH_SCHEDULE_TIME - Scheduled time (ISO 8601, empty if manual)\n#   ORTH_TRIGGER_TIME  - Actual trigger time (ISO 8601)\n#   ORTH_SHARD_INDEX   - Shard index (0-based)\n#   ORTH_SHARD_TOTAL   - Total shard count\n#\n# Positional args: sys.argv[1]=jobParam sys.argv[2]=shardIndex sys.argv[3]=shardTotal\n\nimport os, sys\n\njob_id = os.environ.get(\"ORTH_JOB_ID\", \"\")\njob_param = os.environ.get(\"ORTH_JOB_PARAM\", \"\")\nschedule_time = os.environ.get(\"ORTH_SCHEDULE_TIME\", \"\")\ntrigger_time = os.environ.get(\"ORTH_TRIGGER_TIME\", \"\")\nshard_index = os.environ.get(\"ORTH_SHARD_INDEX\", \"0\")\nshard_total = os.environ.get(\"ORTH_SHARD_TOTAL\", \"1\")\n\nprint(f\"[Orth] Job={job_id} Param={job_param}\")\nprint(f\"[Orth] Schedule={schedule_time} Trigger={trigger_time}\")\nprint(f\"[Orth] Shard={shard_index}/{shard_total}\")\n\n# --- Your logic below ---\n\nsys.exit(0)',
         'Python script template with env vars', now(), '');
 

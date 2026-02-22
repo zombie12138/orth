@@ -458,6 +458,7 @@ public class JobTrigger {
         request.setExecutorHandler(jobInfo.getExecutorHandler());
         request.setExecutorParams(jobInfo.getExecutorParam());
         request.setExecutorBlockStrategy(jobInfo.getExecutorBlockStrategy());
+        request.setExecutorConcurrency(jobInfo.getExecutorConcurrency());
         request.setExecutorTimeout(jobInfo.getExecutorTimeout());
         request.setLogId(jobLog.getId());
         request.setLogDateTime(jobLog.getTriggerTime().getTime());

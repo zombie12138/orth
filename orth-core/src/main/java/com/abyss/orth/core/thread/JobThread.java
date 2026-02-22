@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,10 @@ import com.xxl.tool.response.Response;
  * trigger queue and executes jobs 3. Handles timeouts via FutureTask 4. Pushes execution results to
  * callback queue 5. Destroys the handler on shutdown
  *
+ * <p>When {@code concurrency > 1}, the main thread acts as a dispatcher: it polls triggers from the
+ * queue and submits them to an internal worker pool. Each worker handles its own context setup,
+ * execution, and callback independently.
+ *
  * <p>Thread lifecycle: init() → [execute loop] → destroy()
  */
 public class JobThread extends Thread {
@@ -34,6 +39,7 @@ public class JobThread extends Thread {
     private static final int TRIGGER_POLL_TIMEOUT_SECONDS = 3;
     private static final int IDLE_TIMES_THRESHOLD = 30;
     private static final int MAX_HANDLE_MSG_LENGTH = 50000;
+    private static final int WORKER_POOL_SHUTDOWN_TIMEOUT_SECONDS = 10;
 
     // Job metadata
     private final int jobId;
@@ -41,23 +47,61 @@ public class JobThread extends Thread {
     private final LinkedBlockingQueue<TriggerRequest> triggerQueue;
     private final Set<Long> triggerLogIdSet; // Deduplicates triggers by log ID
 
+    // Concurrency support
+    private final int concurrency;
+    private final ExecutorService workerPool; // null when concurrency == 1
+    private final AtomicInteger activeCount; // tracks running workers in concurrent mode
+
     // Thread state
     private volatile boolean toStop = false;
     private String stopReason;
-    private boolean running = false; // Currently executing a job
+    private boolean running = false; // Currently executing a job (serial mode only)
     private int idleTimes = 0; // Consecutive idle poll cycles
 
     /**
-     * Constructs a job thread for the specified job.
+     * Constructs a job thread for the specified job with serial execution (concurrency = 1).
      *
      * @param jobId the job ID
      * @param handler the job handler to execute
      */
     public JobThread(int jobId, IJobHandler handler) {
+        this(jobId, handler, 1);
+    }
+
+    /**
+     * Constructs a job thread for the specified job with configurable concurrency.
+     *
+     * @param jobId the job ID
+     * @param handler the job handler to execute
+     * @param concurrency concurrency level (1 = serial, >1 = concurrent via internal pool)
+     */
+    public JobThread(int jobId, IJobHandler handler, int concurrency) {
         this.jobId = jobId;
         this.handler = handler;
+        this.concurrency = Math.max(1, concurrency);
         this.triggerQueue = new LinkedBlockingQueue<>();
         this.triggerLogIdSet = ConcurrentHashMap.newKeySet();
+        this.activeCount = new AtomicInteger(0);
+
+        if (this.concurrency > 1) {
+            this.workerPool =
+                    new ThreadPoolExecutor(
+                            this.concurrency,
+                            this.concurrency,
+                            60L,
+                            TimeUnit.SECONDS,
+                            new LinkedBlockingQueue<>(),
+                            r -> {
+                                Thread t = new Thread(r);
+                                t.setName(
+                                        String.format(
+                                                "orth-job-worker-%d-%d",
+                                                jobId, System.currentTimeMillis()));
+                                return t;
+                            });
+        } else {
+            this.workerPool = null;
+        }
 
         // Assign descriptive thread name
         this.setName(String.format("orth-job-thread-%d-%d", jobId, System.currentTimeMillis()));
@@ -65,6 +109,10 @@ public class JobThread extends Thread {
 
     public IJobHandler getHandler() {
         return handler;
+    }
+
+    public int getConcurrency() {
+        return concurrency;
     }
 
     /**
@@ -105,6 +153,9 @@ public class JobThread extends Thread {
      * @return true if running or queue not empty
      */
     public boolean isRunningOrHasQueue() {
+        if (concurrency > 1) {
+            return activeCount.get() > 0 || !triggerQueue.isEmpty();
+        }
         return running || !triggerQueue.isEmpty();
     }
 
@@ -113,67 +164,14 @@ public class JobThread extends Thread {
         // Initialize handler
         initHandler();
 
-        // Main execution loop
-        while (!toStop) {
-            running = false;
-            idleTimes++;
-
-            TriggerRequest triggerParam = null;
-            try {
-                // Poll queue with timeout to check toStop signal periodically
-                // (cannot use blocking take() as it would prevent graceful shutdown)
-                triggerParam = triggerQueue.poll(TRIGGER_POLL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                if (triggerParam != null) {
-                    running = true;
-                    idleTimes = 0;
-                    triggerLogIdSet.remove(triggerParam.getLogId());
-
-                    // Build job context
-                    OrthJobContext orthJobContext = buildJobContext(triggerParam);
-                    OrthJobContext.setOrthJobContext(orthJobContext);
-
-                    // Execute job
-                    OrthJobHelper.log(
-                            "<br>----------- Orth job execute start -----------<br>----------- Param: {}",
-                            orthJobContext.getJobParam());
-
-                    executeJob(triggerParam, orthJobContext);
-
-                    // Validate and truncate result message
-                    validateAndTruncateResult();
-
-                    OrthJobHelper.log(
-                            "<br>----------- Orth job execute end(finish) -----------<br>----------- Result: handleCode={}, handleMsg={}",
-                            OrthJobContext.getOrthJobContext().getHandleCode(),
-                            OrthJobContext.getOrthJobContext().getHandleMsg());
-
-                } else {
-                    // Auto-cleanup idle threads
-                    if (idleTimes > IDLE_TIMES_THRESHOLD && triggerQueue.isEmpty()) {
-                        OrthJobExecutor.removeJobThread(
-                                jobId, "Executor idle timeout - no triggers received");
-                    }
-                }
-            } catch (Throwable e) {
-                if (toStop) {
-                    OrthJobHelper.log("<br>----------- JobThread stopped, reason: {}", stopReason);
-                }
-
-                // Capture stack trace
-                StringWriter stringWriter = new StringWriter();
-                e.printStackTrace(new PrintWriter(stringWriter));
-                String errorMsg = stringWriter.toString();
-
-                OrthJobHelper.handleFail(errorMsg);
-                OrthJobHelper.log(
-                        "<br>----------- JobThread Exception: {}<br>----------- Orth job execute end(error) -----------",
-                        errorMsg);
-            } finally {
-                if (triggerParam != null) {
-                    pushCallback(triggerParam);
-                }
-            }
+        if (concurrency > 1) {
+            runConcurrent();
+        } else {
+            runSerial();
         }
+
+        // Shutdown worker pool if needed
+        shutdownWorkerPool();
 
         // Callback remaining triggers in queue
         callbackRemainingTriggers();
@@ -182,6 +180,136 @@ public class JobThread extends Thread {
         destroyHandler();
 
         logger.info("Orth job thread stopped: {}", Thread.currentThread());
+    }
+
+    /** Serial execution loop (concurrency == 1). Unchanged from original behavior. */
+    private void runSerial() {
+        while (!toStop) {
+            running = false;
+            idleTimes++;
+
+            TriggerRequest triggerParam = null;
+            try {
+                triggerParam = triggerQueue.poll(TRIGGER_POLL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                if (triggerParam != null) {
+                    running = true;
+                    idleTimes = 0;
+                    triggerLogIdSet.remove(triggerParam.getLogId());
+
+                    OrthJobContext orthJobContext = buildJobContext(triggerParam);
+                    OrthJobContext.setOrthJobContext(orthJobContext);
+
+                    OrthJobHelper.log(
+                            "<br>----------- Orth job execute start -----------<br>----------- Param: {}",
+                            orthJobContext.getJobParam());
+
+                    executeJob(triggerParam, orthJobContext);
+                    validateAndTruncateResult();
+
+                    OrthJobHelper.log(
+                            "<br>----------- Orth job execute end(finish) -----------<br>----------- Result: handleCode={}, handleMsg={}",
+                            OrthJobContext.getOrthJobContext().getHandleCode(),
+                            OrthJobContext.getOrthJobContext().getHandleMsg());
+
+                } else {
+                    checkIdleCleanup();
+                }
+            } catch (Throwable e) {
+                handleExecutionError(e);
+            } finally {
+                if (triggerParam != null) {
+                    pushCallback(triggerParam);
+                }
+            }
+        }
+    }
+
+    /** Concurrent execution loop (concurrency > 1). Dispatches triggers to worker pool. */
+    private void runConcurrent() {
+        while (!toStop) {
+            idleTimes++;
+
+            try {
+                TriggerRequest triggerParam =
+                        triggerQueue.poll(TRIGGER_POLL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                if (triggerParam != null) {
+                    idleTimes = 0;
+                    triggerLogIdSet.remove(triggerParam.getLogId());
+                    activeCount.incrementAndGet();
+
+                    workerPool.execute(
+                            () -> {
+                                try {
+                                    executeTriggerInWorker(triggerParam);
+                                } finally {
+                                    activeCount.decrementAndGet();
+                                }
+                            });
+                } else {
+                    // Auto-cleanup idle threads when no workers are active
+                    if (idleTimes > IDLE_TIMES_THRESHOLD
+                            && triggerQueue.isEmpty()
+                            && activeCount.get() == 0) {
+                        OrthJobExecutor.removeJobThread(
+                                jobId, "Executor idle timeout - no triggers received");
+                    }
+                }
+            } catch (Throwable e) {
+                if (toStop) {
+                    logger.info("JobThread stopped during dispatch, reason: {}", stopReason);
+                } else {
+                    logger.error("JobThread dispatch error", e);
+                }
+            }
+        }
+    }
+
+    /** Executes a single trigger in a worker thread (concurrent mode). */
+    private void executeTriggerInWorker(TriggerRequest triggerParam) {
+        try {
+            OrthJobContext orthJobContext = buildJobContext(triggerParam);
+            OrthJobContext.setOrthJobContext(orthJobContext);
+
+            OrthJobHelper.log(
+                    "<br>----------- Orth job execute start -----------<br>----------- Param: {}",
+                    orthJobContext.getJobParam());
+
+            executeJob(triggerParam, orthJobContext);
+            validateAndTruncateResult();
+
+            OrthJobHelper.log(
+                    "<br>----------- Orth job execute end(finish) -----------<br>----------- Result: handleCode={}, handleMsg={}",
+                    OrthJobContext.getOrthJobContext().getHandleCode(),
+                    OrthJobContext.getOrthJobContext().getHandleMsg());
+
+        } catch (Throwable e) {
+            handleExecutionError(e);
+        } finally {
+            pushCallback(triggerParam);
+        }
+    }
+
+    /** Checks and triggers idle cleanup. */
+    private void checkIdleCleanup() {
+        if (idleTimes > IDLE_TIMES_THRESHOLD && triggerQueue.isEmpty()) {
+            OrthJobExecutor.removeJobThread(jobId, "Executor idle timeout - no triggers received");
+        }
+    }
+
+    /** Handles execution errors. */
+    private void handleExecutionError(Throwable e) {
+        if (toStop) {
+            OrthJobHelper.log("<br>----------- JobThread stopped, reason: {}", stopReason);
+        }
+
+        StringWriter stringWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stringWriter));
+        String errorMsg = stringWriter.toString();
+
+        OrthJobHelper.handleFail(errorMsg);
+        OrthJobHelper.log(
+                "<br>----------- JobThread Exception: {}<br>----------- Orth job execute end(error) -----------",
+                errorMsg);
     }
 
     /** Initializes the job handler. */
@@ -285,6 +413,25 @@ public class JobThread extends Thread {
         }
 
         TriggerCallbackThread.pushCallBack(callback);
+    }
+
+    /** Shuts down the worker pool if it exists. */
+    private void shutdownWorkerPool() {
+        if (workerPool == null) {
+            return;
+        }
+        workerPool.shutdownNow();
+        try {
+            if (!workerPool.awaitTermination(
+                    WORKER_POOL_SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                logger.warn(
+                        "Worker pool for job {} did not terminate within {} seconds",
+                        jobId,
+                        WORKER_POOL_SHUTDOWN_TIMEOUT_SECONDS);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /** Callbacks remaining triggers in queue that were not executed. */

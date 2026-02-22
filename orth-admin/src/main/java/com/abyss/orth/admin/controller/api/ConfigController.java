@@ -1,6 +1,7 @@
 package com.abyss.orth.admin.controller.api;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,12 +29,53 @@ public class ConfigController {
     @GetMapping("/enums")
     public Response<Map<String, Object>> enums() {
         Map<String, Object> enumData = new HashMap<>();
-        enumData.put("ExecutorRouteStrategyEnum", ExecutorRouteStrategyEnum.values());
-        enumData.put("GlueTypeEnum", GlueTypeEnum.values());
-        enumData.put("ExecutorBlockStrategyEnum", ExecutorBlockStrategyEnum.values());
-        enumData.put("ScheduleTypeEnum", ScheduleTypeEnum.values());
-        enumData.put("MisfireStrategyEnum", MisfireStrategyEnum.values());
+        enumData.put("ExecutorRouteStrategyEnum", toMap(ExecutorRouteStrategyEnum.values()));
+        enumData.put("GlueTypeEnum", toMap(GlueTypeEnum.values()));
+        enumData.put("ExecutorBlockStrategyEnum", toMap(ExecutorBlockStrategyEnum.values()));
+        enumData.put("ScheduleTypeEnum", toMap(ScheduleTypeEnum.values()));
+        enumData.put("MisfireStrategyEnum", toMap(MisfireStrategyEnum.values()));
         return Response.ofSuccess(enumData);
+    }
+
+    /** Converts enum values to a {name: title} map for frontend consumption. */
+    private Map<String, String> toMap(ExecutorRouteStrategyEnum[] values) {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (ExecutorRouteStrategyEnum e : values) {
+            map.put(e.name(), e.getTitle());
+        }
+        return map;
+    }
+
+    private Map<String, String> toMap(GlueTypeEnum[] values) {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (GlueTypeEnum e : values) {
+            map.put(e.name(), e.getDesc());
+        }
+        return map;
+    }
+
+    private Map<String, String> toMap(ExecutorBlockStrategyEnum[] values) {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (ExecutorBlockStrategyEnum e : values) {
+            map.put(e.name(), e.getTitle());
+        }
+        return map;
+    }
+
+    private Map<String, String> toMap(ScheduleTypeEnum[] values) {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (ScheduleTypeEnum e : values) {
+            map.put(e.name(), e.getTitle());
+        }
+        return map;
+    }
+
+    private Map<String, String> toMap(MisfireStrategyEnum[] values) {
+        Map<String, String> map = new LinkedHashMap<>();
+        for (MisfireStrategyEnum e : values) {
+            map.put(e.name(), e.getTitle());
+        }
+        return map;
     }
 
     @GetMapping("/i18n")

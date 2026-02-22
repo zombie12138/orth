@@ -423,6 +423,65 @@ class ExecutorBizImplTest extends AbstractUnitTest {
                 .until(() -> testJobHandler.getExecutionCount() == concurrentCount);
     }
 
+    // -------------------- Concurrent Block Strategy Tests --------------------
+
+    @Test
+    void testRun_blockStrategyConcurrent_shouldQueueTrigger() throws Exception {
+        // Given
+        testJobHandler.setExecutionTime(2000);
+        TriggerRequest request1 = createBeanTriggerRequest(TEST_JOB_ID, TEST_HANDLER_NAME);
+        request1.setExecutorBlockStrategy(ExecutorBlockStrategyEnum.CONCURRENT.name());
+        request1.setExecutorConcurrency(2);
+        request1.setLogId(1L);
+
+        TriggerRequest request2 = createBeanTriggerRequest(TEST_JOB_ID, TEST_HANDLER_NAME);
+        request2.setExecutorBlockStrategy(ExecutorBlockStrategyEnum.CONCURRENT.name());
+        request2.setExecutorConcurrency(2);
+        request2.setLogId(2L);
+
+        // When
+        Response<String> response1 = executorBiz.run(request1);
+        Thread.sleep(100);
+        Response<String> response2 = executorBiz.run(request2);
+
+        // Then - both should succeed (queued for concurrent execution)
+        assertThat(response1.isSuccess()).isTrue();
+        assertThat(response2.isSuccess()).isTrue();
+
+        // Wait for both to execute
+        await().atMost(10, TimeUnit.SECONDS).until(() -> testJobHandler.getExecutionCount() == 2);
+    }
+
+    @Test
+    void testRun_concurrencyChanged_shouldRecreateThread() throws Exception {
+        // Given - first trigger with concurrency=1
+        TriggerRequest request1 = createBeanTriggerRequest(TEST_JOB_ID, TEST_HANDLER_NAME);
+        request1.setExecutorBlockStrategy(ExecutorBlockStrategyEnum.CONCURRENT.name());
+        request1.setExecutorConcurrency(1);
+        request1.setLogId(1L);
+        executorBiz.run(request1);
+
+        Thread.sleep(500);
+
+        // When - second trigger with concurrency=3 (changed)
+        TriggerRequest request2 = createBeanTriggerRequest(TEST_JOB_ID, TEST_HANDLER_NAME);
+        request2.setExecutorBlockStrategy(ExecutorBlockStrategyEnum.CONCURRENT.name());
+        request2.setExecutorConcurrency(3);
+        request2.setLogId(2L);
+        Response<String> response = executorBiz.run(request2);
+
+        // Then - should succeed (old thread recreated with new concurrency)
+        assertThat(response.isSuccess()).isTrue();
+
+        // Verify the new thread has the updated concurrency
+        await().atMost(5, TimeUnit.SECONDS)
+                .until(
+                        () -> {
+                            var thread = OrthJobExecutor.loadJobThread(TEST_JOB_ID);
+                            return thread != null && thread.getConcurrency() == 3;
+                        });
+    }
+
     // Helper methods
 
     private TriggerRequest createBeanTriggerRequest(int jobId, String handlerName) {

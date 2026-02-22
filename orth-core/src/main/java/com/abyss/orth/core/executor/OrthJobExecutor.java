@@ -332,7 +332,7 @@ public class OrthJobExecutor {
             new ConcurrentHashMap<>();
 
     /**
-     * Registers a new job thread for the specified job.
+     * Registers a new job thread for the specified job with serial execution.
      *
      * <p>If a thread already exists for this job, it will be stopped and replaced.
      *
@@ -343,9 +343,29 @@ public class OrthJobExecutor {
      */
     public static JobThread registJobThread(
             int jobId, IJobHandler handler, String removeOldReason) {
-        JobThread newJobThread = new JobThread(jobId, handler);
+        return registJobThread(jobId, handler, removeOldReason, 1);
+    }
+
+    /**
+     * Registers a new job thread for the specified job with configurable concurrency.
+     *
+     * <p>If a thread already exists for this job, it will be stopped and replaced.
+     *
+     * @param jobId the job ID
+     * @param handler the job handler to execute
+     * @param removeOldReason reason for stopping old thread (if exists)
+     * @param concurrency concurrency level (1 = serial, >1 = concurrent via internal pool)
+     * @return the newly registered job thread
+     */
+    public static JobThread registJobThread(
+            int jobId, IJobHandler handler, String removeOldReason, int concurrency) {
+        JobThread newJobThread = new JobThread(jobId, handler, concurrency);
         newJobThread.start();
-        logger.info("Registered Orth job thread: jobId={}, handler={}", jobId, handler);
+        logger.info(
+                "Registered Orth job thread: jobId={}, handler={}, concurrency={}",
+                jobId,
+                handler,
+                concurrency);
 
         // Replace old thread if exists (ConcurrentHashMap.put returns previous value)
         JobThread oldJobThread = jobThreadRepository.put(jobId, newJobThread);

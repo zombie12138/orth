@@ -61,6 +61,17 @@ public class ExecutorBizImpl implements ExecutorBiz {
         jobThread = handlerResult.jobThread();
         removeOldReason = handlerResult.removeOldReason();
 
+        // Check if concurrency changed (need to recreate thread)
+        int requestedConcurrency = triggerRequest.getExecutorConcurrency();
+        if (jobThread != null && jobThread.getConcurrency() != requestedConcurrency) {
+            removeOldReason =
+                    "Concurrency changed from "
+                            + jobThread.getConcurrency()
+                            + " to "
+                            + requestedConcurrency;
+            jobThread = null;
+        }
+
         // Apply block strategy if thread already exists
         BlockStrategyResult blockResult =
                 applyBlockStrategy(triggerRequest, jobThread, removeOldReason);
@@ -75,7 +86,10 @@ public class ExecutorBizImpl implements ExecutorBiz {
         if (jobThread == null) {
             jobThread =
                     OrthJobExecutor.registJobThread(
-                            triggerRequest.getJobId(), jobHandler, removeOldReason);
+                            triggerRequest.getJobId(),
+                            jobHandler,
+                            removeOldReason,
+                            requestedConcurrency);
         }
 
         // Queue trigger for execution
@@ -217,7 +231,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
                                 + ExecutorBlockStrategyEnum.COVER_EARLY.getTitle());
             }
         }
-        // SERIAL_EXECUTION (default): just queue the trigger
+        // SERIAL_EXECUTION, CONCURRENT (default): just queue the trigger
 
         return BlockStrategyResult.success(jobThread, removeOldReason);
     }

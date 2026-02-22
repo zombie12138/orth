@@ -64,6 +64,7 @@
       "nextTriggerTimes": "Next trigger times",
       "misfireStrategy": "Misfire Strategy",
       "blockStrategy": "Block Strategy",
+      "concurrency": "Concurrency",
       "glueType": "GLUE Type",
       "handler": "Handler",
       "parameters": "Parameters",

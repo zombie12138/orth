@@ -109,6 +109,9 @@ public class TriggerRequest implements Serializable {
 
     // ---------------------- Scheduling Metadata ----------------------
 
+    /** Executor concurrency level (1 = serial, >1 = concurrent execution via internal pool) */
+    private int executorConcurrency = 1;
+
     /**
      * Theoretical schedule time (milliseconds since epoch).
      *

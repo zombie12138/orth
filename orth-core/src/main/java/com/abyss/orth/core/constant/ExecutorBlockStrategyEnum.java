@@ -16,7 +16,10 @@ public enum ExecutorBlockStrategyEnum {
     DISCARD_LATER("Discard Later"),
 
     /** Terminate the previous execution and start the new trigger immediately */
-    COVER_EARLY("Cover Early");
+    COVER_EARLY("Cover Early"),
+
+    /** Execute triggers concurrently using an internal thread pool */
+    CONCURRENT("Concurrent");
 
     private final String title;
 

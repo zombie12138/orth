@@ -459,6 +459,168 @@ class JobThreadTest extends AbstractUnitTest {
         verify(mockHandler, times(5)).execute();
     }
 
+    // -------------------- Concurrent Execution Tests --------------------
+
+    @Test
+    void testConcurrentExecution_shouldRunMultipleTriggersInParallel() throws Exception {
+        // Given
+        int concurrency = 3;
+        CountDownLatch startedLatch = new CountDownLatch(concurrency);
+        CountDownLatch holdLatch = new CountDownLatch(1);
+        AtomicInteger executeCount = new AtomicInteger(0);
+
+        IJobHandler concurrentHandler =
+                spy(
+                        new IJobHandler() {
+                            @Override
+                            public void execute() throws Exception {
+                                executeCount.incrementAndGet();
+                                startedLatch.countDown();
+                                OrthJobHelper.handleSuccess("concurrent");
+                                holdLatch.await(10, TimeUnit.SECONDS);
+                            }
+                        });
+
+        jobThread = new JobThread(TEST_JOB_ID, concurrentHandler, concurrency);
+        jobThread.start();
+
+        // When - push N triggers
+        for (int i = 1; i <= concurrency; i++) {
+            jobThread.pushTriggerQueue(createTriggerRequest(i));
+        }
+
+        // Then - all should be running concurrently
+        assertThat(startedLatch.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(executeCount.get()).isEqualTo(concurrency);
+
+        // Cleanup
+        holdLatch.countDown();
+    }
+
+    @Test
+    void testConcurrentExecution_shouldRespectConcurrencyLimit() throws Exception {
+        // Given - concurrency of 2, push 4 triggers
+        int concurrency = 2;
+        int totalTriggers = 4;
+        AtomicInteger concurrentCount = new AtomicInteger(0);
+        AtomicInteger maxConcurrent = new AtomicInteger(0);
+        CountDownLatch allDone = new CountDownLatch(totalTriggers);
+
+        IJobHandler limitHandler =
+                spy(
+                        new IJobHandler() {
+                            @Override
+                            public void execute() throws Exception {
+                                int current = concurrentCount.incrementAndGet();
+                                maxConcurrent.updateAndGet(prev -> Math.max(prev, current));
+                                OrthJobHelper.handleSuccess("ok");
+                                Thread.sleep(200); // Hold briefly
+                                concurrentCount.decrementAndGet();
+                                allDone.countDown();
+                            }
+                        });
+
+        jobThread = new JobThread(TEST_JOB_ID, limitHandler, concurrency);
+        jobThread.start();
+
+        // When
+        for (int i = 1; i <= totalTriggers; i++) {
+            jobThread.pushTriggerQueue(createTriggerRequest(i));
+        }
+
+        // Then
+        assertThat(allDone.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(maxConcurrent.get()).isLessThanOrEqualTo(concurrency);
+    }
+
+    @Test
+    void testConcurrentExecution_isRunningOrHasQueue_shouldReturnTrueWhileWorkersActive()
+            throws Exception {
+        // Given
+        CountDownLatch startedLatch = new CountDownLatch(1);
+        CountDownLatch holdLatch = new CountDownLatch(1);
+
+        IJobHandler holdHandler =
+                spy(
+                        new IJobHandler() {
+                            @Override
+                            public void execute() throws Exception {
+                                startedLatch.countDown();
+                                OrthJobHelper.handleSuccess("running");
+                                holdLatch.await(10, TimeUnit.SECONDS);
+                            }
+                        });
+
+        jobThread = new JobThread(TEST_JOB_ID, holdHandler, 2);
+        jobThread.start();
+
+        // When
+        jobThread.pushTriggerQueue(createTriggerRequest(1L));
+        assertThat(startedLatch.await(5, TimeUnit.SECONDS)).isTrue();
+        Thread.sleep(100);
+
+        // Then
+        assertThat(jobThread.isRunningOrHasQueue()).isTrue();
+
+        // Cleanup
+        holdLatch.countDown();
+    }
+
+    @Test
+    void testConcurrentExecution_killShouldStopAllWorkers() throws Exception {
+        // Given
+        CountDownLatch startedLatch = new CountDownLatch(2);
+        CountDownLatch holdLatch = new CountDownLatch(1);
+
+        IJobHandler holdHandler =
+                spy(
+                        new IJobHandler() {
+                            @Override
+                            public void execute() throws Exception {
+                                startedLatch.countDown();
+                                OrthJobHelper.handleSuccess("running");
+                                holdLatch.await(10, TimeUnit.SECONDS);
+                            }
+                        });
+
+        jobThread = new JobThread(TEST_JOB_ID, holdHandler, 2);
+        jobThread.start();
+
+        jobThread.pushTriggerQueue(createTriggerRequest(1L));
+        jobThread.pushTriggerQueue(createTriggerRequest(2L));
+
+        assertThat(startedLatch.await(5, TimeUnit.SECONDS)).isTrue();
+        Thread.sleep(100);
+
+        // When
+        jobThread.toStop("test kill");
+        holdLatch.countDown();
+        jobThread.join(10000);
+
+        // Then
+        assertThat(jobThread.isAlive()).isFalse();
+        verify(holdHandler).init();
+        verify(holdHandler).destroy();
+    }
+
+    @Test
+    void testConcurrentExecution_getConcurrency() {
+        // Given / When
+        jobThread = new JobThread(TEST_JOB_ID, mockHandler, 4);
+
+        // Then
+        assertThat(jobThread.getConcurrency()).isEqualTo(4);
+    }
+
+    @Test
+    void testConcurrentExecution_defaultConcurrencyIsOne() {
+        // Given / When
+        jobThread = new JobThread(TEST_JOB_ID, mockHandler);
+
+        // Then
+        assertThat(jobThread.getConcurrency()).isEqualTo(1);
+    }
+
     // Helper methods
 
     private TriggerRequest createTriggerRequest(long logId) {

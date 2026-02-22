@@ -64,6 +64,7 @@
       "nextTriggerTimes": "下次调度时间",
       "misfireStrategy": "调度过期策略",
       "blockStrategy": "阻塞处理策略",
+      "concurrency": "并发数",
       "glueType": "运行模式",
       "handler": "Handler",
       "parameters": "任务参数",

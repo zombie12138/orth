@@ -13,6 +13,7 @@ export interface JobInfo {
   executorHandler: string;
   executorParam: string;
   executorBlockStrategy: string;
+  executorConcurrency: number;
   executorTimeout: number;
   executorFailRetryCount: number;
   glueType: string;

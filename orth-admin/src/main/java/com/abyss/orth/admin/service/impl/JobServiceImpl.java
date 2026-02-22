@@ -655,7 +655,7 @@ public class JobServiceImpl implements JobService {
         return Response.ofSuccess();
     }
 
-    /** Validates advanced settings (routing, misfire, block strategy). */
+    /** Validates advanced settings (routing, misfire, block strategy, concurrency). */
     private Response<String> validateAdvancedSettings(JobInfo jobInfo) {
         if (ExecutorRouteStrategyEnum.match(jobInfo.getExecutorRouteStrategy(), null) == null) {
             return Response.ofFail(
@@ -668,10 +668,22 @@ public class JobServiceImpl implements JobService {
                     I18nUtil.getString("misfire_strategy") + I18nUtil.getString("system_unvalid"));
         }
 
-        if (ExecutorBlockStrategyEnum.match(jobInfo.getExecutorBlockStrategy(), null) == null) {
+        ExecutorBlockStrategyEnum blockStrategy =
+                ExecutorBlockStrategyEnum.match(jobInfo.getExecutorBlockStrategy(), null);
+        if (blockStrategy == null) {
             return Response.ofFail(
                     I18nUtil.getString("jobinfo_field_executorBlockStrategy")
                             + I18nUtil.getString("system_unvalid"));
+        }
+
+        // Validate and normalize concurrency
+        if (blockStrategy == ExecutorBlockStrategyEnum.CONCURRENT) {
+            if (jobInfo.getExecutorConcurrency() < 1 || jobInfo.getExecutorConcurrency() > 64) {
+                return Response.ofFail("Concurrency must be between 1 and 64");
+            }
+        } else {
+            // Force concurrency to 1 for non-CONCURRENT strategies
+            jobInfo.setExecutorConcurrency(1);
         }
 
         return Response.ofSuccess();
@@ -794,6 +806,7 @@ public class JobServiceImpl implements JobService {
         existingJob.setExecutorHandler(newJobInfo.getExecutorHandler().trim());
         existingJob.setExecutorParam(newJobInfo.getExecutorParam());
         existingJob.setExecutorBlockStrategy(newJobInfo.getExecutorBlockStrategy());
+        existingJob.setExecutorConcurrency(newJobInfo.getExecutorConcurrency());
         existingJob.setExecutorTimeout(newJobInfo.getExecutorTimeout());
         existingJob.setExecutorFailRetryCount(newJobInfo.getExecutorFailRetryCount());
         existingJob.setChildJobId(newJobInfo.getChildJobId());
@@ -1007,6 +1020,7 @@ public class JobServiceImpl implements JobService {
         clone.setExecutorHandler(template.getExecutorHandler());
         clone.setExecutorParam(template.getExecutorParam());
         clone.setExecutorBlockStrategy(template.getExecutorBlockStrategy());
+        clone.setExecutorConcurrency(template.getExecutorConcurrency());
         clone.setExecutorTimeout(template.getExecutorTimeout());
         clone.setExecutorFailRetryCount(template.getExecutorFailRetryCount());
         clone.setGlueType(template.getGlueType());

@@ -36,6 +36,7 @@ public class JobInfo {
     private String executorHandler; // Job handler name
     private String executorParam; // Job parameters
     private String executorBlockStrategy; // Block handling strategy (see ExecutorBlockStrategyEnum)
+    private int executorConcurrency = 1; // Concurrency level for CONCURRENT block strategy
     private int executorTimeout; // Execution timeout in seconds
     private int executorFailRetryCount; // Retry count on failure
 

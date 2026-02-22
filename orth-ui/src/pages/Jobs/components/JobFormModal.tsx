@@ -40,6 +40,7 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
     const misfireOptions = useEnumOptions('MisfireStrategyEnum');
 
     const [scheduleType, setScheduleType] = useState('NONE');
+    const [blockStrategy, setBlockStrategy] = useState('SERIAL_EXECUTION');
     const [nextTimes, setNextTimes] = useState<string[]>([]);
     const [superTaskOptions, setSuperTaskOptions] = useState<
         { value: number; label: string }[]
@@ -49,6 +50,7 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
         if (open && job) {
             form.setFieldsValue(job);
             setScheduleType(job.scheduleType);
+            setBlockStrategy(job.executorBlockStrategy || 'SERIAL_EXECUTION');
             if (job.superTaskId && job.superTaskId > 0) {
                 setSuperTaskOptions([
                     {
@@ -62,6 +64,7 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
         } else if (open) {
             form.resetFields();
             setScheduleType('NONE');
+            setBlockStrategy('SERIAL_EXECUTION');
             setNextTimes([]);
             setSuperTaskOptions([]);
         }
@@ -138,6 +141,7 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
                     misfireStrategy: 'DO_NOTHING',
                     executorRouteStrategy: 'FIRST',
                     executorBlockStrategy: 'SERIAL_EXECUTION',
+                    executorConcurrency: 1,
                     executorTimeout: 0,
                     executorFailRetryCount: 0,
                 }}
@@ -259,8 +263,24 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
                                         label={t('form.labels.blockStrategy')}
                                         rules={[{ required: true }]}
                                     >
-                                        <Select options={blockStrategyOptions} />
+                                        <Select
+                                            options={blockStrategyOptions}
+                                            onChange={(v) => setBlockStrategy(v as string)}
+                                        />
                                     </Form.Item>
+                                    {blockStrategy === 'CONCURRENT' && (
+                                        <Form.Item
+                                            name="executorConcurrency"
+                                            label={t('form.labels.concurrency')}
+                                            rules={[{ required: true }]}
+                                        >
+                                            <InputNumber
+                                                min={1}
+                                                max={64}
+                                                style={{ width: '100%' }}
+                                            />
+                                        </Form.Item>
+                                    )}
                                 </>
                             ),
                         },
