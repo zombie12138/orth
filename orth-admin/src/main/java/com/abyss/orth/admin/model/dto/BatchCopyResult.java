@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import lombok.Getter;
+
 /**
  * Batch copy result DTO containing operation statistics and outcomes for SubTask creation.
  *
@@ -29,6 +31,7 @@ import java.util.List;
  * @since 3.3.0
  * @see BatchCopyRequest
  */
+@Getter
 public class BatchCopyResult {
 
     /**
@@ -127,19 +130,11 @@ public class BatchCopyResult {
         this.failCount++;
     }
 
-    public int getSuccessCount() {
-        return successCount;
-    }
-
     public void setSuccessCount(int successCount) {
         if (successCount < 0) {
             throw new IllegalArgumentException("Success count cannot be negative");
         }
         this.successCount = successCount;
-    }
-
-    public int getFailCount() {
-        return failCount;
     }
 
     public void setFailCount(int failCount) {

@@ -7,12 +7,17 @@ import java.util.List;
 
 import com.xxl.tool.core.StringTool;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Executor group entity for managing executor clusters.
  *
  * <p>Represents a logical group of executors that can run jobs, supporting both automatic
  * registration and manual configuration.
  */
+@Getter
+@Setter
 public class JobGroup {
 
     /** Address type: Automatic registration via heartbeat */
@@ -41,53 +46,5 @@ public class JobGroup {
             registryList = new ArrayList<>(Arrays.asList(addressList.split(",")));
         }
         return registryList;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getAppname() {
-        return appname;
-    }
-
-    public void setAppname(String appname) {
-        this.appname = appname;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public int getAddressType() {
-        return addressType;
-    }
-
-    public void setAddressType(int addressType) {
-        this.addressType = addressType;
-    }
-
-    public String getAddressList() {
-        return addressList;
-    }
-
-    public Date getUpdateTime() {
-        return updateTime;
-    }
-
-    public void setUpdateTime(Date updateTime) {
-        this.updateTime = updateTime;
-    }
-
-    public void setAddressList(String addressList) {
-        this.addressList = addressList;
     }
 }

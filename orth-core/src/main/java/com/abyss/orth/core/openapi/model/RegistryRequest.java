@@ -2,6 +2,11 @@ package com.abyss.orth.core.openapi.model;
 
 import java.io.Serializable;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 /**
  * Executor registry request for service discovery.
  *
@@ -28,6 +33,10 @@ import java.io.Serializable;
  *
  * @author xuxueli 2017-05-10 20:22:42
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class RegistryRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
@@ -39,46 +48,6 @@ public class RegistryRequest implements Serializable {
 
     /** Registry value (executor address URL) */
     private String registryValue;
-
-    /** Default constructor for JSON deserialization */
-    public RegistryRequest() {}
-
-    /**
-     * Constructs a registry request.
-     *
-     * @param registryGroup registry group (typically "EXECUTOR")
-     * @param registryKey application name
-     * @param registryValue executor address URL
-     */
-    public RegistryRequest(String registryGroup, String registryKey, String registryValue) {
-        this.registryGroup = registryGroup;
-        this.registryKey = registryKey;
-        this.registryValue = registryValue;
-    }
-
-    public String getRegistryGroup() {
-        return registryGroup;
-    }
-
-    public void setRegistryGroup(String registryGroup) {
-        this.registryGroup = registryGroup;
-    }
-
-    public String getRegistryKey() {
-        return registryKey;
-    }
-
-    public void setRegistryKey(String registryKey) {
-        this.registryKey = registryKey;
-    }
-
-    public String getRegistryValue() {
-        return registryValue;
-    }
-
-    public void setRegistryValue(String registryValue) {
-        this.registryValue = registryValue;
-    }
 
     @Override
     public String toString() {

@@ -2,6 +2,10 @@ package com.abyss.orth.core.openapi.model;
 
 import java.io.Serializable;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * Log retrieval request.
  *
@@ -23,6 +27,9 @@ import java.io.Serializable;
  *
  * @author xuxueli 2020-04-11 22:27
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class LogRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
@@ -34,44 +41,4 @@ public class LogRequest implements Serializable {
 
     /** Starting line number to read from (0-based) */
     private int fromLineNum;
-
-    /** Default constructor for JSON deserialization */
-    public LogRequest() {}
-
-    /**
-     * Constructs a log request.
-     *
-     * @param logDateTim log creation timestamp
-     * @param logId log ID
-     * @param fromLineNum starting line number (0=start of file)
-     */
-    public LogRequest(long logDateTim, long logId, int fromLineNum) {
-        this.logDateTim = logDateTim;
-        this.logId = logId;
-        this.fromLineNum = fromLineNum;
-    }
-
-    public long getLogDateTim() {
-        return logDateTim;
-    }
-
-    public void setLogDateTim(long logDateTim) {
-        this.logDateTim = logDateTim;
-    }
-
-    public long getLogId() {
-        return logId;
-    }
-
-    public void setLogId(long logId) {
-        this.logId = logId;
-    }
-
-    public int getFromLineNum() {
-        return fromLineNum;
-    }
-
-    public void setFromLineNum(int fromLineNum) {
-        this.fromLineNum = fromLineNum;
-    }
 }

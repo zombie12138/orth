@@ -2,6 +2,10 @@ package com.abyss.orth.core.openapi.model;
 
 import java.io.Serializable;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * Job execution log query result.
  *
@@ -13,11 +17,14 @@ import java.io.Serializable;
  * <ul>
  *   <li>{@link #fromLineNum} - Starting line number (inclusive)
  *   <li>{@link #toLineNum} - Ending line number (inclusive)
- *   <li>{@link #isEnd} - Indicates if this is the last segment (job execution completed)
+ *   <li>{@link #end} - Indicates if this is the last segment (job execution completed)
  * </ul>
  *
  * @author xuxueli 2017-03-23
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class LogResult implements Serializable {
     private static final long serialVersionUID = 42L;
 
@@ -31,55 +38,5 @@ public class LogResult implements Serializable {
     private String logContent;
 
     /** True if job execution is complete (no more log lines will be appended) */
-    private boolean isEnd;
-
-    /** Default constructor for JSON deserialization */
-    public LogResult() {}
-
-    /**
-     * Constructs a log result with all fields.
-     *
-     * @param fromLineNum starting line number
-     * @param toLineNum ending line number
-     * @param logContent log content
-     * @param isEnd true if this is the final segment
-     */
-    public LogResult(int fromLineNum, int toLineNum, String logContent, boolean isEnd) {
-        this.fromLineNum = fromLineNum;
-        this.toLineNum = toLineNum;
-        this.logContent = logContent;
-        this.isEnd = isEnd;
-    }
-
-    public int getFromLineNum() {
-        return fromLineNum;
-    }
-
-    public void setFromLineNum(int fromLineNum) {
-        this.fromLineNum = fromLineNum;
-    }
-
-    public int getToLineNum() {
-        return toLineNum;
-    }
-
-    public void setToLineNum(int toLineNum) {
-        this.toLineNum = toLineNum;
-    }
-
-    public String getLogContent() {
-        return logContent;
-    }
-
-    public void setLogContent(String logContent) {
-        this.logContent = logContent;
-    }
-
-    public boolean isEnd() {
-        return isEnd;
-    }
-
-    public void setEnd(boolean end) {
-        isEnd = end;
-    }
+    private boolean end;
 }

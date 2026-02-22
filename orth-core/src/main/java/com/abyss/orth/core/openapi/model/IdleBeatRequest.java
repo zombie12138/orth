@@ -2,6 +2,10 @@ package com.abyss.orth.core.openapi.model;
 
 import java.io.Serializable;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * Idle beat request for checking if a job is currently running.
  *
@@ -18,29 +22,12 @@ import java.io.Serializable;
  *
  * @author xuxueli 2020-04-11 22:27
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class IdleBeatRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
     /** Job ID to check idle status for */
     private int jobId;
-
-    /** Default constructor for JSON deserialization */
-    public IdleBeatRequest() {}
-
-    /**
-     * Constructs an idle beat request.
-     *
-     * @param jobId job ID to check
-     */
-    public IdleBeatRequest(int jobId) {
-        this.jobId = jobId;
-    }
-
-    public int getJobId() {
-        return jobId;
-    }
-
-    public void setJobId(int jobId) {
-        this.jobId = jobId;
-    }
 }

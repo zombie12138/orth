@@ -2,6 +2,10 @@ package com.abyss.orth.core.openapi.model;
 
 import java.io.Serializable;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * Job termination request.
  *
@@ -27,29 +31,12 @@ import java.io.Serializable;
  *
  * @author xuxueli 2020-04-11 22:27
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class KillRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
     /** Job ID to terminate */
     private int jobId;
-
-    /** Default constructor for JSON deserialization */
-    public KillRequest() {}
-
-    /**
-     * Constructs a kill request.
-     *
-     * @param jobId job ID to terminate
-     */
-    public KillRequest(int jobId) {
-        this.jobId = jobId;
-    }
-
-    public int getJobId() {
-        return jobId;
-    }
-
-    public void setJobId(int jobId) {
-        this.jobId = jobId;
-    }
 }

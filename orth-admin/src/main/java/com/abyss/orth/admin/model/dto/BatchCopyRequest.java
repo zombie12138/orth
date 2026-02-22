@@ -2,6 +2,9 @@ package com.abyss.orth.admin.model.dto;
 
 import java.util.List;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Batch copy request DTO for creating multiple SubTask instances from a SuperTask template.
  *
@@ -22,6 +25,8 @@ import java.util.List;
  * @see SubTaskConfig
  * @see BatchCopyResult
  */
+@Getter
+@Setter
 public class BatchCopyRequest {
 
     /** Supported batch copy modes */
@@ -179,86 +184,6 @@ public class BatchCopyRequest {
             return tasks.size();
         }
         return 0;
-    }
-
-    public int getTemplateJobId() {
-        return templateJobId;
-    }
-
-    public void setTemplateJobId(int templateJobId) {
-        this.templateJobId = templateJobId;
-    }
-
-    public String getMode() {
-        return mode;
-    }
-
-    public void setMode(String mode) {
-        this.mode = mode;
-    }
-
-    public List<String> getParams() {
-        return params;
-    }
-
-    public void setParams(List<String> params) {
-        this.params = params;
-    }
-
-    public String getNameTemplate() {
-        return nameTemplate;
-    }
-
-    public void setNameTemplate(String nameTemplate) {
-        this.nameTemplate = nameTemplate;
-    }
-
-    public List<SubTaskConfig> getTasks() {
-        return tasks;
-    }
-
-    public void setTasks(List<SubTaskConfig> tasks) {
-        this.tasks = tasks;
-    }
-
-    public String getJobDesc() {
-        return jobDesc;
-    }
-
-    public void setJobDesc(String jobDesc) {
-        this.jobDesc = jobDesc;
-    }
-
-    public String getAuthor() {
-        return author;
-    }
-
-    public void setAuthor(String author) {
-        this.author = author;
-    }
-
-    public String getScheduleConf() {
-        return scheduleConf;
-    }
-
-    public void setScheduleConf(String scheduleConf) {
-        this.scheduleConf = scheduleConf;
-    }
-
-    public String getScheduleType() {
-        return scheduleType;
-    }
-
-    public void setScheduleType(String scheduleType) {
-        this.scheduleType = scheduleType;
-    }
-
-    public String getAlarmEmail() {
-        return alarmEmail;
-    }
-
-    public void setAlarmEmail(String alarmEmail) {
-        this.alarmEmail = alarmEmail;
     }
 
     @Override

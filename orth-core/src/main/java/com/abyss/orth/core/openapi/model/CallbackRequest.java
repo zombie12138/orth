@@ -2,6 +2,11 @@ package com.abyss.orth.core.openapi.model;
 
 import java.io.Serializable;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 /**
  * Job execution callback request.
  *
@@ -20,6 +25,10 @@ import java.io.Serializable;
  *
  * @author xuxueli 2017-03-02
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class CallbackRequest implements Serializable {
     private static final long serialVersionUID = 42L;
 
@@ -34,56 +43,6 @@ public class CallbackRequest implements Serializable {
 
     /** Handle result message (empty on success, error message on failure) */
     private String handleMsg;
-
-    /** Default constructor for JSON deserialization */
-    public CallbackRequest() {}
-
-    /**
-     * Constructs a callback request with all fields.
-     *
-     * @param logId log ID
-     * @param logDateTim log creation timestamp
-     * @param handleCode handle result code (200=success, 500=failure)
-     * @param handleMsg handle result message
-     */
-    public CallbackRequest(long logId, long logDateTim, int handleCode, String handleMsg) {
-        this.logId = logId;
-        this.logDateTim = logDateTim;
-        this.handleCode = handleCode;
-        this.handleMsg = handleMsg;
-    }
-
-    public long getLogId() {
-        return logId;
-    }
-
-    public void setLogId(long logId) {
-        this.logId = logId;
-    }
-
-    public long getLogDateTim() {
-        return logDateTim;
-    }
-
-    public void setLogDateTim(long logDateTim) {
-        this.logDateTim = logDateTim;
-    }
-
-    public int getHandleCode() {
-        return handleCode;
-    }
-
-    public void setHandleCode(int handleCode) {
-        this.handleCode = handleCode;
-    }
-
-    public String getHandleMsg() {
-        return handleMsg;
-    }
-
-    public void setHandleMsg(String handleMsg) {
-        this.handleMsg = handleMsg;
-    }
 
     @Override
     public String toString() {

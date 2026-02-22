@@ -1,5 +1,8 @@
 package com.abyss.orth.admin.model.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * SubTask configuration DTO for advanced batch copy mode.
  *
@@ -22,6 +25,8 @@ package com.abyss.orth.admin.model.dto;
  * @since 3.3.0
  * @see BatchCopyRequest
  */
+@Getter
+@Setter
 public class SubTaskConfig {
 
     /**
@@ -84,54 +89,6 @@ public class SubTaskConfig {
                 || scheduleConf != null
                 || scheduleType != null
                 || alarmEmail != null;
-    }
-
-    public String getExecutorParam() {
-        return executorParam;
-    }
-
-    public void setExecutorParam(String executorParam) {
-        this.executorParam = executorParam;
-    }
-
-    public String getJobDesc() {
-        return jobDesc;
-    }
-
-    public void setJobDesc(String jobDesc) {
-        this.jobDesc = jobDesc;
-    }
-
-    public String getAuthor() {
-        return author;
-    }
-
-    public void setAuthor(String author) {
-        this.author = author;
-    }
-
-    public String getScheduleConf() {
-        return scheduleConf;
-    }
-
-    public void setScheduleConf(String scheduleConf) {
-        this.scheduleConf = scheduleConf;
-    }
-
-    public String getScheduleType() {
-        return scheduleType;
-    }
-
-    public void setScheduleType(String scheduleType) {
-        this.scheduleType = scheduleType;
-    }
-
-    public String getAlarmEmail() {
-        return alarmEmail;
-    }
-
-    public void setAlarmEmail(String alarmEmail) {
-        this.alarmEmail = alarmEmail;
     }
 
     @Override

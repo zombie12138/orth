@@ -53,6 +53,8 @@
 
 		<!-- groovy -->
 		<groovy.version>5.0.2</groovy.version>
+		<!-- lombok -->
+		<lombok.version>1.18.36</lombok.version>
 
 		<!-- xxl-sso (+xxl-tool、gson) -->
 		<xxl-sso.version>2.2.0</xxl-sso.version>
@@ -92,6 +94,13 @@
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
 					<parameters>true</parameters>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
 			<!-- Surefire: JUnit 5 support -->
