@@ -51,6 +51,7 @@ public class ExecutorGroupController {
     private static final int ADDRESS_TYPE_AUTO = 0;
     private static final int ADDRESS_TYPE_MANUAL = 1;
     private static final int ADMIN_ROLE = 1;
+    private static final int MAX_PAGE_SIZE = 200;
 
     @Resource public JobInfoMapper jobInfoMapper;
     @Resource public JobGroupMapper jobGroupMapper;
@@ -63,6 +64,9 @@ public class ExecutorGroupController {
             @RequestParam(required = false, defaultValue = "10") int pagesize,
             @RequestParam(required = false) String appname,
             @RequestParam(required = false) String title) {
+
+        offset = Math.max(offset, 0);
+        pagesize = Math.max(1, Math.min(pagesize, MAX_PAGE_SIZE));
 
         Response<String> adminCheck = requireAdmin(request);
         if (!adminCheck.isSuccess()) {

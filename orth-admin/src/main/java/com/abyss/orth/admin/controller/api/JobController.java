@@ -53,6 +53,7 @@ public class JobController {
     private static final Logger logger = LoggerFactory.getLogger(JobController.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int NEXT_TRIGGER_PREVIEW_COUNT = 10;
+    private static final int MAX_PAGE_SIZE = 200;
 
     @Resource private JobGroupMapper jobGroupMapper;
     @Resource private JobInfoMapper jobInfoMapper;
@@ -69,6 +70,9 @@ public class JobController {
             @RequestParam(defaultValue = "") String executorHandler,
             @RequestParam(defaultValue = "") String author,
             @RequestParam(defaultValue = "0") int superTaskId) {
+
+        offset = Math.max(offset, 0);
+        pagesize = Math.max(1, Math.min(pagesize, MAX_PAGE_SIZE));
 
         JobGroupPermissionUtil.validJobGroupPermission(request, jobGroup);
         return orthJobService.pageList(

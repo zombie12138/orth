@@ -58,6 +58,7 @@ public class LogController {
     private static final int CLEAR_TYPE_100K = 8;
     private static final int CLEAR_TYPE_ALL = 9;
     private static final int BATCH_DELETE_SIZE = 1000;
+    private static final int MAX_PAGE_SIZE = 200;
 
     @Resource private JobGroupMapper jobGroupMapper;
     @Resource public JobInfoMapper jobInfoMapper;
@@ -72,6 +73,9 @@ public class LogController {
             @RequestParam(required = false, defaultValue = "0") int jobId,
             @RequestParam(required = false, defaultValue = "0") int logStatus,
             @RequestParam(required = false, defaultValue = "") String filterTime) {
+
+        offset = Math.max(offset, 0);
+        pagesize = Math.max(1, Math.min(pagesize, MAX_PAGE_SIZE));
 
         List<Integer> permittedGroupIds;
         if (jobGroup > 0) {
