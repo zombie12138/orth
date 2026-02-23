@@ -1,5 +1,7 @@
 package com.abyss.orth.admin.scheduler.openapi;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
@@ -41,10 +43,15 @@ public class OpenApiController {
             return Response.ofFail("invalid request, requestBody empty.");
         }
 
-        // valid token
-        if (StringTool.isNotBlank(OrthAdminBootstrap.getInstance().getAccessToken())
-                && !OrthAdminBootstrap.getInstance().getAccessToken().equals(accesstoken)) {
-            return Response.ofFail("The access token is wrong.");
+        // valid token (constant-time comparison to prevent timing attacks)
+        String configuredToken = OrthAdminBootstrap.getInstance().getAccessToken();
+        if (StringTool.isNotBlank(configuredToken)) {
+            if (accesstoken == null
+                    || !MessageDigest.isEqual(
+                            configuredToken.getBytes(StandardCharsets.UTF_8),
+                            accesstoken.getBytes(StandardCharsets.UTF_8))) {
+                return Response.ofFail("The access token is wrong.");
+            }
         }
 
         // dispatch request

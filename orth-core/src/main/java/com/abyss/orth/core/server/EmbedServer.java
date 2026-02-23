@@ -1,5 +1,7 @@
 package com.abyss.orth.core.server;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.concurrent.*;
 
 import org.slf4j.Logger;
@@ -292,11 +294,14 @@ public class EmbedServer {
                 return Response.ofFail("Invalid request, URI-mapping empty.");
             }
 
-            // Validate access token
-            if (accessToken != null
-                    && !accessToken.trim().isEmpty()
-                    && !accessToken.equals(accessTokenReq)) {
-                return Response.ofFail("The access token is wrong.");
+            // Validate access token (constant-time comparison to prevent timing attacks)
+            if (accessToken != null && !accessToken.trim().isEmpty()) {
+                if (accessTokenReq == null
+                        || !MessageDigest.isEqual(
+                                accessToken.getBytes(StandardCharsets.UTF_8),
+                                accessTokenReq.getBytes(StandardCharsets.UTF_8))) {
+                    return Response.ofFail("The access token is wrong.");
+                }
             }
 
             // Route to ExecutorBiz methods
