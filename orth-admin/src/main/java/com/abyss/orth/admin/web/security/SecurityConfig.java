@@ -13,7 +13,8 @@ import jakarta.annotation.Resource;
  * Security configuration for JWT authentication and CORS.
  *
  * <p>Registers the JWT auth filter for /api/v1/** paths and configures CORS for frontend
- * cross-origin requests.
+ * cross-origin requests. Default allows all origins ({@code *}) which is safe because
+ * authentication uses JWT Bearer tokens, not cookies — no CSRF risk from cross-origin requests.
  */
 @Configuration
 public class SecurityConfig implements WebMvcConfigurer {
@@ -38,7 +39,6 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns(allowedOrigins.split(","))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true)
                 .maxAge(3600);
     }
 }
