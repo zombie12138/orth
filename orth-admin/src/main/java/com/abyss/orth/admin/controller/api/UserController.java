@@ -16,11 +16,11 @@ import com.abyss.orth.admin.mapper.JobGroupMapper;
 import com.abyss.orth.admin.mapper.JobUserMapper;
 import com.abyss.orth.admin.model.JobUser;
 import com.abyss.orth.admin.util.I18nUtil;
+import com.abyss.orth.admin.util.PasswordEncoderUtil;
 import com.abyss.orth.admin.web.security.JwtUserInfo;
 import com.abyss.orth.admin.web.security.SecurityContext;
 import com.xxl.tool.core.CollectionTool;
 import com.xxl.tool.core.StringTool;
-import com.xxl.tool.encrypt.SHA256Tool;
 import com.xxl.tool.response.PageModel;
 import com.xxl.tool.response.Response;
 
@@ -41,6 +41,7 @@ public class UserController {
     private static final int MIN_PASSWORD_LENGTH = 4;
     private static final int MAX_PASSWORD_LENGTH = 20;
     private static final int ADMIN_ROLE = 1;
+    private static final int MAX_PAGE_SIZE = 200;
 
     @Resource private JobUserMapper jobUserMapper;
     @Resource private JobGroupMapper jobGroupMapper;
@@ -52,6 +53,9 @@ public class UserController {
             @RequestParam(required = false, defaultValue = "10") int pagesize,
             @RequestParam(required = false, defaultValue = "") String username,
             @RequestParam(required = false, defaultValue = "-1") int role) {
+
+        offset = Math.max(offset, 0);
+        pagesize = Math.max(1, Math.min(pagesize, MAX_PAGE_SIZE));
 
         Response<String> adminCheck = requireAdmin(request);
         if (!adminCheck.isSuccess()) {
@@ -87,8 +91,7 @@ public class UserController {
             return Response.ofFail(I18nUtil.getString("user_username_repeat"));
         }
 
-        String passwordHash = SHA256Tool.sha256(orthJobUser.getPassword());
-        orthJobUser.setPassword(passwordHash);
+        orthJobUser.setPassword(PasswordEncoderUtil.encode(orthJobUser.getPassword()));
         jobUserMapper.save(orthJobUser);
 
         return Response.ofSuccess();
@@ -114,8 +117,7 @@ public class UserController {
                 return passwordValidation;
             }
 
-            String passwordHash = SHA256Tool.sha256(orthJobUser.getPassword().trim());
-            orthJobUser.setPassword(passwordHash);
+            orthJobUser.setPassword(PasswordEncoderUtil.encode(orthJobUser.getPassword().trim()));
         } else {
             orthJobUser.setPassword(null);
         }

@@ -78,6 +78,12 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
+		<!-- spring-security-crypto (BCrypt only, not full Spring Security) -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
+
 		<!-- JWT (jjwt) -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
