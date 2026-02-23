@@ -12,6 +12,50 @@ x-logging: &rolling-logs
     max-file: "${LOG_MAX_FILE}"
 
 services:
+  orth-mysql:
+    image: ${MYSQL_IMAGE}
+    restart: unless-stopped
+    networks: [orth-net]
+    ports:
+      - "${MYSQL_EXTERNAL_PORT}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ${MYSQL_DATA_DIR}:/var/lib/mysql
+      - type: bind
+        source: ./mysql/db/tables_orth_job.sql
+        target: /docker-entrypoint-initdb.d/tables_orth_job.sql
+        read_only: true
+      - type: bind
+        source: ./mysql/my.conf
+        target: /etc/mysql/my.cnf
+        read_only: true
+    logging: *rolling-logs
+    deploy:
+      resources:
+        limits:
+          memory: 800M
+          cpus: "2.0"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    command:
+      - --skip-name-resolve
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
   orth-admin:
     pull_policy: build   # 只构建，不从 registry 拉取
     build:
@@ -21,14 +65,13 @@ services:
         # Build argument
         # APP_VERSION: "${ADMIN_VERSION}"
     image: "${REGISTRY}${REPO_PREFIX}orth-admin:${ADMIN_VERSION}"
-    container_name: orth-admin
     restart: unless-stopped
     networks: [orth-net]
     ports:
       - "${ADMIN_HTTP_PORT}:8080"
       - "${ADMIN_DEBUG_PORT}:5005"
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DB}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=${TZ}"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://orth-mysql:3306/${MYSQL_DB}?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=${TZ}"
       SPRING_DATASOURCE_USERNAME: "${MYSQL_USER}"
       SPRING_DATASOURCE_PASSWORD: "${MYSQL_PASSWORD}"
       ORTH_JOB_ACCESSTOKEN: "${ORTH_JOB_ACCESS_TOKEN}"
@@ -36,6 +79,9 @@ services:
     volumes:
       - "${ADMIN_DATA_DIR}/applogs:/data/applogs"
       - "${ADMIN_DATA_DIR}/gclogs:/data/gclogs"
+    depends_on:
+      orth-mysql:
+        condition: service_healthy
     logging: *rolling-logs
     healthcheck:
       test: ["CMD-SHELL", "bash -lc \"timeout 2 bash -lc 'echo > /dev/tcp/127.0.0.1/8080' || exit 1\""]
@@ -59,7 +105,6 @@ services:
 
   orth-ui:
     image: nginx:1.27-alpine
-    container_name: orth-ui
     restart: unless-stopped
     networks: [orth-net]
     ports:
@@ -87,7 +132,6 @@ services:
       # args:
       #   APP_VERSION: "${WORKER_VERSION}"
     image: "${REGISTRY}${REPO_PREFIX}orth-worker:${WORKER_VERSION}"
-    container_name: orth-worker-1
     restart: unless-stopped
     networks: [orth-net]
     # 9999 port;
@@ -113,7 +157,7 @@ services:
       start_period: 20s
       retries: 5
     labels:
-      org.opencontainers.image.title: "orth-worker"       
+      org.opencontainers.image.title: "orth-worker"
       org.opencontainers.image.version: "${WORKER_VERSION}"
       org.opencontainers.image.revision: "${GIT_SHA}"
       org.opencontainers.image.created: "${BUILD_DATE}"
@@ -133,7 +177,6 @@ services:
       # args:
       #   APP_VERSION: "${WORKER_VERSION}"
     image: "${REGISTRY}${REPO_PREFIX}orth-worker:${WORKER_VERSION}"
-    container_name: orth-worker-2
     restart: unless-stopped
     networks: [orth-net]
     ports:
