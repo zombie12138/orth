@@ -66,24 +66,6 @@ Key differences from upstream XXL-JOB:
 
 ## Architecture
 
-```
-                    ┌─────────────────────────────────────────┐
-                    │              Admin Server                │
-  ┌──────────┐     │  ┌───────────┐  ┌──────────────────────┐ │     ┌──────────────┐
-  │  Admin UI │────▶│  │  REST API │  │  Scheduling Engine   │ │────▶│  Executor 1   │
-  │ (React)  │◀────│  │  (Spring) │  │  (Time-Ring + Pools) │ │◀────│  (Netty RPC)  │
-  └──────────┘     │  └───────────┘  └──────────────────────┘ │     └──────────────┘
-                    │       │                    │              │     ┌──────────────┐
-                    │       ▼                    ▼              │────▶│  Executor 2   │
-                    │  ┌─────────┐      ┌──────────────┐       │◀────│  (Netty RPC)  │
-                    │  │  MySQL  │      │   Registry    │       │     └──────────────┘
-                    │  │   (DB)  │      │  (Heartbeat)  │       │          ...
-                    │  └─────────┘      └──────────────┘       │     ┌──────────────┐
-                    └─────────────────────────────────────────┘────▶│  Executor N   │
-                                                                ◀────│  (Netty RPC)  │
-                                                                     └──────────────┘
-```
-
 For detailed architecture documentation, see the [`arch/`](arch/) directory:
 
 | Doc | Topic |
@@ -127,6 +109,7 @@ For detailed architecture documentation, see the [`arch/`](arch/) directory:
 
    ```bash
    mvn clean package -DskipTests
+   cd orth-ui && pnpm install && pnpm build && cd ..
    docker-compose up -d
    ```
 
