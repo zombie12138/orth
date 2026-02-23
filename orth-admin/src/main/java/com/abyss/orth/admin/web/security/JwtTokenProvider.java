@@ -12,6 +12,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 
 /**
@@ -30,8 +31,21 @@ public class JwtTokenProvider {
     private static final String CLAIM_TOKEN_TYPE = "type";
     private static final String TOKEN_TYPE_ACCESS = "access";
     private static final String TOKEN_TYPE_REFRESH = "refresh";
+    private static final String DEFAULT_SECRET =
+            "default-dev-secret-must-change-in-production-32bytes";
 
     @Resource private JwtProperties jwtProperties;
+
+    @PostConstruct
+    void checkSecret() {
+        if (DEFAULT_SECRET.equals(jwtProperties.getSecret())) {
+            logger.warn(
+                    "##########################################################\n"
+                            + "# WARNING: Using default JWT secret!                     #\n"
+                            + "# Change jwt.secret in production to a strong random key #\n"
+                            + "##########################################################");
+        }
+    }
 
     public String generateAccessToken(JwtUserInfo userInfo) {
         return generateToken(userInfo, TOKEN_TYPE_ACCESS, jwtProperties.getAccessTokenExpiration());
