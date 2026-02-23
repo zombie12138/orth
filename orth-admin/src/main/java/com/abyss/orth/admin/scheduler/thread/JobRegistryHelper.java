@@ -47,17 +47,16 @@ public class JobRegistryHelper {
     private static final int REGISTRY_QUEUE_SIZE = 2000;
 
     private ThreadPoolExecutor registryOrRemoveThreadPool = null;
-    private Thread registryMonitorThread;
-    private volatile boolean toStop = false;
+    private ScheduledExecutorService monitorScheduler;
 
     /**
-     * Starts the registry helper with thread pool and monitor thread.
+     * Starts the registry helper with thread pool and monitor scheduler.
      *
      * <p>Initializes:
      *
      * <ul>
      *   <li>Registry thread pool for async registration/removal requests
-     *   <li>Monitor thread for cleaning stale entries and refreshing group addresses
+     *   <li>Scheduled executor for cleaning stale entries and refreshing group addresses
      * </ul>
      */
     public void start() {
@@ -82,116 +81,114 @@ public class JobRegistryHelper {
                         });
 
         // for monitor
-        registryMonitorThread =
-                new Thread(
-                        () -> {
-                            while (!toStop) {
-                                try {
-                                    // auto registry group
-                                    List<JobGroup> groupList =
-                                            OrthAdminBootstrap.getInstance()
-                                                    .getJobGroupMapper()
-                                                    .findByAddressType(0);
-                                    if (groupList == null || groupList.isEmpty()) {
-                                        continue;
-                                    }
-
-                                    // remove dead address (admin/executor)
-                                    List<Integer> ids =
-                                            OrthAdminBootstrap.getInstance()
-                                                    .getJobRegistryMapper()
-                                                    .findDead(Const.DEAD_TIMEOUT, new Date());
-                                    if (ids != null && !ids.isEmpty()) {
-                                        OrthAdminBootstrap.getInstance()
-                                                .getJobRegistryMapper()
-                                                .removeDead(ids);
-                                    }
-
-                                    // fresh online address (admin/executor)
-                                    List<JobRegistry> list =
-                                            OrthAdminBootstrap.getInstance()
-                                                    .getJobRegistryMapper()
-                                                    .findAll(Const.DEAD_TIMEOUT, new Date());
-                                    if (list == null) {
-                                        continue;
-                                    }
-
-                                    Map<String, List<String>> appAddressMap =
-                                            list.stream()
-                                                    .filter(
-                                                            item ->
-                                                                    RegistType.EXECUTOR
-                                                                            .name()
-                                                                            .equals(
-                                                                                    item
-                                                                                            .getRegistryGroup()))
-                                                    .collect(
-                                                            Collectors.groupingBy(
-                                                                    JobRegistry::getRegistryKey,
-                                                                    Collectors.mapping(
-                                                                            JobRegistry
-                                                                                    ::getRegistryValue,
-                                                                            Collectors.toList())));
-
-                                    // fresh group address
-                                    for (JobGroup group : groupList) {
-                                        List<String> registryList =
-                                                appAddressMap.get(group.getAppname());
-                                        String addressListStr = null;
-                                        if (registryList != null && !registryList.isEmpty()) {
-                                            Collections.sort(registryList);
-                                            addressListStr = String.join(",", registryList);
-                                        }
-                                        group.setAddressList(addressListStr);
-                                        group.setUpdateTime(new Date());
-
-                                        OrthAdminBootstrap.getInstance()
-                                                .getJobGroupMapper()
-                                                .update(group);
-                                    }
-                                } catch (Throwable e) {
-                                    if (!toStop) {
-                                        logger.error(
-                                                ">>>>>>>>>>> orth, job registry monitor thread error:{}",
-                                                e);
-                                    }
-                                }
-                                try {
-                                    TimeUnit.SECONDS.sleep(Const.BEAT_TIMEOUT);
-                                } catch (Throwable e) {
-                                    if (!toStop) {
-                                        logger.error(
-                                                ">>>>>>>>>>> orth, job registry monitor thread error:{}",
-                                                e);
-                                    }
-                                }
-                            }
-                            logger.info(">>>>>>>>>>> orth, job registry monitor thread stop");
+        monitorScheduler =
+                Executors.newSingleThreadScheduledExecutor(
+                        r -> {
+                            Thread t =
+                                    new Thread(
+                                            r,
+                                            "orth-admin-JobRegistryMonitorHelper-registryMonitorThread");
+                            t.setDaemon(true);
+                            return t;
                         });
-        registryMonitorThread.setDaemon(true);
-        registryMonitorThread.setName("orth, admin JobRegistryMonitorHelper-registryMonitorThread");
-        registryMonitorThread.start();
+        monitorScheduler.scheduleWithFixedDelay(
+                safeRunnable("registry-monitor", this::processRegistryMonitor),
+                0,
+                Const.BEAT_TIMEOUT,
+                TimeUnit.SECONDS);
+    }
+
+    /**
+     * Processes one registry monitor cycle: cleans stale entries and refreshes group addresses.
+     *
+     * <p>This fixes the original tight-spin bug where an empty groupList caused `continue` to skip
+     * the sleep, resulting in a busy loop. Now uses `return` to exit back to the scheduler.
+     */
+    private void processRegistryMonitor() {
+        // auto registry group
+        List<JobGroup> groupList =
+                OrthAdminBootstrap.getInstance().getJobGroupMapper().findByAddressType(0);
+        if (groupList == null || groupList.isEmpty()) {
+            return;
+        }
+
+        // remove dead address (admin/executor)
+        List<Integer> ids =
+                OrthAdminBootstrap.getInstance()
+                        .getJobRegistryMapper()
+                        .findDead(Const.DEAD_TIMEOUT, new Date());
+        if (ids != null && !ids.isEmpty()) {
+            OrthAdminBootstrap.getInstance().getJobRegistryMapper().removeDead(ids);
+        }
+
+        // fresh online address (admin/executor)
+        List<JobRegistry> list =
+                OrthAdminBootstrap.getInstance()
+                        .getJobRegistryMapper()
+                        .findAll(Const.DEAD_TIMEOUT, new Date());
+        if (list == null) {
+            return;
+        }
+
+        Map<String, List<String>> appAddressMap =
+                list.stream()
+                        .filter(item -> RegistType.EXECUTOR.name().equals(item.getRegistryGroup()))
+                        .collect(
+                                Collectors.groupingBy(
+                                        JobRegistry::getRegistryKey,
+                                        Collectors.mapping(
+                                                JobRegistry::getRegistryValue,
+                                                Collectors.toList())));
+
+        // fresh group address
+        for (JobGroup group : groupList) {
+            List<String> registryList = appAddressMap.get(group.getAppname());
+            String addressListStr = null;
+            if (registryList != null && !registryList.isEmpty()) {
+                Collections.sort(registryList);
+                addressListStr = String.join(",", registryList);
+            }
+            group.setAddressList(addressListStr);
+            group.setUpdateTime(new Date());
+
+            OrthAdminBootstrap.getInstance().getJobGroupMapper().update(group);
+        }
     }
 
     /**
      * Stops the registry helper gracefully.
      *
-     * <p>Shuts down the registry thread pool and interrupts the monitor thread, waiting for it to
-     * finish.
+     * <p>Shuts down the registry thread pool and monitor scheduler.
      */
     public void stop() {
-        toStop = true;
-
         // stop registryOrRemoveThreadPool
         registryOrRemoveThreadPool.shutdownNow();
 
-        // stop monitor (interrupt and wait)
-        registryMonitorThread.interrupt();
+        // stop monitor scheduler
+        monitorScheduler.shutdown();
         try {
-            registryMonitorThread.join();
-        } catch (Throwable e) {
-            logger.error(e.getMessage(), e);
+            if (!monitorScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                monitorScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            monitorScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
         }
+        logger.info(">>>>>>>>>>> orth, job registry monitor thread stop");
+    }
+
+    /**
+     * Wraps a runnable to catch and log exceptions, preventing {@link ScheduledExecutorService}
+     * from silently cancelling future executions on uncaught exceptions.
+     */
+    private static Runnable safeRunnable(String taskName, Runnable task) {
+        return () -> {
+            try {
+                task.run();
+            } catch (Throwable e) {
+                logger.error("Scheduled task '{}' threw exception", taskName, e);
+            }
+        };
     }
 
     // ---------------------- tool ----------------------

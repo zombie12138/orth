@@ -3,6 +3,8 @@ package com.abyss.orth.core.thread;
 import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -54,11 +56,10 @@ public class JobLogFileCleanThread {
         return instance;
     }
 
-    private Thread localThread;
-    private volatile boolean toStop = false;
+    private ScheduledExecutorService cleanupScheduler;
 
     /**
-     * Starts the log cleanup thread.
+     * Starts the log cleanup scheduler.
      *
      * @param logRetentionDays number of days to retain log files (minimum 3 days)
      */
@@ -72,60 +73,43 @@ public class JobLogFileCleanThread {
             return;
         }
 
-        localThread =
-                new Thread(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                while (!toStop) {
-                                    try {
-                                        cleanExpiredLogDirs(logRetentionDays);
-                                    } catch (Throwable e) {
-                                        if (!toStop) {
-                                            logger.error("Error cleaning log files", e);
-                                        }
-                                    }
-
-                                    try {
-                                        TimeUnit.DAYS.sleep(1);
-                                    } catch (Throwable e) {
-                                        if (!toStop) {
-                                            logger.error("Error sleeping cleanup thread", e);
-                                        }
-                                    }
-                                }
-                                logger.info(
-                                        ">>>>>>>>>>> orth, executor JobLogFileCleanThread thread"
-                                                + " destroy.");
-                            }
+        cleanupScheduler =
+                Executors.newSingleThreadScheduledExecutor(
+                        r -> {
+                            Thread t = new Thread(r, "orth-executor-JobLogFileCleanThread");
+                            t.setDaemon(true);
+                            return t;
                         });
-        localThread.setDaemon(true);
-        localThread.setName("orth, executor JobLogFileCleanThread");
-        localThread.start();
+        cleanupScheduler.scheduleWithFixedDelay(
+                safeRunnable("log-file-cleanup", () -> cleanExpiredLogDirs(logRetentionDays)),
+                0,
+                1,
+                TimeUnit.DAYS);
 
         logger.info(
-                "Started log cleanup thread with retention period of {} days", logRetentionDays);
+                "Started log cleanup scheduler with retention period of {} days", logRetentionDays);
     }
 
     /**
-     * Stops the cleanup thread.
+     * Stops the cleanup scheduler.
      *
-     * <p>This method sets the stop flag and waits for the thread to terminate gracefully.
+     * <p>Shuts down the scheduled executor and waits up to 5 seconds for termination.
      */
     public void toStop() {
-        toStop = true;
-
-        if (localThread == null) {
+        if (cleanupScheduler == null) {
             return;
         }
 
-        // Interrupt and wait for termination
-        localThread.interrupt();
+        cleanupScheduler.shutdown();
         try {
-            localThread.join();
+            if (!cleanupScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                cleanupScheduler.shutdownNow();
+            }
         } catch (InterruptedException e) {
-            logger.error("Interrupted while waiting for cleanup thread to stop", e);
+            cleanupScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
         }
+        logger.info(">>>>>>>>>>> orth, executor JobLogFileCleanThread thread destroy.");
     }
 
     /**
@@ -223,5 +207,19 @@ public class JobLogFileCleanThread {
             logger.debug("Failed to parse date from log directory name: {}", dirName);
             return null;
         }
+    }
+
+    /**
+     * Wraps a runnable to catch and log exceptions, preventing {@link ScheduledExecutorService}
+     * from silently cancelling future executions on uncaught exceptions.
+     */
+    private static Runnable safeRunnable(String taskName, Runnable task) {
+        return () -> {
+            try {
+                task.run();
+            } catch (Throwable e) {
+                logger.error("Scheduled task '{}' threw exception", taskName, e);
+            }
+        };
     }
 }

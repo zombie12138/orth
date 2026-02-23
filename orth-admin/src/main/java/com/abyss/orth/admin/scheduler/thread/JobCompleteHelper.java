@@ -4,6 +4,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +67,7 @@ public class JobCompleteHelper {
     // ---------------------- monitor ----------------------
 
     private ThreadPoolExecutor callbackThreadPool = null;
-    private Thread monitorThread;
-    private volatile boolean toStop = false;
+    private ScheduledExecutorService monitorScheduler;
 
     /**
      * Starts the job completion helper with callback thread pool and lost result monitor.
@@ -75,7 +76,7 @@ public class JobCompleteHelper {
      *
      * <ul>
      *   <li>Async thread pool for processing executor callbacks
-     *   <li>Daemon monitor thread for detecting lost job results
+     *   <li>Scheduled executor for detecting lost job results
      * </ul>
      */
     public void start() {
@@ -95,37 +96,19 @@ public class JobCompleteHelper {
                                             + "executing in caller thread (backpressure)");
                         });
 
-        // Initialize lost result monitor thread
-        monitorThread = new Thread(this::monitorLostResults);
-        monitorThread.setDaemon(true);
-        monitorThread.setName("orth-admin-lost-result-monitor");
-        monitorThread.start();
-    }
-
-    /**
-     * Monitor loop for detecting and handling lost job results.
-     *
-     * <p>Identifies jobs stuck in "running" state when executors are offline and marks them as
-     * failed. Runs continuously until shutdown signal received.
-     */
-    private void monitorLostResults() {
-        // Wait for JobTriggerPoolHelper initialization
-        sleepQuietly(STARTUP_DELAY_MS, TimeUnit.MILLISECONDS);
-
-        while (!toStop) {
-            try {
-                processLostJobs();
-            } catch (Throwable e) {
-                if (!toStop) {
-                    logger.error(
-                            ">>>>>>>>>>> orth, lost result monitor error: {}", e.getMessage(), e);
-                }
-            }
-
-            sleepQuietly(MONITOR_INTERVAL_SECONDS, TimeUnit.SECONDS);
-        }
-
-        logger.info(">>>>>>>>>>> orth, lost result monitor stopped");
+        // Initialize lost result monitor scheduler
+        monitorScheduler =
+                Executors.newSingleThreadScheduledExecutor(
+                        r -> {
+                            Thread t = new Thread(r, "orth-admin-lost-result-monitor");
+                            t.setDaemon(true);
+                            return t;
+                        });
+        monitorScheduler.scheduleWithFixedDelay(
+                safeRunnable("lost-result-monitor", this::processLostJobs),
+                STARTUP_DELAY_MS,
+                MONITOR_INTERVAL_SECONDS * 1000,
+                TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -161,47 +144,44 @@ public class JobCompleteHelper {
     }
 
     /**
-     * Sleeps for the specified duration, suppressing interruption logging during shutdown.
-     *
-     * @param duration the duration to sleep
-     * @param unit the time unit of the duration
-     */
-    private void sleepQuietly(long duration, TimeUnit unit) {
-        try {
-            unit.sleep(duration);
-        } catch (InterruptedException e) {
-            if (!toStop) {
-                logger.error("Sleep interrupted: {}", e.getMessage(), e);
-            }
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * Stops the job completion helper, shutting down callback thread pool and monitor thread.
+     * Stops the job completion helper, shutting down callback thread pool and monitor scheduler.
      *
      * <p>Shutdown sequence:
      *
      * <ul>
-     *   <li>Sets stop flag to halt monitor loop
      *   <li>Forcefully shuts down callback thread pool
-     *   <li>Interrupts and joins monitor thread
+     *   <li>Gracefully shuts down monitor scheduler (waits up to 5 seconds)
      * </ul>
      */
     public void stop() {
-        toStop = true;
-
         // Shutdown callback processing thread pool
         callbackThreadPool.shutdownNow();
 
-        // Stop and wait for monitor thread termination
-        monitorThread.interrupt();
+        // Stop monitor scheduler
+        monitorScheduler.shutdown();
         try {
-            monitorThread.join();
+            if (!monitorScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                monitorScheduler.shutdownNow();
+            }
         } catch (InterruptedException e) {
-            logger.error("Failed to join monitor thread: {}", e.getMessage(), e);
+            monitorScheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
+        logger.info(">>>>>>>>>>> orth, lost result monitor stopped");
+    }
+
+    /**
+     * Wraps a runnable to catch and log exceptions, preventing {@link ScheduledExecutorService}
+     * from silently cancelling future executions on uncaught exceptions.
+     */
+    private static Runnable safeRunnable(String taskName, Runnable task) {
+        return () -> {
+            try {
+                task.run();
+            } catch (Throwable e) {
+                logger.error("Scheduled task '{}' threw exception", taskName, e);
+            }
+        };
     }
 
     // ---------------------- callback processing ----------------------

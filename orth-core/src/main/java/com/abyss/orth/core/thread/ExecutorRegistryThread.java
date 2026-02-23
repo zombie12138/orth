@@ -1,5 +1,7 @@
 package com.abyss.orth.core.thread;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -26,11 +28,12 @@ public class ExecutorRegistryThread {
         return instance;
     }
 
-    private Thread registryThread;
-    private volatile boolean toStop = false;
+    private ScheduledExecutorService heartbeatScheduler;
+    private String appname;
+    private String address;
 
     /**
-     * Starts the executor registry thread.
+     * Starts the executor registry heartbeat scheduler.
      *
      * @param appname executor application name (e.g., "orth-executor-1")
      * @param address executor address (e.g., "http://192.168.1.100:9999/")
@@ -46,42 +49,27 @@ public class ExecutorRegistryThread {
             return;
         }
 
-        // Start registry thread
-        registryThread = new Thread(() -> runRegistryLoop(appname, address));
-        registryThread.setDaemon(true);
-        registryThread.setName("orth-registry-thread");
-        registryThread.start();
+        this.appname = appname;
+        this.address = address;
+
+        // Start heartbeat scheduler
+        heartbeatScheduler =
+                Executors.newSingleThreadScheduledExecutor(
+                        r -> {
+                            Thread t = new Thread(r, "orth-registry-thread");
+                            t.setDaemon(true);
+                            return t;
+                        });
+        heartbeatScheduler.scheduleWithFixedDelay(
+                safeRunnable("registry-heartbeat", this::sendHeartbeat),
+                0,
+                Const.BEAT_TIMEOUT,
+                TimeUnit.SECONDS);
     }
 
-    /** Main registry loop: sends periodic heartbeats and deregisters on shutdown. */
-    private void runRegistryLoop(String appname, String address) {
-        // Periodic registration heartbeat
-        while (!toStop) {
-            try {
-                sendRegistration(appname, address);
-            } catch (Throwable e) {
-                if (!toStop) {
-                    logger.error("Registry heartbeat error", e);
-                }
-            }
-
-            // Sleep between heartbeats
-            try {
-                if (!toStop) {
-                    TimeUnit.SECONDS.sleep(Const.BEAT_TIMEOUT);
-                }
-            } catch (InterruptedException e) {
-                if (!toStop) {
-                    logger.warn("Registry sleep interrupted: {}", e.getMessage());
-                }
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        // Deregister on shutdown
-        sendDeregistration(appname, address);
-
-        logger.info("Orth registry thread stopped");
+    /** Sends a single heartbeat registration to admin. */
+    private void sendHeartbeat() {
+        sendRegistration(appname, address);
     }
 
     /** Sends registration heartbeat to all admin endpoints. */
@@ -117,25 +105,49 @@ public class ExecutorRegistryThread {
                     logger.info("Deregistration failed: {}, response: {}", request, response);
                 }
             } catch (Throwable e) {
-                if (!toStop) {
-                    logger.info("Deregistration error: {}", request, e);
-                }
+                logger.info("Deregistration error: {}", request, e);
             }
         }
     }
 
-    /** Stops the registry thread gracefully. */
+    /**
+     * Stops the registry heartbeat scheduler and sends deregistration.
+     *
+     * <p>Shutdown sequence: stop scheduler first to prevent new heartbeats, then synchronously send
+     * deregistration so admin removes this executor from service discovery.
+     */
     public void toStop() {
-        toStop = true;
-
-        if (registryThread != null) {
-            registryThread.interrupt();
-            try {
-                registryThread.join();
-            } catch (InterruptedException e) {
-                logger.error("Registry thread join interrupted", e);
-                Thread.currentThread().interrupt();
-            }
+        if (heartbeatScheduler == null) {
+            return;
         }
+
+        // Stop scheduler first
+        heartbeatScheduler.shutdown();
+        try {
+            if (!heartbeatScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                heartbeatScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            heartbeatScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        // Then deregister synchronously
+        sendDeregistration(appname, address);
+        logger.info("Orth registry thread stopped");
+    }
+
+    /**
+     * Wraps a runnable to catch and log exceptions, preventing {@link ScheduledExecutorService}
+     * from silently cancelling future executions on uncaught exceptions.
+     */
+    private static Runnable safeRunnable(String taskName, Runnable task) {
+        return () -> {
+            try {
+                task.run();
+            } catch (Throwable e) {
+                logger.error("Scheduled task '{}' threw exception", taskName, e);
+            }
+        };
     }
 }

@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -65,10 +67,10 @@ public class TriggerCallbackThread {
 
     // Thread instances
     private Thread triggerCallbackThread;
-    private Thread triggerRetryCallbackThread;
+    private ScheduledExecutorService retryScheduler;
     private volatile boolean toStop = false;
 
-    /** Starts the callback and retry threads. */
+    /** Starts the callback thread and retry scheduler. */
     public void start() {
         // Validate admin addresses configured
         if (OrthJobExecutor.getAdminBizList() == null) {
@@ -76,17 +78,25 @@ public class TriggerCallbackThread {
             return;
         }
 
-        // Start main callback thread
+        // Start main callback thread (blocking queue consumer — stays as bare thread)
         triggerCallbackThread = new Thread(this::runCallbackLoop);
         triggerCallbackThread.setDaemon(true);
         triggerCallbackThread.setName("orth-callback-thread");
         triggerCallbackThread.start();
 
-        // Start retry thread
-        triggerRetryCallbackThread = new Thread(this::runRetryLoop);
-        triggerRetryCallbackThread.setDaemon(true);
-        triggerRetryCallbackThread.setName("orth-callback-retry-thread");
-        triggerRetryCallbackThread.start();
+        // Start retry scheduler
+        retryScheduler =
+                Executors.newSingleThreadScheduledExecutor(
+                        r -> {
+                            Thread t = new Thread(r, "orth-callback-retry-thread");
+                            t.setDaemon(true);
+                            return t;
+                        });
+        retryScheduler.scheduleWithFixedDelay(
+                safeRunnable("callback-retry", this::retryFailCallbackFile),
+                Const.BEAT_TIMEOUT,
+                Const.BEAT_TIMEOUT,
+                TimeUnit.SECONDS);
     }
 
     /** Main callback loop: processes callback queue and sends to admin. */
@@ -126,31 +136,7 @@ public class TriggerCallbackThread {
         logger.info("Orth callback thread stopped");
     }
 
-    /** Retry loop: retries failed callbacks from persisted files. */
-    private void runRetryLoop() {
-        while (!toStop) {
-            try {
-                retryFailCallbackFile();
-            } catch (Throwable e) {
-                if (!toStop) {
-                    logger.error("Callback retry error", e);
-                }
-            }
-
-            try {
-                TimeUnit.SECONDS.sleep(Const.BEAT_TIMEOUT);
-            } catch (InterruptedException e) {
-                if (!toStop) {
-                    logger.error("Retry sleep interrupted", e);
-                }
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        logger.info("Orth callback retry thread stopped");
-    }
-
-    /** Stops the callback and retry threads gracefully. */
+    /** Stops the callback thread and retry scheduler gracefully. */
     public void toStop() {
         toStop = true;
 
@@ -165,15 +151,18 @@ public class TriggerCallbackThread {
             }
         }
 
-        // Stop retry thread
-        if (triggerRetryCallbackThread != null) {
-            triggerRetryCallbackThread.interrupt();
+        // Stop retry scheduler
+        if (retryScheduler != null) {
+            retryScheduler.shutdown();
             try {
-                triggerRetryCallbackThread.join();
+                if (!retryScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    retryScheduler.shutdownNow();
+                }
             } catch (InterruptedException e) {
-                logger.error("Retry thread join interrupted", e);
+                retryScheduler.shutdownNow();
                 Thread.currentThread().interrupt();
             }
+            logger.info("Orth callback retry thread stopped");
         }
     }
 
@@ -251,6 +240,20 @@ public class TriggerCallbackThread {
         } catch (IOException e) {
             logger.error("Failed to persist callback to file: {}", fileName, e);
         }
+    }
+
+    /**
+     * Wraps a runnable to catch and log exceptions, preventing {@link ScheduledExecutorService}
+     * from silently cancelling future executions on uncaught exceptions.
+     */
+    private static Runnable safeRunnable(String taskName, Runnable task) {
+        return () -> {
+            try {
+                task.run();
+            } catch (Throwable e) {
+                logger.error("Scheduled task '{}' threw exception", taskName, e);
+            }
+        };
     }
 
     /** Retries failed callbacks from persisted files. */

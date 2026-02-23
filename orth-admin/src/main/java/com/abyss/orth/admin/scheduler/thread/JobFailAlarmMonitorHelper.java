@@ -1,6 +1,8 @@
 package com.abyss.orth.admin.scheduler.thread;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -68,62 +70,47 @@ public class JobFailAlarmMonitorHelper {
 
     // ---------------------- Fields ----------------------
 
-    private Thread monitorThread;
-    private volatile boolean toStop = false;
+    private ScheduledExecutorService monitorScheduler;
 
     // ---------------------- Lifecycle ----------------------
 
     /**
-     * Starts the fail alarm monitor thread.
+     * Starts the fail alarm monitor using a scheduled executor.
      *
-     * <p>Creates a daemon thread that continuously scans for failed job logs and processes alarms
-     * and retries.
+     * <p>Schedules periodic scans for failed job logs, processing alarms and retries every {@link
+     * #SCAN_INTERVAL_SECONDS} seconds.
      */
     public void start() {
-        monitorThread = new Thread(this::monitorFailedJobs);
-        monitorThread.setDaemon(true);
-        monitorThread.setName("orth-admin-JobFailAlarmMonitor");
-        monitorThread.start();
+        monitorScheduler =
+                Executors.newSingleThreadScheduledExecutor(
+                        r -> {
+                            Thread t = new Thread(r, "orth-admin-JobFailAlarmMonitor");
+                            t.setDaemon(true);
+                            return t;
+                        });
+        monitorScheduler.scheduleWithFixedDelay(
+                safeRunnable("JobFailAlarmMonitor", this::processScanCycle),
+                0,
+                SCAN_INTERVAL_SECONDS,
+                TimeUnit.SECONDS);
+        logger.info("orth job fail alarm monitor started");
     }
 
     /**
-     * Stops the fail alarm monitor thread gracefully.
+     * Stops the fail alarm monitor gracefully.
      *
-     * <p>Sets stop flag, interrupts the thread, and waits for it to terminate.
+     * <p>Shuts down the scheduled executor and waits up to 5 seconds for termination.
      */
     public void stop() {
-        toStop = true;
-        monitorThread.interrupt();
+        monitorScheduler.shutdown();
         try {
-            monitorThread.join();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error("Interrupted while waiting for monitor thread to stop", e);
-        }
-    }
-
-    // ---------------------- Core Monitor Logic ----------------------
-
-    /**
-     * Main monitoring loop that processes failed job logs.
-     *
-     * <p>Runs continuously until stopped, with configurable sleep interval between scans.
-     */
-    private void monitorFailedJobs() {
-        logger.info("orth job fail alarm monitor started");
-
-        while (!toStop) {
-            try {
-                processScanCycle();
-            } catch (Throwable e) {
-                if (!toStop) {
-                    logger.error("orth job fail monitor error: {}", e.getMessage(), e);
-                }
+            if (!monitorScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                monitorScheduler.shutdownNow();
             }
-
-            sleepBetweenScans();
+        } catch (InterruptedException e) {
+            monitorScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
         }
-
         logger.info("orth job fail alarm monitor stopped");
     }
 
@@ -362,18 +349,16 @@ public class JobFailAlarmMonitorHelper {
     // ---------------------- Utility ----------------------
 
     /**
-     * Sleeps between scan cycles.
-     *
-     * <p>Sleeps for {@link #SCAN_INTERVAL_SECONDS} seconds, ignoring interrupts unless stopping.
+     * Wraps a runnable to catch and log exceptions, preventing {@link ScheduledExecutorService}
+     * from silently cancelling future executions on uncaught exceptions.
      */
-    private void sleepBetweenScans() {
-        try {
-            TimeUnit.SECONDS.sleep(SCAN_INTERVAL_SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            if (!toStop) {
-                logger.error("Monitor thread interrupted during sleep", e);
+    private static Runnable safeRunnable(String taskName, Runnable task) {
+        return () -> {
+            try {
+                task.run();
+            } catch (Throwable e) {
+                logger.error("Scheduled task '{}' threw exception", taskName, e);
             }
-        }
+        };
     }
 }

@@ -303,7 +303,6 @@ export default function JobsPage() {
         {
             title: t('columns.actions'),
             width: 160,
-            fixed: 'right',
             render: (_: unknown, record: JobInfo) => {
                 const items = [
                     {

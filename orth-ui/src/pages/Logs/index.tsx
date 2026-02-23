@@ -168,68 +168,51 @@ export default function LogsPage() {
 
     const columns: ColumnsType<JobLog> = [
         { title: t('columns.id'), dataIndex: 'id', width: 70 },
-        ...(isMobile
-            ? []
-            : [
-                  {
-                      title: t('columns.group'),
-                      dataIndex: 'jobGroup',
-                      width: 110,
-                      render: (v: number) => groupMap.get(v) ?? v,
-                  } as const,
-              ]),
+        {
+            title: t('columns.group'),
+            dataIndex: 'jobGroup',
+            width: 110,
+            render: (v: number) => groupMap.get(v) ?? v,
+        },
         { title: t('columns.jid'), dataIndex: 'jobId', width: 70 },
-        ...(isMobile
-            ? []
-            : [
-                  {
-                      title: t('columns.handler'),
-                      dataIndex: 'executorHandler',
-                      width: 130,
-                      ellipsis: { showTitle: false },
-                      render: (v: string) => (
-                          <Tooltip title={v}>
-                              <span>{v}</span>
-                          </Tooltip>
-                      ),
-                  } as const,
-              ]),
-        ...(isMobile
-            ? []
-            : [
-                  {
-                      title: t('columns.scheduleTime'),
-                      dataIndex: 'scheduleTime',
-                      width: 160,
-                      render: (v: string | null) => formatDate(v),
-                  } as const,
-              ]),
+        {
+            title: t('columns.handler'),
+            dataIndex: 'executorHandler',
+            width: 130,
+            ellipsis: { showTitle: false },
+            render: (v: string) => (
+                <Tooltip title={v}>
+                    <span>{v}</span>
+                </Tooltip>
+            ),
+        },
+        {
+            title: t('columns.scheduleTime'),
+            dataIndex: 'scheduleTime',
+            width: 160,
+            render: (v: string | null) => formatDate(v),
+        },
         {
             title: t('columns.triggerTime'),
             dataIndex: 'triggerTime',
             width: 160,
             render: (v: string) => formatDate(v),
         },
-        ...(isMobile
-            ? []
-            : [
-                  {
-                      title: t('columns.execution'),
-                      width: 200,
-                      render: (_: unknown, r: JobLog) => {
-                          if (!r.handleTime) return '-';
-                          const handleMs = dayjs(r.handleTime).valueOf();
-                          const triggerMs = dayjs(r.triggerTime).valueOf();
-                          const diffMs = handleMs - triggerMs;
-                          let duration: string;
-                          if (diffMs < 1000) duration = `${diffMs}ms`;
-                          else if (diffMs < 60000)
-                              duration = `${(diffMs / 1000).toFixed(1)}s`;
-                          else duration = `${(diffMs / 60000).toFixed(1)}m`;
-                          return `${formatDate(r.handleTime)} (${duration})`;
-                      },
-                  } as const,
-              ]),
+        {
+            title: t('columns.execution'),
+            width: 200,
+            render: (_: unknown, r: JobLog) => {
+                if (!r.handleTime) return '-';
+                const handleMs = dayjs(r.handleTime).valueOf();
+                const triggerMs = dayjs(r.triggerTime).valueOf();
+                const diffMs = handleMs - triggerMs;
+                let duration: string;
+                if (diffMs < 1000) duration = `${diffMs}ms`;
+                else if (diffMs < 60000) duration = `${(diffMs / 1000).toFixed(1)}s`;
+                else duration = `${(diffMs / 60000).toFixed(1)}m`;
+                return `${formatDate(r.handleTime)} (${duration})`;
+            },
+        },
         {
             title: t('columns.status'),
             width: 140,
@@ -251,7 +234,6 @@ export default function LogsPage() {
         {
             title: t('columns.detail'),
             width: 100,
-            fixed: 'right',
             render: (_: unknown, record: JobLog) => (
                 <Space size="small">
                     <Button
