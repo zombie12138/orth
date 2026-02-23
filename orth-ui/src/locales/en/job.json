@@ -78,6 +78,46 @@
     },
     "messages": {
       "previewFailed": "Failed to preview"
+    },
+    "cron": {
+      "selectPreset": "Quick presets...",
+      "formatHint": "Format: seconds minutes hours day-of-month month day-of-week [year]",
+      "categories": {
+        "frequent": "Frequent",
+        "minutes": "Minutes",
+        "hourly": "Hourly",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      },
+      "presets": {
+        "every5s": "Every 5 seconds",
+        "every10s": "Every 10 seconds",
+        "every30s": "Every 30 seconds",
+        "every1m": "Every minute",
+        "every5m": "Every 5 minutes",
+        "every15m": "Every 15 minutes",
+        "every30m": "Every 30 minutes",
+        "every1h": "Every hour",
+        "every2h": "Every 2 hours",
+        "every6h": "Every 6 hours",
+        "midnight": "Every day at midnight",
+        "sixAM": "Every day at 6:00",
+        "noon": "Every day at noon",
+        "weekdays": "Weekdays at midnight",
+        "everyMonday": "Every Monday at midnight",
+        "firstDay": "First day of month",
+        "lastDay": "Last day of month"
+      },
+      "validation": {
+        "required": "CRON expression is required",
+        "fieldCount": "Must have 6 or 7 fields (seconds minutes hours day-of-month month day-of-week [year])",
+        "invalidValue": "Invalid value in expression",
+        "invalidStep": "Invalid step value",
+        "outOfRange": "Value out of allowed range",
+        "invalidQuestion": "? is only valid for day-of-month and day-of-week",
+        "bothQuestion": "Day-of-month and day-of-week cannot both be ?"
+      }
     }
   },
   "trigger": {

@@ -21,6 +21,7 @@
     "@uiw/react-codemirror": "^4.23.7",
     "antd": "^5.23.4",
     "axios": "^1.7.9",
+    "cronstrue": "^3.12.0",
     "dayjs": "^1.11.13",
     "echarts": "^5.6.0",
     "echarts-for-react": "^3.0.2",

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Modal, Form, Input, Select, InputNumber, message, Tabs, Button, List } from 'antd';
+import { Modal, Form, Input, Select, InputNumber, message, Tabs, List } from 'antd';
 import { useMutation } from '@tanstack/react-query';
 import { showError } from '../../../api/client';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,8 @@ import debounce from '../../_utils/debounce';
 import { createJob, updateJob, nextTriggerTime, searchSuperTask } from '../../../api/jobs';
 import { useEnumOptions } from '../../../hooks/useEnums';
 import { useIsMobile } from '../../../hooks/useIsMobile';
+import CronInput from './CronInput';
+import { validateQuartzCron } from '../../../utils/cronValidator';
 import type { JobInfo } from '../../../types/job';
 import type { JobGroup } from '../../../types/group';
 
@@ -204,18 +206,25 @@ export default function JobFormModal({ open, job, groups, onClose, onSuccess }: 
                                         <Form.Item
                                             name="scheduleConf"
                                             label={t('form.labels.cronExpression')}
-                                            rules={[{ required: true }]}
+                                            rules={[
+                                                { required: true },
+                                                {
+                                                    validator: (_, val) => {
+                                                        if (!val) return Promise.resolve();
+                                                        const err = validateQuartzCron(val);
+                                                        if (err)
+                                                            return Promise.reject(
+                                                                t(
+                                                                    `form.cron.validation.${err}`,
+                                                                ),
+                                                            );
+                                                        return Promise.resolve();
+                                                    },
+                                                },
+                                            ]}
                                         >
-                                            <Input
-                                                addonAfter={
-                                                    <Button
-                                                        size="small"
-                                                        type="link"
-                                                        onClick={handlePreviewTrigger}
-                                                    >
-                                                        {t('form.labels.previewNext5')}
-                                                    </Button>
-                                                }
+                                            <CronInput
+                                                onPreview={handlePreviewTrigger}
                                             />
                                         </Form.Item>
                                     )}

@@ -78,6 +78,46 @@
     },
     "messages": {
       "previewFailed": "预览失败"
+    },
+    "cron": {
+      "selectPreset": "快速选择预设...",
+      "formatHint": "格式: 秒 分 时 日 月 周 [年]",
+      "categories": {
+        "frequent": "高频",
+        "minutes": "分钟",
+        "hourly": "小时",
+        "daily": "每天",
+        "weekly": "每周",
+        "monthly": "每月"
+      },
+      "presets": {
+        "every5s": "每5秒",
+        "every10s": "每10秒",
+        "every30s": "每30秒",
+        "every1m": "每分钟",
+        "every5m": "每5分钟",
+        "every15m": "每15分钟",
+        "every30m": "每30分钟",
+        "every1h": "每小时",
+        "every2h": "每2小时",
+        "every6h": "每6小时",
+        "midnight": "每天午夜",
+        "sixAM": "每天6:00",
+        "noon": "每天中午",
+        "weekdays": "工作日午夜",
+        "everyMonday": "每周一午夜",
+        "firstDay": "每月第一天",
+        "lastDay": "每月最后一天"
+      },
+      "validation": {
+        "required": "请输入 CRON 表达式",
+        "fieldCount": "必须包含 6 或 7 个字段（秒 分 时 日 月 周 [年]）",
+        "invalidValue": "表达式中包含无效值",
+        "invalidStep": "步长值无效",
+        "outOfRange": "值超出允许范围",
+        "invalidQuestion": "? 仅可用于日和周字段",
+        "bothQuestion": "日和周不能同时为 ?"
+      }
     }
   },
   "trigger": {
