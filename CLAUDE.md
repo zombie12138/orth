@@ -302,8 +302,7 @@ start target/site/jacoco/index.html    # Windows
 - **Architecture docs**: `/arch/` directory contains detailed analysis of registry, RPC, scheduling, executors, logs, database layer
 - **Official docs**: See `README.md` (English) and `README.zh-CN.md` (Chinese)
 - **Cursor AI rules**: `.cursor/rules/` for coding standards and conventions
-- **Official site**: https://www.xuxueli.com/orth/
-- **GitHub**: https://github.com/xuxueli/orth
+- **GitHub**: https://github.com/zombie12138/Orth
 
 ## Project Context (Orth Fork)
 
